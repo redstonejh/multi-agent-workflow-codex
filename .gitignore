@@ -1,0 +1,13 @@
+# Multi-Agent Workflow — ignored artifacts
+
+# Run folders are local logbooks, not source. Keep them out of version control.
+runs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db

@@ -4,7 +4,12 @@
 
 Instead of one model doing one pass, a *conductor* reads your task, assembles the right team of specialist agents (planner, workers, critics, validators), and runs them through a pipeline where they hand work off to each other, check each other, and iterate until the result actually holds up. It's designed to run on Claude Code with no per-token API cost.
 
-> **Status:** Architecture & design complete (see [`docs/`](docs/)). Reference implementation in progress — the design is fully specified and being built out incrementally per the roadmap.
+> **Status:** Architecture & design complete (see [`docs/`](docs/)), and a **working
+> minimal version now runs** — Phases 1–3 of [`docs/08-build-strategy.md`](docs/08-build-strategy.md).
+> A small roster of subagents, the `/maw` conductor skill, and deterministic helper
+> tools are implemented and tested end to end (see the [worked example](examples/README.md)).
+> The full domain rosters (ML and code packs, Phase 4) are still design-only. See
+> [What works today](#what-works-today-vs-whats-still-design) below for the honest line.
 
 ---
 
@@ -79,6 +84,65 @@ claude                   # start Claude Code (runs on your subscription)
 
 The agents operate on the files in your current folder, while their definitions live once in `~/.claude/`. Runs on a Claude Pro/Max subscription with no separate API billing. See [`docs/08-build-strategy.md`](docs/08-build-strategy.md) for the full build and install plan.
 
+## Quick start
+
+The working minimal version lives in this repo under [`.claude/`](.claude/) and
+[`maw-tools/`](maw-tools/). From inside the repo:
+
+```bash
+claude                                  # start Claude Code (on your subscription)
+/maw <your task>                        # the conductor assembles the team and runs it
+```
+
+For example: `/maw implement normalize_whitespace in examples/sample_app/textutil.py so the tests pass`.
+The conductor scaffolds a `runs/<timestamp>_<slug>/` folder, delegates to the
+`planner → worker → critic` team through markdown hand-off notes, loops the critic
+until the bar is met, and finishes with an **independent `acceptance_gate`**
+(SHIP / NO-SHIP). See the [worked example](examples/README.md) for an actual run.
+
+To make `/maw` available from any folder, install the agents and skill under
+`~/.claude/` — see [`INSTALL.md`](INSTALL.md).
+
+The deterministic tools run standalone, no model needed:
+
+```bash
+python maw-tools/scaffold_run.py init "demo task" --agents planner,worker,critic
+python maw-tools/checks.py test --cmd "python test_textutil.py" --cwd examples/sample_app
+python maw-tools/checks.py gap --train 0.98 --test 0.81 --tol 0.05
+# (use `uv run maw-tools/...` or `py maw-tools/...` if `python` isn't on PATH)
+```
+
+## What works today vs. what's still design
+
+Honest scope — this repo backs a résumé claim, so only the lines below actually run:
+
+**Works now (Phases 1–3 of [doc 08](docs/08-build-strategy.md)):**
+- A 5-role roster of subagents in [`.claude/agents/`](.claude/agents/): `conductor`,
+  `planner`, `worker`, `critic`, `acceptance_gate` (cheap models for routine roles,
+  stronger models for the conductor and the independent gate).
+- The [`/maw` conductor skill](.claude/skills/maw/SKILL.md): assess → select a
+  conservative team → scaffold → delegate → refine loop → acceptance gate, within
+  governor caps.
+- Markdown memory + automatic hand-offs ([`docs/05`](docs/05-memory-and-handoffs.md)
+  template enforced by a deterministic helper).
+- Deterministic, model-free tools in [`maw-tools/`](maw-tools/): `scaffold_run.py`
+  (run folders + hand-off files) and `checks.py` (test runner + stats + a
+  train-test-gap demo).
+- A verified [end-to-end example](examples/README.md): four subagents, hand-off
+  files, a passing refine loop, and a SHIP verdict.
+
+**Still design-only (Phase 4+):**
+- The full **ML validation roster** ([`docs/06`](docs/06-ml-validation.md)):
+  `leakage_auditor`, `overfitting_checker`, `baseline_enforcer`, etc., and their
+  deterministic check scripts (only a single `gap` demo exists so far). `# MAW-TODO`
+- The full **code & debugging roster** ([`docs/07`](docs/07-code-and-debugging.md)):
+  `repro_engineer`, `bug_hunter`, `debugger`, `dep_mapper`, etc., plus `deps.md`
+  tooling. `# MAW-TODO`
+- Dependency-aware **parallel scheduling** and the `route` / `debate` patterns —
+  the current conductor runs the team sequentially. `# MAW-TODO`
+- Workflow skills (`ml-experiment`, `debug`) and Phase-5 polish (path-resolution
+  for `maw-tools/`, retention/compaction). `# MAW-TODO`
+
 ## Design documentation
 
 The complete architecture is specified in [`docs/`](docs/):
@@ -97,4 +161,4 @@ The complete architecture is specified in [`docs/`](docs/):
 
 ## Tech
 
-Built on Claude via [Claude Code](https://code.claude.com) and the Claude Agent SDK. Agents are defined as configuration (subagents, skills, conventions); deterministic checks are plain scripts; the multi-agent runtime is provided by Claude Code.
+Built on [Claude Code](https://code.claude.com), running on a Pro/Max subscription (no API key, no per-token cost). Agents are defined as configuration (subagents, skills, conventions); deterministic checks are plain stdlib Python scripts; the multi-agent runtime is provided by Claude Code. (The same configuration could later be driven by the Claude Agent SDK / API for unattended use — see [`docs/08`](docs/08-build-strategy.md).)
