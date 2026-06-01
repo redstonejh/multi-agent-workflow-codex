@@ -1,205 +1,262 @@
-# Multi-Agent Workflow
+# Codex Multi-Agent Workflow
 
-**A framework for turning a single Claude assistant into a coordinated team of specialized agents — with built-in quality loops, independent verification, and shared memory — for tackling complex tasks like ML experiments, debugging, and research.**
+Codex Multi-Agent Workflow (MAW) is a Codex CLI convention for running one task through a small team of roles: conductor, planner, worker, critic, and acceptance gate. The workflow is file-backed: every run gets a local folder with markdown handoffs, shared memory, role notes, artifacts, and deterministic Python check output.
 
-Instead of one model doing one pass, a *conductor* reads your task, assembles the right team of specialist agents (planner, workers, critics, validators), and runs them through a pipeline where they hand work off to each other, check each other, and iterate until the result actually holds up. It's designed to run on Claude Code with no per-token API cost.
+This repo is intentionally Codex-only. It uses `AGENTS.md`, `.codex/skills/maw/SKILL.md`, optional `.codex/agents/` role definitions, and stdlib Python helper scripts.
 
-> **Status:** Architecture & design complete (see [`docs/`](docs/)), and a **working
-> minimal version now runs** — Phases 1–3 of [`docs/08-build-strategy.md`](docs/08-build-strategy.md).
-> A small roster of subagents, the `/maw` conductor skill, and deterministic helper
-> tools are implemented and tested end to end (see the [worked example](examples/README.md)).
-> The full domain rosters (ML and code packs, Phase 4) are still design-only. See
-> [What works today](#what-works-today-vs-whats-still-design) below for the honest line.
+## Install
 
----
+Use the repo directly from Codex CLI:
 
-## The problem it solves
-
-A single LLM pass is fast but fragile: no second opinion, no check on whether the output is actually correct, and for technical work (ML especially) the most impressive-looking results are often the most misleading. This framework makes **multi-agent coordination and self-verification the default**, so that:
-
-- work is **decomposed** across specialists instead of crammed into one prompt,
-- output is **critiqued and revised in a loop** until it meets an explicit quality bar,
-- results are **independently verified** before they're accepted,
-- and the whole run is **self-documenting** — every agent's reasoning and hand-off is written to disk as readable markdown.
-
-## How it works
-
-```
-your task
-   │
-   ▼
-┌─────────────┐   reads a roster of available specialist roles, then
-│  CONDUCTOR  │   plans the team: which roles, how many, which pattern,
-└─────────────┘   with what quality bar — staying within safety caps
-   │
-   ▼
-┌──────────────────────────────────────────────┐
-│  the team executes (orchestrate / pipeline /   │
-│  parallel / route), passing markdown hand-off  │
-│  notes between agents and sharing a journal     │
-└──────────────────────────────────────────────┘
-   │
-   ▼
-┌─────────────┐   generate → evaluate → revise, looping until the
-│ QUALITY LOOP│   output clears the bar (the "refine" pattern)
-└─────────────┘
-   │
-   ▼
-┌─────────────┐   an INDEPENDENT agent (not the one that did the work)
-│ ACCEPTANCE  │   checks: did we answer the real ask? does every claim
-│    GATE     │   trace to evidence? does it run end-to-end?  SHIP / NO-SHIP
-└─────────────┘
-   │
-   ▼
-result + a readable run folder documenting how it got there
+```text
+Use $maw to fix the failing test in this repo.
 ```
 
-## Key features
+To make the skill available in another workspace, copy these paths into that workspace:
 
-- **Conductor (dynamic team assembly).** Given a task, it intelligently selects which specialist agents are actually needed and how many — conservative by default, escalating only when quality checks fail, all within hard caps on agent count and cost.
-- **Composable orchestration patterns.** `pipeline`, `orchestrate` (lead + workers), `parallel` (fan-out + reduce), `route` (classify + specialist), and `debate` — mixed and nested as a task requires.
-- **Recursive quality loop (`refine`).** A generate → evaluate → revise loop that wraps *any* pattern and repeats until output meets an explicit, rubric-based bar. This is the core mechanism for compounding quality rather than relying on a single lucky pass.
-- **Markdown memory & automatic hand-offs.** Each agent keeps local notes; the team shares a journal; and at every step the framework auto-writes a structured hand-off note and passes it to the next agent — so a multi-agent chain runs from one instruction with no manual prompt-threading. Every run produces a human-readable folder you can open and audit.
-- **Independent acceptance gate.** A terminal verification step run by a *different* agent than produced the work, checking task conformance, claim-to-evidence consistency (anti-overclaiming), and end-to-end soundness — with an optional human sign-off for high-stakes runs.
-- **Dependency-aware parallelism.** Work runs concurrently only when it's truly independent (scheduled against a dependency graph); discovered hidden couplings feed back so the system stops parallelizing things that secretly conflict.
-- **Domain validation packs.** Specialized agents + checks for domains where naive results mislead (below).
+```text
+AGENTS.md
+.codex/skills/maw/SKILL.md
+.codex/agents/
+maw-tools/
+```
 
-## Domain packs
+No package installation is required. The scripts use Python 3.10+ standard library only. On Windows, use `py` or `uv run python` if `python` is not on `PATH`.
 
-### ML validation
-A generic "looks good" critic isn't enough for machine learning — the best-looking metric is often an artifact. This pack ships specialized validators with deterministic, tool-computed checks (not LLM guesswork) for the ways ML results mislead: **overfitting** (train/test gap, learning curves, CV stability), **data leakage** (target/temporal/group leakage, the shuffled-label control), **misleading metrics** (imbalance, wrong metric for the goal), **weak baselines & non-significant gains**, **distribution shift & shortcut learning**, **calibration**, **label quality**, and **reproducibility**. A model only counts as "good" once it survives the audits *and* an independent acceptance gate. See [`docs/06-ml-validation.md`](docs/06-ml-validation.md).
-
-### Code & debugging
-A methodology pack for working on real codebases: reproduce-first bug finding, structured bug reports, a hypothesis-driven debugging loop (bisection, delta-debugging), written **root-cause analyses** (not just patches), fix + permanent regression test, a disciplined comment policy (explain *why*, never restate *what*), and — notably — a convention for capturing **hidden dependencies / spaghetti coupling** both inline (a greppable marker right above the line) and in a central, queryable dependency map that also makes parallelization safe. See [`docs/07-code-and-debugging.md`](docs/07-code-and-debugging.md).
-
-## How you'd use it
-
-The framework installs as a set of agent and workflow definitions in your Claude Code config directory (`~/.claude/`), so it's available in **every** terminal automatically — no per-project setup. Day to day:
+Install the `maw` command from this checkout:
 
 ```bash
-cd your-project          # any folder you want to work in
-claude                   # start Claude Code (runs on your subscription)
-/maw fix the failing test in payments.py      # the team assembles and goes
+python -m pip install -e .
+maw list-templates
+maw start standard-software-task "implement a parser"
 ```
 
-The agents operate on the files in your current folder, while their definitions live once in `~/.claude/`. Runs on a Claude Pro/Max subscription with no separate API billing. See [`docs/08-build-strategy.md`](docs/08-build-strategy.md) for the full build and install plan.
-
-## Quick start
-
-The working minimal version lives in this repo under [`.claude/`](.claude/) and
-[`maw-tools/`](maw-tools/). From inside the repo:
+Without installation, the local wrapper still works:
 
 ```bash
-claude                                  # start Claude Code (on your subscription)
-/maw <your task>                        # the conductor assembles the team and runs it
+python maw.py list-templates
 ```
 
-For example: `/maw implement normalize_whitespace in examples/sample_app/textutil.py so the tests pass`.
-The conductor scaffolds a `runs/<timestamp>_<slug>/` folder, delegates to the
-`planner → worker → critic` team through markdown hand-off notes, loops the critic
-until the bar is met, and finishes with an **independent `acceptance_gate`**
-(SHIP / NO-SHIP). See the [worked example](examples/README.md) for an actual run.
+## Usage
 
-To make `/maw` available from any folder, install the agents and skill under
-`~/.claude/` — see [`INSTALL.md`](INSTALL.md).
-
-The deterministic tools run standalone, no model needed:
+Use the single MAW CLI:
 
 ```bash
-python maw-tools/scaffold_run.py init "demo task" --agents planner,worker,critic
-python maw-tools/checks.py test --cmd "python test_textutil.py" --cwd examples/sample_app
-python maw-tools/checks.py gap --train 0.98 --test 0.81 --tol 0.05
+python maw.py list-templates
+python maw.py start standard-software-task "implement a parser" --run-root runs
+python maw.py validate-template standard-software-task
+python maw.py validate-handoffs runs/<run_id>
+python maw.py acceptance runs/<run_id> --test-cmd "python -m unittest discover -s tests"
+python maw.py plan-graph artifacts/task-graph.json
 ```
 
-## Requirements & running the tests
-
-**Requirements: just Python 3.10+ — no third-party packages.** The tests and the
-`maw-tools/` scripts use only the standard library on purpose, so the repo runs
-anywhere with nothing to `pip install`. (No `pytest` needed — see the note below.)
-
-If `python` isn't on your PATH (common on Windows, where it resolves to the
-Microsoft Store stub), use **`uv run python …`** (uv is lightweight and what this
-project assumes) or the **`py …`** launcher. Substitute that for `python` in every
-command below.
-
-**Run the worked example's tests directly** (plain stdlib, exits 0 on pass):
+Create a run folder:
 
 ```bash
-cd examples/sample_app
-python test_textutil.py          # -> "PASS — all 6 cases passed", exit 0
-# Windows / no python on PATH:  uv run python test_textutil.py
+python maw-tools/scaffold_run.py init "implement normalize_whitespace" --agents conductor,planner,worker,critic,acceptance_gate --json
 ```
 
-**Run them through the framework's test gate** — the same wrapper the `critic` and
-`acceptance_gate` use, which reports a machine-readable pass/fail:
+Create a handoff:
+
+```bash
+python maw-tools/scaffold_run.py handoff --run runs/<run_id> --from planner --to worker
+```
+
+Validate handoffs:
+
+```bash
+python maw-tools/validate_handoffs.py runs/<run_id>
+```
+
+Run deterministic checks:
 
 ```bash
 python maw-tools/checks.py test --cmd "python test_textutil.py" --cwd examples/sample_app
-# -> {"check": "test", "exit_code": 0, "passed": true, ...}
+python maw-tools/checks.py gap --train 0.91 --test 0.88 --tol 0.05
+python maw-tools/checks.py dependency-map --file examples/advanced_workflows/dependency-map.json
+python maw-tools/checks.py aggregation --file examples/advanced_workflows/research-aggregation.json
 ```
 
-**Self-test the checks themselves** (the tools are verified against known-good and
-known-bad fixtures, so a regression in the gate logic turns this red):
+Run an acceptance gate over a completed run:
 
 ```bash
-python maw-tools/selftest_checks.py     # -> 4/4 assertions pass
+python maw-tools/acceptance_check.py --run runs/<run_id> --test-cmd "python test_textutil.py" --test-cwd examples/sample_app
 ```
 
-> **Why no pytest?** The example deliberately uses a plain stdlib test runner so the
-> repo has zero install steps and the `checks.py test` gate works on any machine.
-> pytest is a fine choice for a larger suite — if you add it (`uv run pip install
-> pytest`), point the gate at it the same way: `checks.py test --cmd "pytest -q"`.
-> The framework doesn't care which test command it runs; it only gates on the exit
-> code, so any runner (stdlib, pytest, jest, go test, …) works.
+Plan a multi-worker task graph:
 
-## What works today vs. what's still design
+```bash
+python maw-tools/task_graph.py plan --file artifacts/task-graph.json
+```
 
-Honest scope — this repo backs a résumé claim, so only the lines below actually run:
+The graph planner validates task dependencies and emits stages. Independent
+`worker` tasks in the same stage can be delegated concurrently, followed by
+`aggregate` and `merge` stages before critic and acceptance review.
 
-**Works now (Phases 1–3 of [doc 08](docs/08-build-strategy.md)):**
-- A 5-role roster of subagents in [`.claude/agents/`](.claude/agents/): `conductor`,
-  `planner`, `worker`, `critic`, `acceptance_gate` (cheap models for routine roles,
-  stronger models for the conductor and the independent gate).
-- The [`/maw` conductor skill](.claude/skills/maw/SKILL.md): assess → select a
-  conservative team → scaffold → delegate → refine loop → acceptance gate, within
-  governor caps.
-- Markdown memory + automatic hand-offs ([`docs/05`](docs/05-memory-and-handoffs.md)
-  template enforced by a deterministic helper).
-- Deterministic, model-free tools in [`maw-tools/`](maw-tools/): `scaffold_run.py`
-  (run folders + hand-off files), `checks.py` (test runner + stats + a
-  train-test-gap demo), and `selftest_checks.py` (verifies the checks against
-  known-good/known-bad fixtures so the gate logic can't silently regress).
-- A verified [end-to-end example](examples/README.md): four subagents, hand-off
-  files, a passing refine loop, and a SHIP verdict.
+Validate workflow templates:
 
-**Still design-only (Phase 4+):**
-- The full **ML validation roster** ([`docs/06`](docs/06-ml-validation.md)):
-  `leakage_auditor`, `overfitting_checker`, `baseline_enforcer`, etc., and their
-  deterministic check scripts (only a single `gap` demo exists so far). `# MAW-TODO`
-- The full **code & debugging roster** ([`docs/07`](docs/07-code-and-debugging.md)):
-  `repro_engineer`, `bug_hunter`, `debugger`, `dep_mapper`, etc., plus `deps.md`
-  tooling. `# MAW-TODO`
-- Dependency-aware **parallel scheduling** and the `route` / `debate` patterns —
-  the current conductor runs the team sequentially. `# MAW-TODO`
-- Workflow skills (`ml-experiment`, `debug`) and Phase-5 polish (path-resolution
-  for `maw-tools/`, retention/compaction). `# MAW-TODO`
+```bash
+python maw-tools/validate_workflow_template.py
+python maw-tools/validate_workflow_template.py --run runs/<run_id>
+```
 
-## Design documentation
+Start a run from a workflow template:
 
-The complete architecture is specified in [`docs/`](docs/):
+```bash
+python maw-tools/start_workflow.py standard-software-task "add a CLI flag" --json
+python maw-tools/start_workflow.py bug-investigation "investigate failing payment test"
+python maw-tools/start_workflow.py multi-agent-research-task "compare task planning approaches"
+```
 
-| Doc | Contents |
-|---|---|
-| [`00-overview.md`](docs/00-overview.md) | Vision, design goals, the recursive-quality principle |
-| [`01-architecture.md`](docs/01-architecture.md) | System layers, components, conductor, acceptance gate, concurrency |
-| [`02-patterns.md`](docs/02-patterns.md) | The orchestration pattern library |
-| [`03-api-design.md`](docs/03-api-design.md) | Developer-facing API and usage examples |
-| [`04-roadmap.md`](docs/04-roadmap.md) | Phased build plan and open questions |
-| [`05-memory-and-handoffs.md`](docs/05-memory-and-handoffs.md) | Markdown memory + automatic hand-off subsystem |
-| [`06-ml-validation.md`](docs/06-ml-validation.md) | ML validators, checks, and evaluation rubric |
-| [`07-code-and-debugging.md`](docs/07-code-and-debugging.md) | Bug methodology, RCA, hidden-dependency annotation |
-| [`08-build-strategy.md`](docs/08-build-strategy.md) | The zero-extra-cost build path (runs on Claude Code) |
+Declare a template in `run.md`:
 
-## Tech
+```markdown
+- Workflow template: standard-software-task
+```
 
-Built on [Claude Code](https://code.claude.com), running on a Pro/Max subscription (no API key, no per-token cost). Agents are defined as configuration (subagents, skills, conventions); deterministic checks are plain stdlib Python scripts; the multi-agent runtime is provided by Claude Code. (The same configuration could later be driven by the Claude Agent SDK / API for unattended use — see [`docs/08`](docs/08-build-strategy.md).)
+Available templates live in `templates/workflows/`:
+
+```text
+standard-software-task
+bug-investigation
+refactor-task
+ml-validation-task
+ml-training-task
+multi-agent-research-task
+```
+
+Each template defines agents, handoff pairs, required artifacts, acceptance gates,
+and deterministic checks. A declared run conforms only when its agent notes,
+handoffs, and required artifacts match the template.
+
+Parity mode uses only:
+
+```text
+conductor, planner, worker, critic, acceptance_gate
+```
+
+Advanced mode is opt-in. Advanced templates may add specialized agents such as
+`leakage_auditor`, `overfitting_checker`, `baseline_enforcer`,
+`calibration_checker`, `reproducibility_checker`, `data_quality_auditor`,
+`debugger`, `bug_hunter`, `dependency_mapper`, and `aggregator`. These roles are
+activated only when the selected workflow template declares them.
+
+`start_workflow.py` validates the selected template before creating a run, copies
+the template into `artifacts/workflow-template.json`, creates all configured
+agent note files, initializes required handoff placeholders, and writes
+`artifacts/artifact-checklist.md` for the template's required artifacts.
+
+Run the script tests:
+
+```bash
+python -m unittest discover -s tests
+```
+
+## Architecture
+
+`AGENTS.md` defines repo-wide behavior and the audit format. `.codex/skills/maw/SKILL.md` is the Codex skill entry point. `.codex/agents/` holds role-specific prompts for Codex environments that support role delegation; otherwise the same roles can run sequentially in one Codex session.
+
+Each run folder has this shape:
+
+```text
+runs/<date>_<slug>_<id>/
+|-- run.md
+|-- memory.md
+|-- agents/
+|   |-- conductor.md
+|   |-- planner.md
+|   |-- worker.md
+|   |-- critic.md
+|   `-- acceptance_gate.md
+|-- handoffs/
+|   `-- 01_planner__to__worker.md
+`-- artifacts/
+```
+
+The normal loop is:
+
+```text
+conductor -> planner -> worker -> critic -> worker if needed -> acceptance_gate
+```
+
+The critic checks the work inside the refine loop. The acceptance gate performs the final independent check and returns `SHIP`, `NO-SHIP`, or `NEEDS-HUMAN`.
+
+Advanced role prompts live in `.codex/agents/`. Each advanced prompt declares
+mission, inputs, outputs, required artifacts, deterministic tools, and pass/fail
+criteria. The parity benchmark roster remains unchanged.
+
+## Examples
+
+See `examples/sample_run/` for a small complete run folder and `examples/sample_app/` for a tiny deterministic test target.
+
+The sample app check is:
+
+```bash
+python maw-tools/checks.py test --cmd "python test_textutil.py" --cwd examples/sample_app
+```
+
+The sample run can be validated with:
+
+```bash
+python maw-tools/validate_handoffs.py examples/sample_run
+python maw-tools/acceptance_check.py --run examples/sample_run --test-cmd "python test_textutil.py" --test-cwd examples/sample_app
+```
+
+Executable toy ML problems live in `examples/ml_problems/`:
+
+```bash
+python examples/ml_problems/classification/run.py --output classification.json
+python examples/ml_problems/regression/run.py --output regression.json
+python examples/ml_problems/data_validation/run.py --output data_validation.json
+python examples/ml_problems/ml_checks.py classification.json
+```
+
+Start ML workflow runs from templates:
+
+```bash
+python maw.py start ml-validation-task "validate the toy classification baseline"
+python maw.py start ml-training-task "train the toy regression baseline"
+```
+
+The toy ML runners emit JSON with generated data metadata, baseline model,
+metrics, split ids, expected seed, and acceptance criteria. `ml_checks.py`
+performs deterministic checks for metric thresholds, target leakage in features,
+train/test split overlap and ratio, and reproducibility seed.
+
+Fit diagnosis checks flag overfitting and underfitting:
+
+```bash
+python examples/ml_problems/ml_checks.py fit-diagnosis \
+  --problem-type classification \
+  --metrics-json "{\"train_score\": 0.98, \"validation_score\": 0.72, \"test_score\": 0.69}" \
+  --output fit-diagnosis.json
+
+python examples/ml_problems/ml_checks.py fit-diagnosis \
+  --problem-type regression \
+  --metrics-json "{\"train_error\": 0.2, \"validation_error\": 0.8, \"test_error\": 0.75}" \
+  --max-error-ratio 2.0
+```
+
+The fit diagnosis JSON artifact includes `status` (`healthy`, `overfit`,
+`underfit`, or `invalid`), `passed`, `metrics`, `thresholds`, and `reasons`.
+
+Advanced ML checks also support baseline, calibration, reproducibility, and data
+quality artifacts:
+
+```bash
+python examples/ml_problems/ml_checks.py baseline \
+  --metrics-json "{\"model_score\": 0.84, \"baseline_score\": 0.78}" \
+  --min-improvement 0.03
+
+python examples/ml_problems/ml_checks.py calibration \
+  --data-json "{\"confidences\": [0.8, 0.7, 0.2], \"correct\": [true, true, false]}" \
+  --max-ece 0.12
+
+python examples/ml_problems/ml_checks.py reproducibility \
+  --data-json "{\"seed\": 42, \"expected_seed\": 42, \"deterministic\": true}"
+
+python examples/ml_problems/ml_checks.py data-quality \
+  --data-json "{\"row_count\": 100, \"missing_values\": {\"x\": 0}, \"duplicate_rows\": 0}"
+```
+
+Advanced workflow examples live in `examples/advanced_workflows/`.

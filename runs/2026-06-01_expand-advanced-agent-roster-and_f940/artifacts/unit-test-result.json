@@ -1,0 +1,6 @@
+{
+  "command": "py -m unittest discover -s tests",
+  "passed": true,
+  "tests": 40,
+  "summary": "Ran 40 tests in 7.812s; OK"
+}

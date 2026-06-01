@@ -1,0 +1,33 @@
+{
+  "id": "multi-agent-research-task",
+  "name": "Multi-Agent Research Task",
+  "description": "Coordinate parallel research lanes, aggregate findings, and merge a sourced final answer.",
+  "mode": "advanced",
+  "agents": ["conductor", "planner", "research_worker_a", "research_worker_b", "research_worker_c", "aggregator", "merge_worker", "critic", "acceptance_gate"],
+  "handoffs": [
+    {"from": "conductor", "to": "planner"},
+    {"from": "planner", "to": "research_worker_a"},
+    {"from": "planner", "to": "research_worker_b"},
+    {"from": "planner", "to": "research_worker_c"},
+    {"from": "research_worker_a", "to": "aggregator"},
+    {"from": "research_worker_b", "to": "aggregator"},
+    {"from": "research_worker_c", "to": "aggregator"},
+    {"from": "aggregator", "to": "merge_worker"},
+    {"from": "merge_worker", "to": "critic"},
+    {"from": "critic", "to": "acceptance_gate"}
+  ],
+  "required_artifacts": [
+    "artifacts/research-plan.md",
+    "artifacts/source-notes.md",
+    "artifacts/aggregation.json",
+    "artifacts/aggregated-findings.md",
+    "artifacts/final-report.md",
+    "artifacts/acceptance-result.json"
+  ],
+  "acceptance_gates": ["sources-recorded", "findings-aggregated", "claims-supported", "handoffs-valid"],
+  "deterministic_checks": [
+    {"name": "aggregation", "command": "py maw-tools/checks.py aggregation --file artifacts/aggregation.json"},
+    {"name": "source-list-present", "command": "py maw-tools/validate_workflow_template.py --run <run_dir>"},
+    {"name": "handoffs", "command": "py maw-tools/validate_handoffs.py <run_dir>"}
+  ]
+}

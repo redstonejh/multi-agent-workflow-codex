@@ -1,0 +1,8 @@
+{
+  "required_lanes": ["literature", "implementation", "risks"],
+  "findings": [
+    {"lane": "literature", "summary": "Summarize source-backed prior work."},
+    {"lane": "implementation", "summary": "Summarize implementation options and constraints."},
+    {"lane": "risks", "summary": "Summarize conflicts, unknowns, and validation gaps."}
+  ]
+}

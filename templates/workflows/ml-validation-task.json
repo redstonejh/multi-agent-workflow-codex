@@ -1,0 +1,39 @@
+{
+  "id": "ml-validation-task",
+  "name": "ML Validation Task",
+  "description": "Audit model or experiment claims for leakage, overfitting, baselines, and reproducibility.",
+  "mode": "advanced",
+  "agents": ["conductor", "planner", "leakage_auditor", "data_quality_auditor", "baseline_enforcer", "overfitting_checker", "calibration_checker", "reproducibility_checker", "critic", "acceptance_gate"],
+  "handoffs": [
+    {"from": "conductor", "to": "planner"},
+    {"from": "planner", "to": "leakage_auditor"},
+    {"from": "leakage_auditor", "to": "data_quality_auditor"},
+    {"from": "data_quality_auditor", "to": "baseline_enforcer"},
+    {"from": "baseline_enforcer", "to": "overfitting_checker"},
+    {"from": "overfitting_checker", "to": "calibration_checker"},
+    {"from": "calibration_checker", "to": "reproducibility_checker"},
+    {"from": "reproducibility_checker", "to": "critic"},
+    {"from": "critic", "to": "acceptance_gate"}
+  ],
+  "required_artifacts": [
+    "artifacts/leakage-audit.json",
+    "artifacts/data-quality-report.json",
+    "artifacts/data-audit.md",
+    "artifacts/baseline-comparison.json",
+    "artifacts/fit-diagnosis.json",
+    "artifacts/calibration-report.json",
+    "artifacts/reproducibility-check.json",
+    "artifacts/validation-report.md",
+    "artifacts/acceptance-result.json"
+  ],
+  "acceptance_gates": ["no-known-leakage", "data-quality-within-thresholds", "baseline-checked", "fit-diagnosis-healthy", "calibration-within-threshold", "reproducible-metadata", "claims-supported"],
+  "deterministic_checks": [
+    {"name": "leakage", "command": "py examples/ml_problems/ml_checks.py validate <result.json>"},
+    {"name": "data-quality", "command": "py examples/ml_problems/ml_checks.py data-quality --data-file <data-quality.json> --output artifacts/data-quality-report.json"},
+    {"name": "baseline", "command": "py examples/ml_problems/ml_checks.py baseline --metrics-file <metrics.json> --output artifacts/baseline-comparison.json"},
+    {"name": "fit-diagnosis", "command": "py examples/ml_problems/ml_checks.py fit-diagnosis --problem-type <classification|regression> --metrics-file <metrics.json> --output artifacts/fit-diagnosis.json"},
+    {"name": "calibration", "command": "py examples/ml_problems/ml_checks.py calibration --data-file <calibration.json> --output artifacts/calibration-report.json"},
+    {"name": "reproducibility", "command": "py examples/ml_problems/ml_checks.py reproducibility --data-file <run-metadata.json> --output artifacts/reproducibility-check.json"},
+    {"name": "handoffs", "command": "py maw-tools/validate_handoffs.py <run_dir>"}
+  ]
+}

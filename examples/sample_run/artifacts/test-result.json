@@ -1,0 +1,8 @@
+{
+  "check": "test",
+  "command": "python test_textutil.py",
+  "cwd": "examples/sample_app",
+  "exit_code": 0,
+  "timed_out": false,
+  "passed": true
+}

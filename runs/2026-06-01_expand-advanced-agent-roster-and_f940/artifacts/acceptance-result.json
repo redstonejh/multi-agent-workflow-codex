@@ -1,0 +1,23 @@
+{
+  "run": "runs\\2026-06-01_expand-advanced-agent-roster-and_f940",
+  "handoffs": {
+    "run": "runs\\2026-06-01_expand-advanced-agent-roster-and_f940",
+    "handoffs": 4,
+    "passed": true,
+    "errors": []
+  },
+  "test": {
+    "check": "test",
+    "command": "py -m unittest discover -s tests",
+    "cwd": ".",
+    "exit_code": 0,
+    "timed_out": false,
+    "passed": true,
+    "duration_sec": 7.734,
+    "stdout_tail": "",
+    "stderr_tail": "........................................\n----------------------------------------------------------------------\nRan 40 tests in 7.571s\n\nOK\n",
+    "configured": true,
+    "tool_exit_code": 0
+  },
+  "verdict": "SHIP"
+}

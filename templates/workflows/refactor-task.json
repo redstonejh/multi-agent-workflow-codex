@@ -1,0 +1,24 @@
+{
+  "id": "refactor-task",
+  "name": "Refactor Task",
+  "description": "Change internal structure while preserving external behavior.",
+  "agents": ["conductor", "planner", "worker", "critic", "acceptance_gate"],
+  "handoffs": [
+    {"from": "conductor", "to": "planner"},
+    {"from": "planner", "to": "worker"},
+    {"from": "worker", "to": "critic"},
+    {"from": "critic", "to": "acceptance_gate"}
+  ],
+  "required_artifacts": [
+    "artifacts/refactor-plan.md",
+    "artifacts/behavior-baseline.json",
+    "artifacts/test-result.json",
+    "artifacts/critic-review.md",
+    "artifacts/acceptance-result.json"
+  ],
+  "acceptance_gates": ["behavior-preserved", "tests-pass", "scope-contained", "handoffs-valid"],
+  "deterministic_checks": [
+    {"name": "baseline-tests", "command": "py -m pytest -q"},
+    {"name": "handoffs", "command": "py maw-tools/validate_handoffs.py <run_dir>"}
+  ]
+}

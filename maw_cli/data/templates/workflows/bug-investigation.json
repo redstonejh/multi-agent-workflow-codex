@@ -1,0 +1,31 @@
+{
+  "id": "bug-investigation",
+  "name": "Bug Investigation",
+  "description": "Reproduce, diagnose, fix, and verify a bug with regression evidence.",
+  "mode": "advanced",
+  "agents": ["conductor", "planner", "debugger", "dependency_mapper", "bug_hunter", "worker", "critic", "acceptance_gate"],
+  "handoffs": [
+    {"from": "conductor", "to": "planner"},
+    {"from": "planner", "to": "debugger"},
+    {"from": "debugger", "to": "dependency_mapper"},
+    {"from": "dependency_mapper", "to": "bug_hunter"},
+    {"from": "bug_hunter", "to": "worker"},
+    {"from": "worker", "to": "critic"},
+    {"from": "critic", "to": "acceptance_gate"}
+  ],
+  "required_artifacts": [
+    "artifacts/reproduction.md",
+    "artifacts/root-cause.md",
+    "artifacts/dependency-map.json",
+    "artifacts/bug-hunt.md",
+    "artifacts/regression-test.json",
+    "artifacts/critic-review.md",
+    "artifacts/acceptance-result.json"
+  ],
+  "acceptance_gates": ["reproduced-before-fix", "root-cause-documented", "regression-test-passes", "handoffs-valid"],
+  "deterministic_checks": [
+    {"name": "dependency-map", "command": "py maw-tools/checks.py dependency-map --file artifacts/dependency-map.json"},
+    {"name": "regression-tests", "command": "py -m pytest -q"},
+    {"name": "handoffs", "command": "py maw-tools/validate_handoffs.py <run_dir>"}
+  ]
+}

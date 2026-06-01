@@ -1,0 +1,7 @@
+{
+  "command": "uv run --with fastapi --with pytest --with httpx python -m pytest -q",
+  "passed": true,
+  "tests": 67,
+  "warnings": 1,
+  "summary": "67 passed, 1 warning in 12.75s"
+}

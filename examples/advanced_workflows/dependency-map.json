@@ -1,0 +1,7 @@
+{
+  "nodes": [
+    {"id": "api", "depends_on": ["models"]},
+    {"id": "tests", "depends_on": ["api"]},
+    {"id": "models", "depends_on": []}
+  ]
+}

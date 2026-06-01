@@ -7,6 +7,7 @@ runs/
 __pycache__/
 *.pyc
 *.pyo
+.venv/
 
 # OS / editor cruft
 .DS_Store
