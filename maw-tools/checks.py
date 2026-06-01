@@ -69,17 +69,23 @@ def cmd_test(args: argparse.Namespace) -> int:
         stderr = e.stderr.decode() if isinstance(e.stderr, bytes) else (e.stderr or "")
     duration = round(time.monotonic() - start, 3)
 
-    return _emit({
+    passed = (exit_code == 0) and not timed_out
+    _emit({
         "check": "test",
         "command": args.cmd,
         "cwd": args.cwd or ".",
         "exit_code": exit_code,
         "timed_out": timed_out,
-        "passed": (exit_code == 0) and not timed_out,
+        "passed": passed,
         "duration_sec": duration,
         "stdout_tail": _tail(stdout),
         "stderr_tail": _tail(stderr),
     })
+    # The check tool's OWN exit code must track the test result, so callers that
+    # gate on `$?` (the acceptance gate, CI, `&&` chains) can't read a failing
+    # test as success. Previously this always returned 0 — a false-negative
+    # vector (see bugs/RCA-001).
+    return 0 if passed else 1
 
 
 # ---------------------------------------------------------------------------
@@ -120,7 +126,7 @@ def cmd_stats(args: argparse.Namespace) -> int:
 def cmd_gap(args: argparse.Namespace) -> int:
     gap = args.train - args.test
     passed = gap <= args.tol
-    return _emit({
+    _emit({
         "check": "gap",
         "train_score": args.train,
         "test_score": args.test,
@@ -133,6 +139,8 @@ def cmd_gap(args: argparse.Namespace) -> int:
             else "gap exceeds tolerance — possible overfitting (see docs/06)"
         ),
     })
+    # Exit code tracks the verdict so callers can gate on `$?`.
+    return 0 if passed else 1
 
 
 # ---------------------------------------------------------------------------

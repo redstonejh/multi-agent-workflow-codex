@@ -109,8 +109,48 @@ The deterministic tools run standalone, no model needed:
 python maw-tools/scaffold_run.py init "demo task" --agents planner,worker,critic
 python maw-tools/checks.py test --cmd "python test_textutil.py" --cwd examples/sample_app
 python maw-tools/checks.py gap --train 0.98 --test 0.81 --tol 0.05
-# (use `uv run maw-tools/...` or `py maw-tools/...` if `python` isn't on PATH)
 ```
+
+## Requirements & running the tests
+
+**Requirements: just Python 3.10+ — no third-party packages.** The tests and the
+`maw-tools/` scripts use only the standard library on purpose, so the repo runs
+anywhere with nothing to `pip install`. (No `pytest` needed — see the note below.)
+
+If `python` isn't on your PATH (common on Windows, where it resolves to the
+Microsoft Store stub), use **`uv run python …`** (uv is lightweight and what this
+project assumes) or the **`py …`** launcher. Substitute that for `python` in every
+command below.
+
+**Run the worked example's tests directly** (plain stdlib, exits 0 on pass):
+
+```bash
+cd examples/sample_app
+python test_textutil.py          # -> "PASS — all 6 cases passed", exit 0
+# Windows / no python on PATH:  uv run python test_textutil.py
+```
+
+**Run them through the framework's test gate** — the same wrapper the `critic` and
+`acceptance_gate` use, which reports a machine-readable pass/fail:
+
+```bash
+python maw-tools/checks.py test --cmd "python test_textutil.py" --cwd examples/sample_app
+# -> {"check": "test", "exit_code": 0, "passed": true, ...}
+```
+
+**Self-test the checks themselves** (the tools are verified against known-good and
+known-bad fixtures, so a regression in the gate logic turns this red):
+
+```bash
+python maw-tools/selftest_checks.py     # -> 4/4 assertions pass
+```
+
+> **Why no pytest?** The example deliberately uses a plain stdlib test runner so the
+> repo has zero install steps and the `checks.py test` gate works on any machine.
+> pytest is a fine choice for a larger suite — if you add it (`uv run pip install
+> pytest`), point the gate at it the same way: `checks.py test --cmd "pytest -q"`.
+> The framework doesn't care which test command it runs; it only gates on the exit
+> code, so any runner (stdlib, pytest, jest, go test, …) works.
 
 ## What works today vs. what's still design
 
@@ -126,8 +166,9 @@ Honest scope — this repo backs a résumé claim, so only the lines below actua
 - Markdown memory + automatic hand-offs ([`docs/05`](docs/05-memory-and-handoffs.md)
   template enforced by a deterministic helper).
 - Deterministic, model-free tools in [`maw-tools/`](maw-tools/): `scaffold_run.py`
-  (run folders + hand-off files) and `checks.py` (test runner + stats + a
-  train-test-gap demo).
+  (run folders + hand-off files), `checks.py` (test runner + stats + a
+  train-test-gap demo), and `selftest_checks.py` (verifies the checks against
+  known-good/known-bad fixtures so the gate logic can't silently regress).
 - A verified [end-to-end example](examples/README.md): four subagents, hand-off
   files, a passing refine loop, and a SHIP verdict.
 
