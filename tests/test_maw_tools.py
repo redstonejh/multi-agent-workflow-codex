@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -21,6 +22,7 @@ WORKFLOW_TEMPLATE = ROOT / "maw-tools" / "validate_workflow_template.py"
 START_WORKFLOW = ROOT / "maw-tools" / "start_workflow.py"
 DEPENDENCY_AUDIT = ROOT / "maw-tools" / "dependency_risk_audit.py"
 PLAN_CHECK = ROOT / "maw-tools" / "plan_check.py"
+BEHAVIOR_BASELINE = ROOT / "maw-tools" / "behavior_baseline.py"
 MAW = ROOT / "maw.py"
 PYPROJECT = ROOT / "pyproject.toml"
 ML_CHECKS = ROOT / "examples" / "ml_problems" / "ml_checks.py"
@@ -255,6 +257,57 @@ class MawToolTests(unittest.TestCase):
             self.assertTrue(result["test"]["passed"])
             self.assertFalse(result["evidence"]["passed"])
             self.assertTrue(any(item["type"] == "missing_required_evidence" for item in result["violations"]))
+
+    def test_refactor_acceptance_late_behavior_baseline_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir) / "runs"
+            proc = run_tool(
+                str(SCAFFOLD),
+                "init",
+                "refactor late baseline",
+                "--root",
+                str(root),
+                "--agents",
+                "conductor,planner,worker,critic,acceptance_gate",
+                "--json",
+            )
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            run_dir = Path(json.loads(proc.stdout)["run_dir"])
+            for frm, to in (
+                ("conductor", "planner"),
+                ("planner", "worker"),
+                ("worker", "critic"),
+                ("critic", "acceptance_gate"),
+            ):
+                handoff = run_tool(str(SCAFFOLD), "handoff", "--run", str(run_dir), "--from", frm, "--to", to)
+                self.assertEqual(handoff.returncode, 0, handoff.stdout + handoff.stderr)
+            self._fill_handoff_placeholders(run_dir)
+            run_md = (run_dir / "run.md").read_text(encoding="utf-8")
+            run_md = run_md.replace("- Status: in-progress", "- Status: in-progress\n- Workflow template: refactor-task")
+            (run_dir / "run.md").write_text(run_md, encoding="utf-8")
+
+            source = Path(tmp_dir) / "legacy.py"
+            source.write_text("def public():\n    return 'edited'\n", encoding="utf-8")
+            edited_mtime = source.stat().st_mtime
+            late_baseline = {
+                "check": "behavior_baseline",
+                "passed": True,
+                "metadata": {
+                    "captured_at_epoch": edited_mtime + 60.0,
+                    "source_paths": [str(source)],
+                },
+                "items": [],
+            }
+            (run_dir / "artifacts" / "behavior-baseline.json").write_text(json.dumps(late_baseline) + "\n", encoding="utf-8")
+            (run_dir / "artifacts" / "behavior-diff.json").write_text(json.dumps({"passed": True, "diffs": []}) + "\n", encoding="utf-8")
+            (run_dir / "artifacts" / "test-result.json").write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
+
+            proc = run_tool(str(ACCEPTANCE), "--run", str(run_dir))
+
+            self.assertNotEqual(proc.returncode, 0)
+            result = json.loads(proc.stdout)
+            self.assertEqual(result["verdict"], "NO-SHIP")
+            self.assertTrue(any(item["type"] == "late_behavior_baseline" for item in result["violations"]))
 
     def _write_verdict_run(self, root: Path, artifact_verdict: str | None, run_verdict: str) -> Path:
         run_dir = root / "run"
@@ -1027,6 +1080,134 @@ class MawToolTests(unittest.TestCase):
         self.assertIn("no_split_overlap", failed_checks)
         self.assertIn("no_feature_target_leakage", failed_checks)
         self.assertIn("accuracy_at_least", failed_checks)
+
+    def _write_behavior_module(self, root: Path, changed: bool = False) -> tuple[Path, Path]:
+        module = root / "legacy_surface.py"
+        if changed:
+            module.write_text(
+                "\n".join(
+                    [
+                        "REGISTRY = {'mode': 'legacy'}",
+                        "",
+                        "def rounded(value):",
+                        "    return round(value, 1)",
+                        "",
+                        "old_round = rounded",
+                        "",
+                        "class Amount:",
+                        "    def __init__(self, value):",
+                        "        self.value = value",
+                        "    def __repr__(self):",
+                        "        return f'Amount({self.value:.1f})'",
+                        "    def __str__(self):",
+                        "        return f'{self.value:.1f}'",
+                        "",
+                        "def json_report():",
+                        "    return {'value': rounded(1.234), 'label': 'legacy'}",
+                        "",
+                        "def csv_rows():",
+                        "    return [['name', 'value'], ['x', f'{rounded(1.234):.1f}']]",
+                        "",
+                        "def text_report():",
+                        "    return f'value={rounded(1.234):.1f}\\n'",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+        else:
+            module.write_text(
+                "\n".join(
+                    [
+                        "REGISTRY = {'mode': 'legacy'}",
+                        "",
+                        "def rounded(value):",
+                        "    scaled = int(value * 100 + 0.5)",
+                        "    return scaled / 100",
+                        "",
+                        "old_round = rounded",
+                        "",
+                        "class Amount:",
+                        "    def __init__(self, value):",
+                        "        self.value = value",
+                        "    def __repr__(self):",
+                        "        return f'Amount(value={self.value:.2f})'",
+                        "    def __str__(self):",
+                        "        return f'{self.value:.2f}'",
+                        "",
+                        "def json_report():",
+                        "    return {'value': rounded(1.234), 'label': 'legacy'}",
+                        "",
+                        "def csv_rows():",
+                        "    return [['name', 'value'], ['x', f'{rounded(1.234):.2f}']]",
+                        "",
+                        "def text_report():",
+                        "    return f'value={rounded(1.234):.2f}\\n'",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+        manifest = root / "behavior-manifest.json"
+        manifest.write_text(
+            json.dumps(
+                {
+                    "source_paths": [str(module)],
+                    "modules": [{"name": "legacy_surface", "attrs": ["REGISTRY"]}],
+                    "signatures": [{"module": "legacy_surface", "members": "public"}],
+                    "reprs": [{"name": "amount", "expr": "legacy_surface.Amount(1.234)"}],
+                    "json": [{"name": "report-json", "expr": "legacy_surface.json_report()"}],
+                    "csv": [{"name": "report-csv", "expr": "legacy_surface.csv_rows()"}],
+                    "text": [{"name": "report-text", "expr": "legacy_surface.text_report()"}],
+                    "aliases": [{"name": "old_round_alias", "alias": "legacy_surface.old_round", "target": "legacy_surface.rounded"}],
+                }
+            ),
+            encoding="utf-8",
+        )
+        return module, manifest
+
+    def test_behavior_baseline_identical_behavior_refactor_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            module, manifest = self._write_behavior_module(root)
+            baseline = root / "behavior-baseline.json"
+            diff = root / "behavior-diff.json"
+
+            capture = run_tool(str(BEHAVIOR_BASELINE), "capture", "--manifest", str(manifest), "--root", str(root), "--output", str(baseline), cwd=root)
+            self.assertEqual(capture.returncode, 0, capture.stdout + capture.stderr)
+            original_mtime = module.stat().st_mtime
+            self._write_behavior_module(root, changed=False)
+            os.utime(module, (original_mtime + 2.0, original_mtime + 2.0))
+
+            verify = run_tool(str(BEHAVIOR_BASELINE), "verify", "--manifest", str(manifest), "--baseline", str(baseline), "--root", str(root), "--output", str(diff), cwd=root)
+
+            self.assertEqual(verify.returncode, 0, verify.stdout + verify.stderr)
+            result = json.loads(verify.stdout)
+            self.assertTrue(result["passed"])
+            self.assertEqual(result["diffs"], [])
+
+    def test_behavior_baseline_rounding_csv_and_repr_changes_fail(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            module, manifest = self._write_behavior_module(root)
+            baseline = root / "behavior-baseline.json"
+            diff = root / "behavior-diff.json"
+
+            capture = run_tool(str(BEHAVIOR_BASELINE), "capture", "--manifest", str(manifest), "--root", str(root), "--output", str(baseline), cwd=root)
+            self.assertEqual(capture.returncode, 0, capture.stdout + capture.stderr)
+            original_mtime = module.stat().st_mtime
+            self._write_behavior_module(root, changed=True)
+            os.utime(module, (original_mtime + 2.0, original_mtime + 2.0))
+
+            verify = run_tool(str(BEHAVIOR_BASELINE), "verify", "--manifest", str(manifest), "--baseline", str(baseline), "--root", str(root), "--output", str(diff), cwd=root)
+
+            self.assertNotEqual(verify.returncode, 0)
+            result = json.loads(verify.stdout)
+            self.assertFalse(result["passed"])
+            diff_types = {item["type"] for item in result["diffs"]}
+            self.assertIn("repr_changed", diff_types)
+            self.assertIn("csv_bytes_changed", diff_types)
+            self.assertIn("json_bytes_changed", diff_types)
 
     def test_ml_template_start_commands_create_runs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

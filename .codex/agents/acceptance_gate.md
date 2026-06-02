@@ -26,3 +26,9 @@ If the artifact is `NO-SHIP` or `NEEDS-HUMAN`, the final answer must not say
 For dependency-risk-audit workflows, verify generated bug dossiers exist for high-severity risks, annotation mode is idempotent, and tests still pass.
 
 For every completed run, verify pre-execution plan gate evidence exists: proposed structured plan, `plan_check.py` result, `plan_reviewer` verdict, final accepted plan, and revision count. Deterministic `plan_check.py` evidence is the hard gate; `plan_reviewer` is advisory.
+
+For refactor tasks, verify `artifacts/behavior-baseline.json` was captured
+before source edits and `artifacts/behavior-diff.json` passed. No refactor ships
+until public API signatures, golden outputs, byte-for-byte exports,
+repr/string formatting, legacy aliases, and edge cases are proven unchanged.
+Prefer ugly compatibility wrappers over clean breaking changes.

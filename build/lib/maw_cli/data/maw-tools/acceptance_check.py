@@ -23,7 +23,7 @@ TASK_TYPE_ALIASES = {
 }
 REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
     "standard-software-task": ("artifacts/test-result.json",),
-    "refactor-task": ("artifacts/behavior-baseline.json", "artifacts/test-result.json"),
+    "refactor-task": ("artifacts/behavior-baseline.json", "artifacts/behavior-diff.json", "artifacts/test-result.json"),
     "bug-investigation": (
         "artifacts/dependency-map.json",
         "artifacts/dependency-risk-report.json",
@@ -143,6 +143,92 @@ def artifact_reports_pass(data: Any) -> tuple[bool, str]:
     return False, "artifact does not report pass/fail"
 
 
+def resolve_source_path(run_dir: Path, source_path: str) -> Path | None:
+    path = Path(source_path)
+    candidates = [path] if path.is_absolute() else [Path.cwd() / path, run_dir / path]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def behavior_baseline_freshness_violations(run_dir: Path, artifact: str, path: Path, data: Any, task_type: str) -> list[dict[str, Any]]:
+    if task_type != "refactor-task" or artifact != "artifacts/behavior-baseline.json":
+        return []
+    if not isinstance(data, dict):
+        return []
+
+    metadata = data.get("metadata")
+    if not isinstance(metadata, dict):
+        return [
+            violation(
+                "missing_behavior_baseline_metadata",
+                "behavior baseline is missing metadata",
+                artifact=artifact,
+                path=str(path),
+                task_type=task_type,
+            )
+        ]
+
+    captured = metadata.get("captured_at_epoch")
+    if not isinstance(captured, (int, float)):
+        return [
+            violation(
+                "missing_behavior_baseline_timestamp",
+                "behavior baseline is missing metadata.captured_at_epoch",
+                artifact=artifact,
+                path=str(path),
+                task_type=task_type,
+            )
+        ]
+
+    source_paths = metadata.get("source_paths")
+    if not isinstance(source_paths, list) or not source_paths:
+        return [
+            violation(
+                "missing_behavior_source_paths",
+                "behavior baseline metadata.source_paths must list refactored source files",
+                artifact=artifact,
+                path=str(path),
+                task_type=task_type,
+            )
+        ]
+
+    violations: list[dict[str, Any]] = []
+    for raw_source in source_paths:
+        source = str(raw_source)
+        resolved = resolve_source_path(run_dir, source)
+        if resolved is None:
+            violations.append(
+                violation(
+                    "missing_behavior_source",
+                    f"behavior baseline source path does not exist: {source}",
+                    artifact=artifact,
+                    path=str(path),
+                    source_path=source,
+                    task_type=task_type,
+                )
+            )
+            continue
+
+        source_mtime = resolved.stat().st_mtime
+        if source_mtime <= float(captured):
+            violations.append(
+                violation(
+                    "late_behavior_baseline",
+                    "behavior baseline was captured after a source edit or the covered source was not edited after baseline capture",
+                    artifact=artifact,
+                    path=str(path),
+                    source_path=source,
+                    resolved_source_path=str(resolved),
+                    captured_at_epoch=float(captured),
+                    source_mtime=source_mtime,
+                    task_type=task_type,
+                )
+            )
+    return violations
+
+
 def check_required_evidence(run_dir: Path, task_type: str) -> dict[str, Any]:
     if task_type not in REQUIRED_EVIDENCE:
         item = violation(
@@ -209,6 +295,10 @@ def check_required_evidence(run_dir: Path, task_type: str) -> dict[str, Any]:
                     reason=reason,
                 )
             )
+        freshness_violations = behavior_baseline_freshness_violations(run_dir, artifact, path, data, task_type)
+        if freshness_violations:
+            item.update({"passed": False, "reason": freshness_violations[0]["type"]})
+            violations.extend(freshness_violations)
         items.append(item)
 
     return {
