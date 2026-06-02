@@ -211,6 +211,89 @@ class MawToolTests(unittest.TestCase):
             "examples/sample_app",
         )
 
+    def _create_ml_acceptance_run(self, root: Path) -> Path:
+        proc = run_tool(
+            str(SCAFFOLD),
+            "init",
+            "ml acceptance fixture",
+            "--root",
+            str(root),
+            "--agents",
+            "conductor,planner,worker,critic,acceptance_gate",
+            "--json",
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        run_dir = Path(json.loads(proc.stdout)["run_dir"])
+        for frm, to in (
+            ("conductor", "planner"),
+            ("planner", "worker"),
+            ("worker", "critic"),
+            ("critic", "acceptance_gate"),
+        ):
+            handoff = run_tool(str(SCAFFOLD), "handoff", "--run", str(run_dir), "--from", frm, "--to", to)
+            self.assertEqual(handoff.returncode, 0, handoff.stdout + handoff.stderr)
+        self._fill_handoff_placeholders(run_dir)
+        run_md = (run_dir / "run.md").read_text(encoding="utf-8")
+        run_md = run_md.replace("- Status: in-progress", "- Status: in-progress\n- Task type: ml")
+        (run_dir / "run.md").write_text(run_md, encoding="utf-8")
+
+        artifacts = run_dir / "artifacts"
+        for name in (
+            "leakage-audit.json",
+            "data-quality-report.json",
+            "reproducibility-check.json",
+            "baseline-comparison.json",
+            "fit-diagnosis.json",
+            "calibration-report.json",
+            "shuffled-label-check.json",
+            "multi-seed-stability.json",
+        ):
+            (artifacts / name).write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
+        (artifacts / "ml-validator.json").write_text(
+            json.dumps(
+                {
+                    "check": "ml_validator",
+                    "schema_version": 1,
+                    "passed": True,
+                    "required_evidence": ["leakage", "baseline", "multi_seed", "shuffled_label"],
+                    "evidence": {
+                        "leakage": {"artifact": "artifacts/leakage-audit.json", "passed": True},
+                        "baseline": {"artifact": "artifacts/baseline-comparison.json", "passed": True},
+                        "multi_seed": {"artifact": "artifacts/multi-seed-stability.json", "passed": True},
+                        "shuffled_label": {"artifact": "artifacts/shuffled-label-check.json", "passed": True},
+                    },
+                    "checks": [
+                        {"check": "leakage", "passed": True},
+                        {"check": "baseline", "passed": True},
+                        {"check": "multi_seed", "passed": True},
+                        {"check": "shuffled_label", "passed": True},
+                    ],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (artifacts / "regression-resistance.json").write_text(
+            json.dumps(
+                {
+                    "check": "regression_resistance",
+                    "schema_version": 1,
+                    "passed": True,
+                    "clean": {"passed": True, "checks": [{"check": "clean", "passed": True}]},
+                    "mutations": [
+                        {"name": "leaky_feature", "caught": True, "mutant_passed": False, "failed_checks": ["no_feature_target_leakage"]},
+                        {"name": "shuffled_labels", "caught": True, "mutant_passed": False, "failed_checks": ["labels_not_shuffled"]},
+                        {"name": "train_test_overlap", "caught": True, "mutant_passed": False, "failed_checks": ["no_split_overlap"]},
+                        {"name": "preprocessing_fit_full_data", "caught": True, "mutant_passed": False, "failed_checks": ["preprocessing_fit_on_train_only"]},
+                    ],
+                    "summary": {"total": 4, "caught": 4},
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        return run_dir
+
     def test_acceptance_check_missing_required_evidence_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             run_dir = Path(tmp_dir) / "sample_run"
@@ -258,6 +341,21 @@ class MawToolTests(unittest.TestCase):
             self.assertTrue(result["test"]["passed"])
             self.assertFalse(result["evidence"]["passed"])
             self.assertTrue(any(item["type"] == "missing_required_evidence" for item in result["violations"]))
+
+    def test_ml_acceptance_missing_validator_or_regression_resistance_fails(self) -> None:
+        for artifact in ("ml-validator.json", "regression-resistance.json"):
+            with self.subTest(artifact=artifact), tempfile.TemporaryDirectory() as tmp_dir:
+                run_dir = self._create_ml_acceptance_run(Path(tmp_dir) / "runs")
+                (run_dir / "artifacts" / artifact).unlink()
+
+                proc = run_tool(str(ACCEPTANCE), "--run", str(run_dir))
+
+                self.assertNotEqual(proc.returncode, 0)
+                result = json.loads(proc.stdout)
+                self.assertEqual(result["verdict"], "NO-SHIP")
+                self.assertTrue(result["handoffs"]["passed"])
+                missing = next(item for item in result["violations"] if item["type"] == "missing_required_evidence")
+                self.assertEqual(missing["artifact"], f"artifacts/{artifact}")
 
     def test_refactor_acceptance_late_behavior_baseline_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -1108,6 +1206,82 @@ class MawToolTests(unittest.TestCase):
         self.assertIn("no_split_overlap", failed_checks)
         self.assertIn("no_feature_target_leakage", failed_checks)
         self.assertIn("accuracy_at_least", failed_checks)
+
+    def test_ml_validator_artifact_schema_matches_expected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            files = {}
+            for name in ("leakage", "baseline", "multi_seed", "shuffled_label"):
+                path = root / f"{name}.json"
+                path.write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
+                files[name] = path
+            output = root / "ml-validator.json"
+
+            proc = run_tool(
+                str(ML_CHECKS),
+                "validator",
+                "--leakage-file",
+                str(files["leakage"]),
+                "--baseline-file",
+                str(files["baseline"]),
+                "--multi-seed-file",
+                str(files["multi_seed"]),
+                "--shuffled-label-file",
+                str(files["shuffled_label"]),
+                "--output",
+                str(output),
+            )
+
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            result = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(result["check"], "ml_validator")
+            self.assertEqual(result["schema_version"], 1)
+            self.assertTrue(result["passed"])
+            self.assertEqual(result["required_evidence"], ["leakage", "baseline", "multi_seed", "shuffled_label"])
+            self.assertEqual(result["evidence"]["leakage"]["expected_artifact"], "artifacts/leakage-audit.json")
+            self.assertTrue(all(item["passed"] for item in result["checks"]))
+
+    def test_ml_regression_resistance_mutations_are_caught(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            clean = root / "clean.json"
+            run_proc = run_tool(str(ML_CLASSIFICATION), "--output", str(clean))
+            self.assertEqual(run_proc.returncode, 0, run_proc.stdout + run_proc.stderr)
+
+            validate_proc = run_tool(str(ML_CHECKS), str(clean))
+            self.assertEqual(validate_proc.returncode, 0, validate_proc.stdout + validate_proc.stderr)
+
+            result = json.loads(clean.read_text(encoding="utf-8"))
+            mutations = {
+                "leaky_feature": lambda data: data["features"].append(data["target"]),
+                "shuffled_labels": lambda data: data.update({"labels_shuffled": True}),
+                "train_test_overlap": lambda data: data["split"]["test_ids"].insert(0, data["split"]["train_ids"][0]),
+                "preprocessing_fit_full_data": lambda data: data.update({"preprocessing": {"fit_scope": "full_data"}}),
+            }
+            for name, mutate in mutations.items():
+                bad = json.loads(json.dumps(result))
+                mutate(bad)
+                bad_path = root / f"{name}.json"
+                bad_path.write_text(json.dumps(bad) + "\n", encoding="utf-8")
+
+                bad_proc = run_tool(str(ML_CHECKS), str(bad_path))
+
+                self.assertNotEqual(bad_proc.returncode, 0, name)
+                validation = json.loads(bad_proc.stdout)
+                self.assertFalse(validation["passed"])
+
+            output = root / "regression-resistance.json"
+            resistance_proc = run_tool(str(ML_CHECKS), "regression-resistance", "--result-file", str(clean), "--output", str(output))
+
+            self.assertEqual(resistance_proc.returncode, 0, resistance_proc.stdout + resistance_proc.stderr)
+            resistance = json.loads(output.read_text(encoding="utf-8"))
+            self.assertTrue(resistance["passed"])
+            self.assertEqual(resistance["summary"], {"total": 4, "caught": 4})
+            self.assertEqual(
+                {item["name"] for item in resistance["mutations"]},
+                {"leaky_feature", "shuffled_labels", "train_test_overlap", "preprocessing_fit_full_data"},
+            )
+            self.assertTrue(all(item["caught"] and item["mutant_passed"] is False for item in resistance["mutations"]))
 
     def _write_behavior_module(self, root: Path, changed: bool = False) -> tuple[Path, Path]:
         module = root / "legacy_surface.py"

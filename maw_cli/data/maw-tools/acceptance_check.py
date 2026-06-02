@@ -14,6 +14,8 @@ import validate_handoffs
 
 
 ACCEPTANCE_RESULT = "acceptance-result.json"
+ML_VALIDATOR_ARTIFACT = "artifacts/ml-validator.json"
+REGRESSION_RESISTANCE_ARTIFACT = "artifacts/regression-resistance.json"
 DEFAULT_TASK_TYPE = "standard-software-task"
 WORKFLOW_TEMPLATE_RE = re.compile(r"(?m)^-\s*Workflow template:\s*(?P<value>[a-zA-Z0-9_-]+)\s*$")
 TASK_TYPE_RE = re.compile(r"(?m)^-\s*Task type:\s*(?P<value>[a-zA-Z0-9_-]+)\s*$")
@@ -45,6 +47,7 @@ REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
         "artifacts/style-drift-audit.json",
     ),
     "ml": (
+        ML_VALIDATOR_ARTIFACT,
         "artifacts/leakage-audit.json",
         "artifacts/data-quality-report.json",
         "artifacts/reproducibility-check.json",
@@ -53,8 +56,10 @@ REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
         "artifacts/calibration-report.json",
         "artifacts/shuffled-label-check.json",
         "artifacts/multi-seed-stability.json",
+        REGRESSION_RESISTANCE_ARTIFACT,
     ),
     "ml-training-task": (
+        ML_VALIDATOR_ARTIFACT,
         "artifacts/leakage-audit.json",
         "artifacts/data-quality-report.json",
         "artifacts/reproducibility-check.json",
@@ -63,8 +68,10 @@ REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
         "artifacts/calibration-report.json",
         "artifacts/shuffled-label-check.json",
         "artifacts/multi-seed-stability.json",
+        REGRESSION_RESISTANCE_ARTIFACT,
     ),
     "ml-validation-task": (
+        ML_VALIDATOR_ARTIFACT,
         "artifacts/leakage-audit.json",
         "artifacts/data-quality-report.json",
         "artifacts/baseline-comparison.json",
@@ -73,6 +80,7 @@ REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
         "artifacts/reproducibility-check.json",
         "artifacts/shuffled-label-check.json",
         "artifacts/multi-seed-stability.json",
+        REGRESSION_RESISTANCE_ARTIFACT,
     ),
     "multi-agent-research-task": ("artifacts/dependency-risk-report.json", "artifacts/aggregation.json"),
 }
@@ -146,6 +154,77 @@ def artifact_reports_pass(data: Any) -> tuple[bool, str]:
         return ok, "ok is true" if ok else "ok is false"
 
     return False, "artifact does not report pass/fail"
+
+
+def ml_validator_reports_pass(data: Any) -> tuple[bool, str]:
+    if not isinstance(data, dict):
+        return False, "ml-validator JSON must be an object"
+    if data.get("check") != "ml_validator":
+        return False, "check must be ml_validator"
+    if data.get("schema_version") != 1:
+        return False, "schema_version must be 1"
+    if not isinstance(data.get("passed"), bool):
+        return False, "passed must be a boolean"
+    required = data.get("required_evidence")
+    if required != ["leakage", "baseline", "multi_seed", "shuffled_label"]:
+        return False, "required_evidence must list leakage, baseline, multi_seed, shuffled_label"
+    evidence = data.get("evidence")
+    if not isinstance(evidence, dict):
+        return False, "evidence must be an object"
+    for name in required:
+        item = evidence.get(name)
+        if not isinstance(item, dict):
+            return False, f"missing evidence item: {name}"
+        if not isinstance(item.get("artifact"), str) or not item["artifact"]:
+            return False, f"evidence.{name}.artifact must be a non-empty string"
+        if not isinstance(item.get("passed"), bool):
+            return False, f"evidence.{name}.passed must be a boolean"
+    checks = data.get("checks")
+    if not isinstance(checks, list) or len(checks) != len(required):
+        return False, "checks must contain one item for each required evidence item"
+    if not all(isinstance(item, dict) and item.get("passed") is True for item in checks):
+        return False, "one or more validator evidence checks failed"
+    return bool(data["passed"]), "ml validator schema passed" if data["passed"] else "ml validator reports failed"
+
+
+def regression_resistance_reports_pass(data: Any) -> tuple[bool, str]:
+    if not isinstance(data, dict):
+        return False, "regression-resistance JSON must be an object"
+    if data.get("check") != "regression_resistance":
+        return False, "check must be regression_resistance"
+    if data.get("schema_version") != 1:
+        return False, "schema_version must be 1"
+    if not isinstance(data.get("passed"), bool):
+        return False, "passed must be a boolean"
+    clean = data.get("clean")
+    if not isinstance(clean, dict) or clean.get("passed") is not True:
+        return False, "clean validation must pass before mutation testing"
+    expected = {"leaky_feature", "shuffled_labels", "train_test_overlap", "preprocessing_fit_full_data"}
+    mutations = data.get("mutations")
+    if not isinstance(mutations, list):
+        return False, "mutations must be a list"
+    names = {item.get("name") for item in mutations if isinstance(item, dict)}
+    if names != expected:
+        return False, "mutations must cover leaky_feature, shuffled_labels, train_test_overlap, preprocessing_fit_full_data"
+    for item in mutations:
+        if not isinstance(item, dict):
+            return False, "mutation item must be an object"
+        if item.get("caught") is not True:
+            return False, f"mutation was not caught: {item.get('name')}"
+        if item.get("mutant_passed") is not False:
+            return False, f"mutant validation must fail: {item.get('name')}"
+        failed_checks = item.get("failed_checks")
+        if not isinstance(failed_checks, list) or not failed_checks:
+            return False, f"mutation must record failed checks: {item.get('name')}"
+    return bool(data["passed"]), "regression resistance schema passed" if data["passed"] else "regression resistance reports failed"
+
+
+def required_artifact_reports_pass(artifact: str, data: Any) -> tuple[bool, str]:
+    if artifact == ML_VALIDATOR_ARTIFACT:
+        return ml_validator_reports_pass(data)
+    if artifact == REGRESSION_RESISTANCE_ARTIFACT:
+        return regression_resistance_reports_pass(data)
+    return artifact_reports_pass(data)
 
 
 def resolve_source_path(run_dir: Path, source_path: str) -> Path | None:
@@ -287,7 +366,7 @@ def check_required_evidence(run_dir: Path, task_type: str) -> dict[str, Any]:
             items.append(item)
             continue
 
-        passed, reason = artifact_reports_pass(data)
+        passed, reason = required_artifact_reports_pass(artifact, data)
         item.update({"passed": passed, "reason": reason})
         if not passed:
             violations.append(

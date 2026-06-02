@@ -16,6 +16,7 @@
     {"from": "critic", "to": "acceptance_gate"}
   ],
   "required_artifacts": [
+    "artifacts/ml-validator.json",
     "artifacts/leakage-audit.json",
     "artifacts/data-quality-report.json",
     "artifacts/data-audit.md",
@@ -25,10 +26,11 @@
     "artifacts/reproducibility-check.json",
     "artifacts/shuffled-label-check.json",
     "artifacts/multi-seed-stability.json",
+    "artifacts/regression-resistance.json",
     "artifacts/validation-report.md",
     "artifacts/acceptance-result.json"
   ],
-  "acceptance_gates": ["no-known-leakage", "data-quality-within-thresholds", "baseline-checked", "fit-diagnosis-healthy", "calibration-within-threshold", "reproducible-metadata", "shuffled-label-collapses", "multi-seed-stable", "claims-supported"],
+  "acceptance_gates": ["ml-validator-passing", "no-known-leakage", "data-quality-within-thresholds", "baseline-checked", "fit-diagnosis-healthy", "calibration-within-threshold", "reproducible-metadata", "shuffled-label-collapses", "multi-seed-stable", "regression-resistance-passing", "claims-supported"],
   "deterministic_checks": [
     {"name": "leakage", "command": "py examples/ml_problems/ml_checks.py validate <result.json>"},
     {"name": "data-quality", "command": "py examples/ml_problems/ml_checks.py data-quality --data-file <data-quality.json> --output artifacts/data-quality-report.json"},
@@ -38,6 +40,8 @@
     {"name": "reproducibility", "command": "py examples/ml_problems/ml_checks.py reproducibility --data-file <run-metadata.json> --output artifacts/reproducibility-check.json"},
     {"name": "shuffled-label", "command": "py examples/ml_problems/ml_checks.py shuffled-label --data-file <shuffled-label.json> --output artifacts/shuffled-label-check.json"},
     {"name": "multi-seed", "command": "py examples/ml_problems/ml_checks.py multi-seed --data-file <multi-seed.json> --output artifacts/multi-seed-stability.json"},
+    {"name": "validator", "command": "py examples/ml_problems/ml_checks.py validator --output artifacts/ml-validator.json"},
+    {"name": "regression-resistance", "command": "py examples/ml_problems/ml_checks.py regression-resistance --result-file <result.json> --output artifacts/regression-resistance.json"},
     {"name": "handoffs", "command": "py maw-tools/validate_handoffs.py <run_dir>"}
   ]
 }

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import math
 import sys
@@ -49,6 +50,19 @@ def no_feature_target_leakage(feature_names: list[str], target_name: str = "targ
     lowered = {name.lower() for name in feature_names}
     leaked = sorted(name for name in lowered if name in {target_name.lower(), "label", "y"})
     return {"check": "no_feature_target_leakage", "leaked_features": leaked, "passed": not leaked}
+
+
+def labels_not_shuffled(result: dict[str, Any]) -> dict[str, Any]:
+    shuffled = bool(result.get("labels_shuffled", False))
+    return {"check": "labels_not_shuffled", "labels_shuffled": shuffled, "passed": not shuffled}
+
+
+def preprocessing_fit_on_train_only(result: dict[str, Any]) -> dict[str, Any]:
+    preprocessing = result.get("preprocessing")
+    if not isinstance(preprocessing, dict):
+        return {"check": "preprocessing_fit_on_train_only", "fit_scope": "not_declared", "passed": True}
+    fit_scope = str(preprocessing.get("fit_scope", "train"))
+    return {"check": "preprocessing_fit_on_train_only", "fit_scope": fit_scope, "passed": fit_scope == "train"}
 
 
 def baseline_comparison(
@@ -633,6 +647,8 @@ def validate_result(result: dict[str, Any]) -> dict[str, Any]:
         no_split_overlap(result["split"]["train_ids"], result["split"]["test_ids"]),
         split_ratio(result["split"]["train_ids"], result["split"]["test_ids"], float(result["split"]["expected_train_ratio"])),
         no_feature_target_leakage(result["features"], result.get("target", "target")),
+        labels_not_shuffled(result),
+        preprocessing_fit_on_train_only(result),
     ]
     for check in result.get("metric_checks", []):
         if check["direction"] == "at_least":
@@ -642,6 +658,119 @@ def validate_result(result: dict[str, Any]) -> dict[str, Any]:
         else:
             checks.append({"check": check["name"], "passed": False, "error": f"unknown direction {check['direction']}"})
     return {"passed": all(check["passed"] for check in checks), "checks": checks}
+
+
+VALIDATOR_EVIDENCE = {
+    "leakage": "artifacts/leakage-audit.json",
+    "baseline": "artifacts/baseline-comparison.json",
+    "multi_seed": "artifacts/multi-seed-stability.json",
+    "shuffled_label": "artifacts/shuffled-label-check.json",
+}
+
+
+def artifact_passed(data: Any) -> tuple[bool, str]:
+    if not isinstance(data, dict):
+        return False, "artifact JSON must be an object"
+    if isinstance(data.get("passed"), bool):
+        return bool(data["passed"]), "passed is true" if data["passed"] else "passed is false"
+    acceptance = data.get("acceptance")
+    if isinstance(acceptance, dict) and isinstance(acceptance.get("passed"), bool):
+        return bool(acceptance["passed"]), "acceptance.passed is true" if acceptance["passed"] else "acceptance.passed is false"
+    checks = data.get("checks")
+    if isinstance(checks, list) and checks and all(isinstance(item, dict) and isinstance(item.get("passed"), bool) for item in checks):
+        passed = all(bool(item["passed"]) for item in checks)
+        return passed, "all checks passed" if passed else "one or more checks failed"
+    if isinstance(data.get("ok"), bool):
+        return bool(data["ok"]), "ok is true" if data["ok"] else "ok is false"
+    status = data.get("status")
+    if isinstance(status, str) and status.lower() in {"pass", "passed", "ok"}:
+        return True, f"status is {status}"
+    if isinstance(status, str) and status.lower() in {"fail", "failed", "invalid", "error"}:
+        return False, f"status is {status}"
+    return False, "artifact does not report pass/fail"
+
+
+def ml_validator_artifact(evidence: dict[str, tuple[str, Any]]) -> dict[str, Any]:
+    checks: list[dict[str, Any]] = []
+    normalized: dict[str, dict[str, Any]] = {}
+    for name, expected_artifact in VALIDATOR_EVIDENCE.items():
+        artifact, data = evidence[name]
+        passed, reason = artifact_passed(data)
+        item = {
+            "check": name,
+            "artifact": artifact,
+            "expected_artifact": expected_artifact,
+            "passed": passed,
+            "reason": reason,
+        }
+        checks.append(item)
+        normalized[name] = {
+            "artifact": artifact,
+            "expected_artifact": expected_artifact,
+            "passed": passed,
+            "reason": reason,
+        }
+    return {
+        "check": "ml_validator",
+        "schema_version": 1,
+        "passed": all(item["passed"] for item in checks),
+        "required_evidence": list(VALIDATOR_EVIDENCE),
+        "evidence": normalized,
+        "checks": checks,
+    }
+
+
+MUTATION_NAMES = ("leaky_feature", "shuffled_labels", "train_test_overlap", "preprocessing_fit_full_data")
+
+
+def plant_mutation(result: dict[str, Any], mutation: str) -> dict[str, Any]:
+    planted = copy.deepcopy(result)
+    if mutation == "leaky_feature":
+        features = list(planted.get("features", []))
+        target = str(planted.get("target", "target"))
+        if target not in features:
+            features.append(target)
+        planted["features"] = features
+    elif mutation == "shuffled_labels":
+        planted["labels_shuffled"] = True
+    elif mutation == "train_test_overlap":
+        train_ids = planted["split"]["train_ids"]
+        if train_ids:
+            planted["split"]["test_ids"] = [train_ids[0], *list(planted["split"]["test_ids"])]
+    elif mutation == "preprocessing_fit_full_data":
+        planted["preprocessing"] = {"fit_scope": "full_data"}
+    else:
+        raise ValueError(f"unknown mutation: {mutation}")
+    return planted
+
+
+def regression_resistance_artifact(result: dict[str, Any]) -> dict[str, Any]:
+    clean = validate_result(result)
+    mutations: list[dict[str, Any]] = []
+    for mutation in MUTATION_NAMES:
+        mutant = plant_mutation(result, mutation)
+        validation = validate_result(mutant)
+        failed_checks = [check["check"] for check in validation["checks"] if not check["passed"]]
+        caught = clean["passed"] and not validation["passed"]
+        mutations.append(
+            {
+                "name": mutation,
+                "planted": True,
+                "clean_passed": clean["passed"],
+                "mutant_passed": validation["passed"],
+                "caught": caught,
+                "failed_checks": failed_checks,
+            }
+        )
+    caught_count = sum(1 for item in mutations if item["caught"])
+    return {
+        "check": "regression_resistance",
+        "schema_version": 1,
+        "passed": clean["passed"] and caught_count == len(mutations),
+        "clean": clean,
+        "mutations": mutations,
+        "summary": {"total": len(mutations), "caught": caught_count},
+    }
 
 
 def load_fit_metrics(args: argparse.Namespace) -> dict[str, float]:
@@ -830,6 +959,47 @@ def cmd_multi_seed(args: argparse.Namespace) -> int:
     return write_result(result, args.output)
 
 
+def cmd_validator(args: argparse.Namespace) -> int:
+    try:
+        evidence = {
+            "leakage": (args.leakage_file, json.loads(Path(args.leakage_file).read_text(encoding="utf-8"))),
+            "baseline": (args.baseline_file, json.loads(Path(args.baseline_file).read_text(encoding="utf-8"))),
+            "multi_seed": (args.multi_seed_file, json.loads(Path(args.multi_seed_file).read_text(encoding="utf-8"))),
+            "shuffled_label": (args.shuffled_label_file, json.loads(Path(args.shuffled_label_file).read_text(encoding="utf-8"))),
+        }
+        result = ml_validator_artifact(evidence)
+    except (OSError, json.JSONDecodeError) as exc:
+        result = {
+            "check": "ml_validator",
+            "schema_version": 1,
+            "passed": False,
+            "required_evidence": list(VALIDATOR_EVIDENCE),
+            "evidence": {},
+            "checks": [],
+            "reasons": [str(exc)],
+        }
+    return write_result(result, args.output)
+
+
+def cmd_regression_resistance(args: argparse.Namespace) -> int:
+    try:
+        result_data = json.loads(Path(args.result_file).read_text(encoding="utf-8"))
+        if not isinstance(result_data, dict):
+            raise ValueError("result JSON must be an object")
+        result = regression_resistance_artifact(result_data)
+    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+        result = {
+            "check": "regression_resistance",
+            "schema_version": 1,
+            "passed": False,
+            "clean": {"passed": False, "checks": []},
+            "mutations": [],
+            "summary": {"total": 0, "caught": 0},
+            "reasons": [str(exc)],
+        }
+    return write_result(result, args.output)
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     commands = {
@@ -841,6 +1011,8 @@ def main(argv: list[str] | None = None) -> int:
         "data-quality",
         "shuffled-label",
         "multi-seed",
+        "validator",
+        "regression-resistance",
         "-h",
         "--help",
     }
@@ -924,6 +1096,19 @@ def main(argv: list[str] | None = None) -> int:
     multi_seed.add_argument("--metric-name", default="score")
     multi_seed.add_argument("--output")
     multi_seed.set_defaults(func=cmd_multi_seed)
+
+    validator = sub.add_parser("validator", help="aggregate required ML invariant evidence into a validator artifact")
+    validator.add_argument("--leakage-file", default="artifacts/leakage-audit.json")
+    validator.add_argument("--baseline-file", default="artifacts/baseline-comparison.json")
+    validator.add_argument("--multi-seed-file", default="artifacts/multi-seed-stability.json")
+    validator.add_argument("--shuffled-label-file", default="artifacts/shuffled-label-check.json")
+    validator.add_argument("--output")
+    validator.set_defaults(func=cmd_validator)
+
+    resistance = sub.add_parser("regression-resistance", help="plant ML regressions and require validation tests to fail")
+    resistance.add_argument("--result-file", required=True)
+    resistance.add_argument("--output")
+    resistance.set_defaults(func=cmd_regression_resistance)
 
     args = parser.parse_args(argv)
     if hasattr(args, "func"):
