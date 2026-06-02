@@ -89,6 +89,40 @@ def validate_sequence(files: list[Path]) -> list[str]:
     return errors
 
 
+def validate_structure(run_dir: Path, files: list[Path]) -> list[str]:
+    errors: list[str] = []
+    required_files = ("run.md", "memory.md")
+    required_dirs = ("agents", "artifacts")
+
+    for name in required_files:
+        path = run_dir / name
+        if not path.is_file():
+            errors.append(f"missing required file: {path}")
+
+    for name in required_dirs:
+        path = run_dir / name
+        if not path.is_dir():
+            errors.append(f"missing required directory: {path}")
+
+    agents_dir = run_dir / "agents"
+    if not agents_dir.is_dir():
+        return errors
+
+    required_agents: set[str] = set()
+    for path in files:
+        match = NAME_RE.match(path.name)
+        if match:
+            required_agents.add(match.group("frm"))
+            required_agents.add(match.group("to"))
+
+    for agent in sorted(required_agents):
+        path = agents_dir / f"{agent}.md"
+        if not path.is_file():
+            errors.append(f"missing required agent notes: {path}")
+
+    return errors
+
+
 def validate_run(run_dir: Path) -> dict:
     handoffs_dir = run_dir / "handoffs"
     errors: list[str] = []
@@ -100,6 +134,7 @@ def validate_run(run_dir: Path) -> dict:
     files = sorted(handoffs_dir.glob("*.md"))
     if not files:
         errors.append(f"{handoffs_dir}: no handoff files")
+    errors.extend(validate_structure(run_dir, files))
     errors.extend(validate_sequence(files))
     for path in files:
         errors.extend(validate_file(path, run_dir.name))

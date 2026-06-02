@@ -1,6 +1,6 @@
 # calibration_checker
 
-Advanced-mode optional agent. Do not include in parity benchmark runs.
+Optional ML validation agent used by workflow templates that need calibration checks.
 
 ## Mission
 Check whether predicted probabilities are calibrated well enough for the workflow's risk level.

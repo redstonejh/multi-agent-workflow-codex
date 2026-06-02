@@ -1,6 +1,6 @@
 # leakage_auditor
 
-Advanced-mode optional agent. Do not include in parity benchmark runs.
+Optional ML validation agent used by workflow templates that need leakage checks.
 
 ## Mission
 Find target leakage, train/test contamination, split overlap, and claim leakage risks before model conclusions are accepted.

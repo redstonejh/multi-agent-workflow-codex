@@ -1,6 +1,6 @@
 # baseline_enforcer
 
-Advanced-mode optional agent. Do not include in parity benchmark runs.
+Optional ML validation agent used by workflow templates that need baseline enforcement.
 
 ## Mission
 Ensure a model or approach beats the declared baseline by the required margin before claims are accepted.

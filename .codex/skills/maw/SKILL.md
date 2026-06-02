@@ -7,6 +7,11 @@ description: Run a Codex-native multi-agent workflow with conductor, planner, wo
 
 Use this skill when the user asks for MAW, a multi-agent workflow, a conductor/planner/worker/critic/acceptance-gate loop, auditable handoffs, or deterministic acceptance checks.
 
+MAW uses core agents for most runs. Workflow templates may add optional
+specialized agents for ML validation, debugging, dependency analysis, research
+aggregation, or similar focused work. There is no separate mode for these
+capabilities.
+
 ## Workflow
 
 1. Read `AGENTS.md` and the relevant `.codex/agents/<role>.md` files.

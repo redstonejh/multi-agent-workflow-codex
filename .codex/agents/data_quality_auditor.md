@@ -1,6 +1,6 @@
 # data_quality_auditor
 
-Advanced-mode optional agent. Do not include in parity benchmark runs.
+Optional ML validation agent used by workflow templates that need data quality checks.
 
 ## Mission
 Check basic data quality signals before ML validation or training proceeds.

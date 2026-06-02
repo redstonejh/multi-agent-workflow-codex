@@ -1,6 +1,6 @@
 # overfitting_checker
 
-Advanced-mode optional agent. Do not include in parity benchmark runs.
+Optional ML validation agent used by workflow templates that need fit diagnosis.
 
 ## Mission
 Diagnose overfitting and underfitting from train, validation, and test metrics.

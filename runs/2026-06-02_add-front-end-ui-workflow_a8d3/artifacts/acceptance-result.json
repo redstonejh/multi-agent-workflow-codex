@@ -1,0 +1,21 @@
+{
+  "run": "runs\\2026-06-02_add-front-end-ui-workflow_a8d3",
+  "handoffs": {
+    "run": "runs\\2026-06-02_add-front-end-ui-workflow_a8d3",
+    "handoffs": 3,
+    "passed": true,
+    "errors": []
+  },
+  "test": {
+    "check": "test",
+    "command": "uv run python maw-tools\\selftest_all.py",
+    "cwd": ".",
+    "exit_code": 0,
+    "timed_out": false,
+    "passed": true,
+    "duration_sec": 3.181,
+    "configured": true,
+    "tool_exit_code": 0
+  },
+  "verdict": "SHIP"
+}

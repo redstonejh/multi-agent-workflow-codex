@@ -18,13 +18,14 @@ ACCEPTANCE = ROOT / "maw-tools" / "acceptance_check.py"
 TASK_GRAPH = ROOT / "maw-tools" / "task_graph.py"
 WORKFLOW_TEMPLATE = ROOT / "maw-tools" / "validate_workflow_template.py"
 START_WORKFLOW = ROOT / "maw-tools" / "start_workflow.py"
+DEPENDENCY_AUDIT = ROOT / "maw-tools" / "dependency_risk_audit.py"
 MAW = ROOT / "maw.py"
 PYPROJECT = ROOT / "pyproject.toml"
 ML_CHECKS = ROOT / "examples" / "ml_problems" / "ml_checks.py"
 ML_CLASSIFICATION = ROOT / "examples" / "ml_problems" / "classification" / "run.py"
 ML_REGRESSION = ROOT / "examples" / "ml_problems" / "regression" / "run.py"
 ML_DATA_VALIDATION = ROOT / "examples" / "ml_problems" / "data_validation" / "run.py"
-ADVANCED_AGENTS = [
+SPECIALIZED_AGENTS = [
     "leakage_auditor",
     "overfitting_checker",
     "baseline_enforcer",
@@ -35,6 +36,23 @@ ADVANCED_AGENTS = [
     "bug_hunter",
     "dependency_mapper",
     "aggregator",
+    "ui_builder",
+    "a11y_auditor",
+    "responsive_checker",
+    "perf_budgeter",
+    "markup_validator",
+    "ux_critic",
+]
+RISK_FIELDS = [
+    "file",
+    "line",
+    "symbol",
+    "risk_type",
+    "severity",
+    "explanation",
+    "affected_symbols_or_files",
+    "recommended_fix",
+    "confidence",
 ]
 
 
@@ -105,6 +123,40 @@ class MawToolTests(unittest.TestCase):
             self.assertNotEqual(proc.returncode, 0)
             self.assertFalse(result["passed"])
             self.assertTrue(any("duplicate handoff step" in error for error in result["errors"]))
+
+    def test_validate_handoffs_requires_run_structure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir) / "runs"
+            proc = run_tool(str(SCAFFOLD), "init", "demo task", "--root", str(root), "--agents", "planner,worker", "--json")
+            run_dir = Path(json.loads(proc.stdout)["run_dir"])
+            run_tool(str(SCAFFOLD), "handoff", "--run", str(run_dir), "--from", "planner", "--to", "worker")
+            self._fill_handoff_placeholders(run_dir)
+            (run_dir / "memory.md").unlink()
+            shutil.rmtree(run_dir / "artifacts")
+
+            proc = run_tool(str(VALIDATE), str(run_dir))
+            result = json.loads(proc.stdout)
+
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertFalse(result["passed"])
+            self.assertTrue(any("missing required file" in error and "memory.md" in error for error in result["errors"]))
+            self.assertTrue(any("missing required directory" in error and "artifacts" in error for error in result["errors"]))
+
+    def test_validate_handoffs_requires_agent_notes_for_handoff_roles(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir) / "runs"
+            proc = run_tool(str(SCAFFOLD), "init", "demo task", "--root", str(root), "--agents", "planner,worker", "--json")
+            run_dir = Path(json.loads(proc.stdout)["run_dir"])
+            run_tool(str(SCAFFOLD), "handoff", "--run", str(run_dir), "--from", "planner", "--to", "worker")
+            self._fill_handoff_placeholders(run_dir)
+            (run_dir / "agents" / "worker.md").unlink()
+
+            proc = run_tool(str(VALIDATE), str(run_dir))
+            result = json.loads(proc.stdout)
+
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertFalse(result["passed"])
+            self.assertTrue(any("missing required agent notes" in error and "worker.md" in error for error in result["errors"]))
 
     def _fill_handoff_placeholders(self, run_dir: Path) -> None:
         for handoff in (run_dir / "handoffs").glob("*.md"):
@@ -230,14 +282,116 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         result = json.loads(proc.stdout)
         self.assertTrue(result["passed"])
-        self.assertEqual(result["templates"], 6)
+        self.assertEqual(result["templates"], 7)
 
-    def test_parity_roster_stays_unchanged(self) -> None:
+    def test_core_roster_stays_unchanged(self) -> None:
         template = json.loads((ROOT / "templates" / "workflows" / "standard-software-task.json").read_text(encoding="utf-8"))
 
         self.assertEqual(template["agents"], ["conductor", "planner", "worker", "critic", "acceptance_gate"])
 
-    def test_advanced_agent_prompts_have_required_contract_sections(self) -> None:
+    def _write_dependency_audit_fixture(self, root: Path) -> Path:
+        package = root / "fixture_pkg"
+        package.mkdir()
+        (package / "__init__.py").write_text("", encoding="utf-8")
+        (package / "config.py").write_text(
+            "DEFAULTS = {'tax_rate': 0.1}\n"
+            "SHARED = []\n",
+            encoding="utf-8",
+        )
+        (package / "a.py").write_text(
+            "import os\n"
+            "import time\n"
+            "import random\n"
+            "from . import b\n"
+            "STATE = {'count': 0}\n"
+            "\n"
+            "def calculate_total(config, items):\n"
+            "    STATE['count'] += 1\n"
+            "    items.append('audit')\n"
+            "    mode = os.environ['MODE']\n"
+            "    now = time.time()\n"
+            "    roll = random.random()\n"
+            "    return config['tax_rate'] + len(mode) + now + roll\n"
+            "\n"
+            "def orchestrate(x):\n"
+            "    str(x)\n"
+            "    int(x)\n"
+            "    float(x)\n"
+            "    repr(x)\n"
+            "    list([x])\n"
+            "    dict(value=x)\n"
+            "    tuple([x])\n"
+            "    set([x])\n"
+            "    return b.export_invoice(x)\n",
+            encoding="utf-8",
+        )
+        (package / "b.py").write_text(
+            "from . import a\n"
+            "\n"
+            "def export_invoice(config):\n"
+            "    return config['tax_rate']\n",
+            encoding="utf-8",
+        )
+        return package
+
+    def test_dependency_risk_audit_detects_required_risks_and_generates_dossiers(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            package = self._write_dependency_audit_fixture(Path(tmp_dir))
+            docs = Path(tmp_dir) / "docs" / "bugs"
+            proc = run_tool(str(DEPENDENCY_AUDIT), str(package), "--docs-dir", str(docs))
+
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            result = json.loads(proc.stdout)
+            self.assertEqual(result["check"], "dependency-risk-audit")
+            self.assertGreater(result["summary"]["risk_count"], 0)
+            risks = result["risks"]
+            risk_types = {risk["risk_type"] for risk in risks}
+            self.assertIn("global_state_read", risk_types)
+            self.assertIn("environment_variable_dependency", risk_types)
+            self.assertIn("time_or_random_dependency", risk_types)
+            self.assertIn("shared_mutable_argument", risk_types)
+            self.assertIn("implicit_coupling_magic_string", risk_types)
+            self.assertIn("high_fan_out", risk_types)
+            self.assertIn("circular_import", risk_types)
+            for risk in risks:
+                for field in RISK_FIELDS:
+                    self.assertIn(field, risk)
+                self.assertIn(risk["severity"], {"low", "medium", "high"})
+                self.assertIsInstance(risk["affected_symbols_or_files"], list)
+            self.assertTrue(result["dossiers"])
+            self.assertTrue(any(path.suffix == ".md" for path in docs.glob("*.md")))
+
+    def test_dependency_risk_audit_annotate_is_idempotent_and_dry_run_preserves_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            package = self._write_dependency_audit_fixture(Path(tmp_dir))
+            target = package / "a.py"
+            before = target.read_text(encoding="utf-8")
+
+            dry = run_tool(str(DEPENDENCY_AUDIT), str(package), "--annotate", "--dry-run", "--no-dossiers")
+            self.assertEqual(dry.returncode, 0, dry.stdout + dry.stderr)
+            self.assertEqual(target.read_text(encoding="utf-8"), before)
+
+            first = run_tool(str(DEPENDENCY_AUDIT), str(package), "--annotate", "--no-dossiers")
+            self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
+            annotated_once = target.read_text(encoding="utf-8")
+            self.assertIn("# MAW-DEPENDENCY-RISK:", annotated_once)
+
+            second = run_tool(str(DEPENDENCY_AUDIT), str(package), "--annotate", "--no-dossiers")
+            self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
+            self.assertEqual(target.read_text(encoding="utf-8"), annotated_once)
+
+    def test_dependency_risk_audit_fail_on_high_and_cli_command(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            package = self._write_dependency_audit_fixture(Path(tmp_dir))
+            proc = run_tool(str(DEPENDENCY_AUDIT), str(package), "--fail-on", "high", "--no-dossiers")
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertTrue(json.loads(proc.stdout)["summary"]["high"] > 0)
+
+            cli = run_tool(str(MAW), "dependency-audit", str(package), "--no-dossiers")
+            self.assertEqual(cli.returncode, 0, cli.stdout + cli.stderr)
+            self.assertEqual(json.loads(cli.stdout)["check"], "dependency-risk-audit")
+
+    def test_specialized_agent_prompts_have_required_contract_sections(self) -> None:
         required_sections = [
             "## Mission",
             "## Inputs",
@@ -247,14 +401,14 @@ class MawToolTests(unittest.TestCase):
             "## Pass / Fail Criteria",
         ]
 
-        for agent in ADVANCED_AGENTS:
+        for agent in SPECIALIZED_AGENTS:
             path = ROOT / ".codex" / "agents" / f"{agent}.md"
             self.assertTrue(path.is_file(), f"missing {path}")
             text = path.read_text(encoding="utf-8")
             for section in required_sections:
                 self.assertIn(section, text, f"{agent} missing {section}")
 
-    def test_advanced_templates_activate_optional_agents_only(self) -> None:
+    def test_workflow_templates_activate_optional_specialized_agents(self) -> None:
         expected = {
             "ml-validation-task": {
                 "leakage_auditor",
@@ -273,11 +427,11 @@ class MawToolTests(unittest.TestCase):
             },
             "bug-investigation": {"debugger", "bug_hunter", "dependency_mapper"},
             "multi-agent-research-task": {"aggregator"},
+            "frontend-ui-task": {"ui_builder", "a11y_auditor", "responsive_checker", "perf_budgeter", "markup_validator", "ux_critic"},
         }
 
         for template_id, agents in expected.items():
             template = json.loads((ROOT / "templates" / "workflows" / f"{template_id}.json").read_text(encoding="utf-8"))
-            self.assertEqual(template.get("mode"), "advanced")
             self.assertTrue(agents.issubset(set(template["agents"])))
 
     def test_declared_workflow_template_conforming_run_passes(self) -> None:
@@ -345,6 +499,7 @@ class MawToolTests(unittest.TestCase):
             "ml-validation-task",
             "ml-training-task",
             "multi-agent-research-task",
+            "frontend-ui-task",
         ]
         with tempfile.TemporaryDirectory() as tmp_dir:
             run_root = Path(tmp_dir) / "runs"
@@ -402,7 +557,7 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         result = json.loads(proc.stdout)
         self.assertTrue(result["passed"])
-        self.assertEqual(len(result["templates"]), 6)
+        self.assertEqual(len(result["templates"]), 7)
         self.assertIn("standard-software-task", {template["id"] for template in result["templates"]})
 
     def test_installed_style_module_entrypoint_lists_templates(self) -> None:
@@ -411,7 +566,7 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         result = json.loads(proc.stdout)
         self.assertTrue(result["passed"])
-        self.assertEqual(len(result["templates"]), 6)
+        self.assertEqual(len(result["templates"]), 7)
 
     def test_installed_console_script_lists_templates_with_uv(self) -> None:
         if shutil.which("uv") is None:

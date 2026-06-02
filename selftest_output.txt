@@ -1,0 +1,155 @@
+COMMAND: uv run python maw-tools\selftest_web_checks.py
+{
+  "passed": true,
+  "assertions": 10,
+  "ok": 10,
+  "results": [
+    {
+      "name": "contrast_good",
+      "passed": true,
+      "expected_check_passed": true,
+      "tool_exit_code": 0,
+      "tool_passed": true,
+      "stdout": "{\n  \"background\": \"#ffffff\",\n  \"check\": \"contrast\",\n  \"foreground\": \"#111827\",\n  \"large\": false,\n  \"passed\": true,\n  \"ratio\": 17.739717,\n  \"threshold\": 4.5\n}",
+      "stderr": ""
+    },
+    {
+      "name": "contrast_bad",
+      "passed": true,
+      "expected_check_passed": false,
+      "tool_exit_code": 1,
+      "tool_passed": false,
+      "stdout": "{\n  \"background\": \"#ffffff\",\n  \"check\": \"contrast\",\n  \"foreground\": \"#9aa0a6\",\n  \"large\": false,\n  \"passed\": false,\n  \"ratio\": 2.640526,\n  \"threshold\": 4.5\n}",
+      "stderr": ""
+    },
+    {
+      "name": "a11y_good",
+      "passed": true,
+      "expected_check_passed": true,
+      "tool_exit_code": 0,
+      "tool_passed": true,
+      "stdout": "{\n  \"check\": \"a11y\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp10gdruvy\\\\good\\\\index.html\",\n  \"passed\": true,\n  \"violation_count\": 0,\n  \"violations\": []\n}",
+      "stderr": ""
+    },
+    {
+      "name": "a11y_bad",
+      "passed": true,
+      "expected_check_passed": false,
+      "tool_exit_code": 1,
+      "tool_passed": false,
+      "stdout": "{\n  \"check\": \"a11y\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp10gdruvy\\\\bad\\\\index.html\",\n  \"passed\": false,\n  \"violation_count\": 6,\n  \"violations\": [\n    {\n      \"message\": \"html element is missing lang\",\n      \"type\": \"missing_html_lang\"\n    },\n    {\n      \"message\": \"document is missing title\",\n      \"type\": \"missing_title\"\n    },\n    {\n      \"message\": \"document is missing viewport meta\",\n      \"type\": \"missing_viewport\"\n    },\n    {\n      \"line\": 11,\n      \"message\": \"img missing alt\",\n      \"type\": \"img_missing_alt\"\n    },\n    {\n      \"line\": 12,\n      \"message\": \"input missing accessible label\",\n      \"tag\": \"input\",\n      \"type\": \"control_missing_label\"\n    },\n    {\n      \"line\": 9,\n      \"message\": \"heading jumps from h1 to h3\",\n      \"type\": \"skipped_heading_level\"\n    }\n  ]\n}",
+      "stderr": ""
+    },
+    {
+      "name": "budget_good",
+      "passed": true,
+      "expected_check_passed": true,
+      "tool_exit_code": 0,
+      "tool_passed": true,
+      "stdout": "{\n  \"asset_count\": 2,\n  \"check\": \"budget\",\n  \"element_count\": 17,\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp10gdruvy\\\\good\\\\index.html\",\n  \"files\": [\n    {\n      \"bytes\": 579,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp10gdruvy\\\\good\\\\index.html\"\n    },\n    {\n      \"bytes\": 47,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp10gdruvy\\\\good\\\\style.css\"\n    },\n    {\n      \"bytes\": 15,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp10gdruvy\\\\good\\\\hero.txt\"\n    }\n  ],\n  \"limits\": {\n    \"max_assets\": 5,\n    \"max_bytes\": 4096,\n    \"max_elements\": 50\n  },\n  \"passed\": true,\n  \"total_bytes\": 641,\n  \"violations\": []\n}",
+      "stderr": ""
+    },
+    {
+      "name": "budget_bad",
+      "passed": true,
+      "expected_check_passed": false,
+      "tool_exit_code": 1,
+      "tool_passed": false,
+      "stdout": "{\n  \"asset_count\": 0,\n  \"check\": \"budget\",\n  \"element_count\": 14,\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp10gdruvy\\\\bad\\\\index.html\",\n  \"files\": [\n    {\n      \"bytes\": 2434,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp10gdruvy\\\\bad\\\\index.html\"\n    }\n  ],\n  \"limits\": {\n    \"max_assets\": 5,\n    \"max_bytes\": 512,\n    \"max_elements\": 50\n  },\n  \"passed\": false,\n  \"total_bytes\": 2434,\n  \"violations\": [\n    {\n      \"actual\": 2434,\n      \"limit\": 512,\n      \"type\": \"byte_budget_exceeded\"\n    }\n  ]\n}",
+      "stderr": ""
+    },
+    {
+      "name": "links_good",
+      "passed": true,
+      "expected_check_passed": true,
+      "tool_exit_code": 0,
+      "tool_passed": true,
+      "stdout": "{\n  \"check\": \"links\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp10gdruvy\\\\good\\\\index.html\",\n  \"passed\": true,\n  \"reference_count\": 3,\n  \"violations\": []\n}",
+      "stderr": ""
+    },
+    {
+      "name": "links_bad",
+      "passed": true,
+      "expected_check_passed": false,
+      "tool_exit_code": 1,
+      "tool_passed": false,
+      "stdout": "{\n  \"check\": \"links\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp10gdruvy\\\\bad\\\\index.html\",\n  \"passed\": false,\n  \"reference_count\": 3,\n  \"violations\": [\n    {\n      \"line\": 5,\n      \"target\": \"missing.css\",\n      \"type\": \"missing_internal_link\"\n    },\n    {\n      \"line\": 10,\n      \"target\": \"#missing\",\n      \"type\": \"missing_anchor\"\n    },\n    {\n      \"target\": \"missing.css\",\n      \"type\": \"missing_asset\"\n    },\n    {\n      \"target\": \"missing-image.txt\",\n      \"type\": \"missing_asset\"\n    }\n  ]\n}",
+      "stderr": ""
+    },
+    {
+      "name": "markup_good",
+      "passed": true,
+      "expected_check_passed": true,
+      "tool_exit_code": 0,
+      "tool_passed": true,
+      "stdout": "{\n  \"check\": \"markup\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp10gdruvy\\\\good\\\\index.html\",\n  \"passed\": true,\n  \"violation_count\": 0,\n  \"violations\": []\n}",
+      "stderr": ""
+    },
+    {
+      "name": "markup_bad",
+      "passed": true,
+      "expected_check_passed": false,
+      "tool_exit_code": 1,
+      "tool_passed": false,
+      "stdout": "{\n  \"check\": \"markup\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp10gdruvy\\\\bad\\\\index.html\",\n  \"passed\": false,\n  \"violation_count\": 3,\n  \"violations\": [\n    {\n      \"line\": 15,\n      \"tag\": \"section\",\n      \"type\": \"unclosed_tag\"\n    },\n    {\n      \"line\": 15,\n      \"tag\": \"p\",\n      \"type\": \"unclosed_tag\"\n    },\n    {\n      \"first_line\": 13,\n      \"id\": \"dup\",\n      \"line\": 14,\n      \"type\": \"duplicate_id\"\n    }\n  ]\n}",
+      "stderr": ""
+    }
+  ]
+}
+EXIT_CODE: 0
+
+COMMAND: uv run python maw-tools\selftest_all.py
+{
+  "passed": true,
+  "checks": 6,
+  "ok": 6,
+  "results": [
+    {
+      "name": "core_checks",
+      "passed": true,
+      "exit_code": 0,
+      "stdout": "{\n  \"passed\": true,\n  \"assertions\": 4,\n  \"ok\": 4\n}",
+      "stderr": ""
+    },
+    {
+      "name": "web_checks",
+      "passed": true,
+      "exit_code": 0,
+      "stdout": "{\n  \"passed\": true,\n  \"assertions\": 10,\n  \"ok\": 10,\n  \"results\": [\n    {\n      \"name\": \"contrast_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"background\\\": \\\"#ffffff\\\",\\n  \\\"check\\\": \\\"contrast\\\",\\n  \\\"foreground\\\": \\\"#111827\\\",\\n  \\\"large\\\": false,\\n  \\\"passed\\\": true,\\n  \\\"ratio\\\": 17.739717,\\n  \\\"threshold\\\": 4.5\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"contrast_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"background\\\": \\\"#ffffff\\\",\\n  \\\"check\\\": \\\"contrast\\\",\\n  \\\"foreground\\\": \\\"#9aa0a6\\\",\\n  \\\"large\\\": false,\\n  \\\"passed\\\": false,\\n  \\\"ratio\\\": 2.640526,\\n  \\\"threshold\\\": 4.5\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"a11y_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"a11y\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpzvxnabr2\\\\\\\\good\\\\\\\\index.html\\\",\\n  \\\"passed\\\": true,\\n  \\\"violation_count\\\": 0,\\n  \\\"violations\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"a11y_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"a11y\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpzvxnabr2\\\\\\\\bad\\\\\\\\index.html\\\",\\n  \\\"passed\\\": false,\\n  \\\"violation_count\\\": 6,\\n  \\\"violations\\\": [\\n    {\\n      \\\"message\\\": \\\"html element is missing lang\\\",\\n      \\\"type\\\": \\\"missing_html_lang\\\"\\n    },\\n    {\\n      \\\"message\\\": \\\"document is missing title\\\",\\n      \\\"type\\\": \\\"missing_title\\\"\\n    },\\n    {\\n      \\\"message\\\": \\\"document is missing viewport meta\\\",\\n      \\\"type\\\": \\\"missing_viewport\\\"\\n    },\\n    {\\n      \\\"line\\\": 11,\\n      \\\"message\\\": \\\"img missing alt\\\",\\n      \\\"type\\\": \\\"img_missing_alt\\\"\\n    },\\n    {\\n      \\\"line\\\": 12,\\n      \\\"message\\\": \\\"input missing accessible label\\\",\\n      \\\"tag\\\": \\\"input\\\",\\n      \\\"type\\\": \\\"control_missing_label\\\"\\n    },\\n    {\\n      \\\"line\\\": 9,\\n      \\\"message\\\": \\\"heading jumps from h1 to h3\\\",\\n      \\\"type\\\": \\\"skipped_heading_level\\\"\\n    }\\n  ]\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"budget_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"asset_count\\\": 2,\\n  \\\"check\\\": \\\"budget\\\",\\n  \\\"element_count\\\": 17,\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpzvxnabr2\\\\\\\\good\\\\\\\\index.html\\\",\\n  \\\"files\\\": [\\n    {\\n      \\\"bytes\\\": 579,\\n      \\\"path\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpzvxnabr2\\\\\\\\good\\\\\\\\index.html\\\"\\n    },\\n    {\\n      \\\"bytes\\\": 47,\\n      \\\"path\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpzvxnabr2\\\\\\\\good\\\\\\\\style.css\\\"\\n    },\\n    {\\n      \\\"bytes\\\": 15,\\n      \\\"path\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpzvxnabr2\\\\\\\\good\\\\\\\\hero.txt\\\"\\n    }\\n  ],\\n  \\\"limits\\\": {\\n    \\\"max_assets\\\": 5,\\n    \\\"max_bytes\\\": 4096,\\n    \\\"max_elements\\\": 50\\n  },\\n  \\\"passed\\\": true,\\n  \\\"total_bytes\\\": 641,\\n  \\\"violations\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"budget_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"asset_count\\\": 0,\\n  \\\"check\\\": \\\"budget\\\",\\n  \\\"element_count\\\": 14,\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpzvxnabr2\\\\\\\\bad\\\\\\\\index.html\\\",\\n  \\\"files\\\": [\\n    {\\n      \\\"bytes\\\": 2434,\\n      \\\"path\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpzvxnabr2\\\\\\\\bad\\\\\\\\index.html\\\"\\n    }\\n  ],\\n  \\\"limits\\\": {\\n    \\\"max_assets\\\": 5,\\n    \\\"max_bytes\\\": 512,\\n    \\\"max_elements\\\": 50\\n  },\\n  \\\"passed\\\": false,\\n  \\\"total_bytes\\\": 2434,\\n  \\\"violations\\\": [\\n    {\\n      \\\"actual\\\": 2434,\\n      \\\"limit\\\": 512,\\n      \\\"type\\\": \\\"byte_budget_exceeded\\\"\\n    }\\n  ]\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"links_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"links\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpzvxnabr2\\\\\\\\good\\\\\\\\index.html\\\",\\n  \\\"passed\\\": true,\\n  \\\"reference_count\\\": 3,\\n  \\\"violations\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"links_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"links\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpzvxnabr2\\\\\\\\bad\\\\\\\\index.html\\\",\\n  \\\"passed\\\": false,\\n  \\\"reference_count\\\": 3,\\n  \\\"violations\\\": [\\n    {\\n      \\\"line\\\": 5,\\n      \\\"target\\\": \\\"missing.css\\\",\\n      \\\"type\\\": \\\"missing_internal_link\\\"\\n    },\\n    {\\n      \\\"line\\\": 10,\\n      \\\"target\\\": \\\"#missing\\\",\\n      \\\"type\\\": \\\"missing_anchor\\\"\\n    },\\n    {\\n      \\\"target\\\": \\\"missing.css\\\",\\n      \\\"type\\\": \\\"missing_asset\\\"\\n    },\\n    {\\n      \\\"target\\\": \\\"missing-image.txt\\\",\\n      \\\"type\\\": \\\"missing_asset\\\"\\n    }\\n  ]\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"markup_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"markup\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpzvxnabr2\\\\\\\\good\\\\\\\\index.html\\\",\\n  \\\"passed\\\": true,\\n  \\\"violation_count\\\": 0,\\n  \\\"violations\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"markup_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"markup\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpzvxnabr2\\\\\\\\bad\\\\\\\\index.html\\\",\\n  \\\"passed\\\": false,\\n  \\\"violation_count\\\": 3,\\n  \\\"violations\\\": [\\n    {\\n      \\\"line\\\": 15,\\n      \\\"tag\\\": \\\"section\\\",\\n      \\\"type\\\": \\\"unclosed_tag\\\"\\n    },\\n    {\\n      \\\"line\\\": 15,\\n      \\\"tag\\\": \\\"p\\\",\\n      \\\"type\\\": \\\"unclosed_tag\\\"\\n    },\\n    {\\n      \\\"first_line\\\": 13,\\n      \\\"id\\\": \\\"dup\\\",\\n      \\\"line\\\": 14,\\n      \\\"type\\\": \\\"duplicate_id\\\"\\n    }\\n  ]\\n}\",\n      \"stderr\": \"\"\n    }\n  ]\n}",
+      "stderr": ""
+    },
+    {
+      "name": "pinned_bad_contrast_ratio",
+      "passed": true,
+      "expected": 2.640526,
+      "actual": 2.640526,
+      "stdout": "{\n  \"background\": \"#ffffff\",\n  \"check\": \"contrast\",\n  \"foreground\": \"#9aa0a6\",\n  \"large\": false,\n  \"passed\": false,\n  \"ratio\": 2.640526,\n  \"threshold\": 4.5\n}",
+      "stderr": ""
+    },
+    {
+      "name": "pinned_a11y_violation_count_before_fix",
+      "passed": true,
+      "expected": 6,
+      "actual": 6,
+      "stdout": "{\n  \"check\": \"a11y\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp693ypksp\\\\bad.html\",\n  \"passed\": false,\n  \"violation_count\": 6,\n  \"violations\": [\n    {\n      \"message\": \"html element is missing lang\",\n      \"type\": \"missing_html_lang\"\n    },\n    {\n      \"message\": \"document is missing title\",\n      \"type\": \"missing_title\"\n    },\n    {\n      \"message\": \"document is missing viewport meta\",\n      \"type\": \"missing_viewport\"\n    },\n    {\n      \"line\": 9,\n      \"message\": \"img missing alt\",\n      \"type\": \"img_missing_alt\"\n    },\n    {\n      \"line\": 10,\n      \"message\": \"input missing accessible label\",\n      \"tag\": \"input\",\n      \"type\": \"control_missing_label\"\n    },\n    {\n      \"line\": 8,\n      \"message\": \"heading jumps from h1 to h3\",\n      \"type\": \"skipped_heading_level\"\n    }\n  ]\n}",
+      "stderr": ""
+    },
+    {
+      "name": "pinned_a11y_violation_count_after_fix",
+      "passed": true,
+      "expected": 0,
+      "actual": 0,
+      "stdout": "{\n  \"check\": \"a11y\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp693ypksp\\\\good.html\",\n  \"passed\": true,\n  \"violation_count\": 0,\n  \"violations\": []\n}",
+      "stderr": ""
+    },
+    {
+      "name": "pinned_page_byte_budget_result",
+      "passed": true,
+      "expected": true,
+      "actual": true,
+      "stdout": "{\n  \"asset_count\": 2,\n  \"check\": \"budget\",\n  \"element_count\": 14,\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp693ypksp\\\\good.html\",\n  \"files\": [\n    {\n      \"bytes\": 494,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp693ypksp\\\\good.html\"\n    },\n    {\n      \"bytes\": 47,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp693ypksp\\\\style.css\"\n    },\n    {\n      \"bytes\": 15,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp693ypksp\\\\hero.txt\"\n    }\n  ],\n  \"limits\": {\n    \"max_assets\": 5,\n    \"max_bytes\": 4096,\n    \"max_elements\": 50\n  },\n  \"passed\": true,\n  \"total_bytes\": 556,\n  \"violations\": []\n}",
+      "stderr": ""
+    }
+  ]
+}
+EXIT_CODE: 0

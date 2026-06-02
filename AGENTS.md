@@ -12,6 +12,11 @@ The main Codex entry point is `.codex/skills/maw/SKILL.md`. Role definitions liv
 - `critic`: evaluates the worker output against the criteria and deterministic check results.
 - `acceptance_gate`: performs the final independent check and records `SHIP`, `NO-SHIP`, or `NEEDS-HUMAN`.
 
+Some workflow templates add specialized agents for ML validation, debugging,
+dependency analysis, research aggregation, or other focused review. These agents
+are optional and template-driven. MAW has one unified workflow system; there is
+no separate mode for specialized capabilities.
+
 Default caps:
 
 | Cap | Default |

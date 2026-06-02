@@ -1,6 +1,6 @@
 # aggregator
 
-Advanced-mode optional agent. Do not include in parity benchmark runs.
+Optional specialized agent used by workflow templates that need aggregation.
 
 ## Mission
 Collect independent worker outputs, detect missing lanes or conflicts, and prepare a merged handoff.

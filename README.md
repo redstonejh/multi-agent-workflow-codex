@@ -4,6 +4,10 @@ Codex Multi-Agent Workflow (MAW) is a Codex CLI convention for running one task 
 
 This repo is intentionally Codex-only. It uses `AGENTS.md`, `.codex/skills/maw/SKILL.md`, optional `.codex/agents/` role definitions, and stdlib Python helper scripts.
 
+See `docs/maw-architecture.md` for the unified MAW architecture: core agents
+are used in most runs, and specialized agents are optional template-driven
+capabilities.
+
 ## Install
 
 Use the repo directly from Codex CLI:
@@ -21,7 +25,7 @@ AGENTS.md
 maw-tools/
 ```
 
-No package installation is required. The scripts use Python 3.10+ standard library only. On Windows, use `py` or `uv run python` if `python` is not on `PATH`.
+No package installation is required. The scripts use Python 3.11+ standard library only. On Windows, use `py` or `uv run python` if `python` is not on `PATH`.
 
 Install the `maw` command from this checkout:
 
@@ -48,6 +52,7 @@ python maw.py validate-template standard-software-task
 python maw.py validate-handoffs runs/<run_id>
 python maw.py acceptance runs/<run_id> --test-cmd "python -m unittest discover -s tests"
 python maw.py plan-graph artifacts/task-graph.json
+python maw.py dependency-audit path/to/package --fail-on high
 ```
 
 Create a run folder:
@@ -73,8 +78,9 @@ Run deterministic checks:
 ```bash
 python maw-tools/checks.py test --cmd "python test_textutil.py" --cwd examples/sample_app
 python maw-tools/checks.py gap --train 0.91 --test 0.88 --tol 0.05
-python maw-tools/checks.py dependency-map --file examples/advanced_workflows/dependency-map.json
-python maw-tools/checks.py aggregation --file examples/advanced_workflows/research-aggregation.json
+python maw-tools/checks.py dependency-map --file examples/workflow_specific_examples/dependency-map.json
+python maw-tools/checks.py aggregation --file examples/workflow_specific_examples/research-aggregation.json
+python maw-tools/dependency_risk_audit.py path/to/package --output dependency-risk-report.json
 ```
 
 Run an acceptance gate over a completed run:
@@ -123,23 +129,31 @@ refactor-task
 ml-validation-task
 ml-training-task
 multi-agent-research-task
+frontend-ui-task
 ```
 
 Each template defines agents, handoff pairs, required artifacts, acceptance gates,
 and deterministic checks. A declared run conforms only when its agent notes,
 handoffs, and required artifacts match the template.
 
-Parity mode uses only:
+Most runs use the core agents:
 
 ```text
 conductor, planner, worker, critic, acceptance_gate
 ```
 
-Advanced mode is opt-in. Advanced templates may add specialized agents such as
+Workflow templates may add specialized agents such as
 `leakage_auditor`, `overfitting_checker`, `baseline_enforcer`,
 `calibration_checker`, `reproducibility_checker`, `data_quality_auditor`,
-`debugger`, `bug_hunter`, `dependency_mapper`, and `aggregator`. These roles are
-activated only when the selected workflow template declares them.
+`debugger`, `bug_hunter`, `dependency_mapper`, `aggregator`, `ui_builder`,
+`a11y_auditor`, `responsive_checker`, `perf_budgeter`, `markup_validator`, and
+`ux_critic`. These roles are activated only when the selected workflow template
+declares them.
+
+MAW has one unified workflow system. Specialized agents are optional and
+template-driven capabilities used when a
+workflow needs ML validation, debugging, dependency analysis, aggregation, or
+other focused review.
 
 `start_workflow.py` validates the selected template before creating a run, copies
 the template into `artifacts/workflow-template.json`, creates all configured
@@ -181,9 +195,9 @@ conductor -> planner -> worker -> critic -> worker if needed -> acceptance_gate
 
 The critic checks the work inside the refine loop. The acceptance gate performs the final independent check and returns `SHIP`, `NO-SHIP`, or `NEEDS-HUMAN`.
 
-Advanced role prompts live in `.codex/agents/`. Each advanced prompt declares
+Specialized role prompts live in `.codex/agents/`. Each prompt declares
 mission, inputs, outputs, required artifacts, deterministic tools, and pass/fail
-criteria. The parity benchmark roster remains unchanged.
+criteria.
 
 ## Examples
 
@@ -240,7 +254,7 @@ python examples/ml_problems/ml_checks.py fit-diagnosis \
 The fit diagnosis JSON artifact includes `status` (`healthy`, `overfit`,
 `underfit`, or `invalid`), `passed`, `metrics`, `thresholds`, and `reasons`.
 
-Advanced ML checks also support baseline, calibration, reproducibility, and data
+ML validation checks also support baseline, calibration, reproducibility, and data
 quality artifacts:
 
 ```bash
@@ -259,4 +273,109 @@ python examples/ml_problems/ml_checks.py data-quality \
   --data-json "{\"row_count\": 100, \"missing_values\": {\"x\": 0}, \"duplicate_rows\": 0}"
 ```
 
-Advanced workflow examples live in `examples/advanced_workflows/`.
+Workflow-specific examples live in `examples/workflow_specific_examples/`.
+
+## Front-End / UI Pack
+
+The front-end/UI workflow pack works now for deterministic, browser-free checks
+that operate on local files. It does not render pages.
+
+Workflow template:
+
+```bash
+uv run python maw.py start frontend-ui-task "audit a static landing page"
+```
+
+Front-end agents:
+
+```text
+ui_builder
+a11y_auditor
+responsive_checker
+perf_budgeter
+markup_validator
+ux_critic
+```
+
+Deterministic checks:
+
+```bash
+uv run python maw-tools/web_checks.py contrast --foreground "#111827" --background "#ffffff"
+uv run python maw-tools/web_checks.py a11y examples/frontend_demo/index.html
+uv run python maw-tools/web_checks.py budget examples/frontend_demo/index.html --max-bytes 4096 --max-elements 80 --max-assets 5
+uv run python maw-tools/web_checks.py links examples/frontend_demo/index.html
+uv run python maw-tools/web_checks.py markup examples/frontend_demo/index.html
+```
+
+Checks implemented:
+
+```text
+contrast: WCAG contrast ratio for two hex colors, threshold 4.5 or 3.0 with --large
+a11y: missing image alt, unlabeled controls, skipped heading levels, missing html lang, missing title, missing viewport meta
+budget: local HTML/CSS/JS/assets byte budget and element/asset counts
+links: internal links, anchors, and local assets resolve
+markup: unclosed tags and duplicate ids using html.parser
+```
+
+Demo path:
+
+```text
+examples/frontend_demo/
+```
+
+The demo keeps `index.initial.html` as the planted red fixture and `index.html`
+as the fixed green fixture.
+
+Run the front-end pack self-tests:
+
+```bash
+uv run python maw-tools/selftest_web_checks.py
+uv run python maw-tools/selftest_all.py
+```
+
+`ux_critic` records advisory usability and aesthetic critique. Hard PASS/FAIL
+comes from deterministic checks.
+
+`# MAW-TODO`: true visual regression.
+`# MAW-TODO`: browser rendering checks.
+`# MAW-TODO`: hard-gated aesthetic judgment.
+`# MAW-TODO`: real viewport screenshot testing.
+
+## Dependency Risk Audit
+
+Use `dependency-risk-audit` when a bug, refactor, or multi-worker
+plan could be affected by fragile hidden dependencies. It scans Python source for
+signals such as global state reads or mutations, environment variable access,
+current-working-directory dependencies, time or randomness without injection,
+shared mutable arguments, duplicated magic strings, broad imports, import-time
+side effects, cross-module calls, fan-in/fan-out risks, circular imports, and
+large mixed-responsibility functions.
+
+Run it directly:
+
+```bash
+python maw-tools/dependency_risk_audit.py path/to/package
+python maw-tools/dependency_risk_audit.py path/to/package --fail-on high
+python maw-tools/dependency_risk_audit.py path/to/package --annotate --dry-run
+python maw-tools/dependency_risk_audit.py path/to/package --annotate
+```
+
+Or through the single CLI:
+
+```bash
+python maw.py dependency-audit path/to/package
+python maw.py dependency-audit path/to/package --annotate
+python maw.py dependency-audit path/to/package --dry-run
+python maw.py dependency-audit path/to/package --fail-on high
+```
+
+Annotation mode inserts short comments like:
+
+```python
+# MAW-DEPENDENCY-RISK: Changing this may affect config/defaults.py. Reason: implicit coupling magic string. See docs/bugs/MAW-BUG-1234ABCD.md
+```
+
+Review annotations before committing. They are intended for non-obvious coupling,
+not for every low-risk static-analysis finding. High-severity risks generate bug
+dossiers under `docs/bugs/` using the format documented in
+`docs/bug-dossiers.md`; see `docs/bugs/MAW-BUG-0003.md` for a sample.

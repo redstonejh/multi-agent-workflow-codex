@@ -1,6 +1,6 @@
 # reproducibility_checker
 
-Advanced-mode optional agent. Do not include in parity benchmark runs.
+Optional ML validation agent used by workflow templates that need reproducibility checks.
 
 ## Mission
 Verify that ML runs record reproducible seed, deterministic setting, and optional config hash metadata.

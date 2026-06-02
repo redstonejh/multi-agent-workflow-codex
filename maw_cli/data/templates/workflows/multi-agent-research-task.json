@@ -2,7 +2,6 @@
   "id": "multi-agent-research-task",
   "name": "Multi-Agent Research Task",
   "description": "Coordinate parallel research lanes, aggregate findings, and merge a sourced final answer.",
-  "mode": "advanced",
   "agents": ["conductor", "planner", "research_worker_a", "research_worker_b", "research_worker_c", "aggregator", "merge_worker", "critic", "acceptance_gate"],
   "handoffs": [
     {"from": "conductor", "to": "planner"},
@@ -19,6 +18,7 @@
   "required_artifacts": [
     "artifacts/research-plan.md",
     "artifacts/source-notes.md",
+    "artifacts/dependency-risk-report.json",
     "artifacts/aggregation.json",
     "artifacts/aggregated-findings.md",
     "artifacts/final-report.md",
@@ -27,6 +27,7 @@
   "acceptance_gates": ["sources-recorded", "findings-aggregated", "claims-supported", "handoffs-valid"],
   "deterministic_checks": [
     {"name": "aggregation", "command": "py maw-tools/checks.py aggregation --file artifacts/aggregation.json"},
+    {"name": "dependency-risk-audit", "command": "py maw-tools/dependency_risk_audit.py <path> --output artifacts/dependency-risk-report.json"},
     {"name": "source-list-present", "command": "py maw-tools/validate_workflow_template.py --run <run_dir>"},
     {"name": "handoffs", "command": "py maw-tools/validate_handoffs.py <run_dir>"}
   ]

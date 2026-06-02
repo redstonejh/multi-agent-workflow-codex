@@ -1,7 +1,9 @@
 # Multi-Agent Workflow — ignored artifacts
 
 # Run folders are local logbooks, not source. Keep them out of version control.
-runs/
+runs/*
+!runs/2026-06-02_add-front-end-ui-workflow_a8d3/
+!runs/2026-06-02_add-front-end-ui-workflow_a8d3/**
 
 # Python
 __pycache__/

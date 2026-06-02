@@ -2,7 +2,6 @@
   "id": "ml-training-task",
   "name": "ML Training Task",
   "description": "Train or tune a model with reproducible configuration, evaluation, and validation.",
-  "mode": "advanced",
   "agents": ["conductor", "planner", "data_quality_auditor", "reproducibility_checker", "baseline_enforcer", "overfitting_checker", "calibration_checker", "critic", "acceptance_gate"],
   "handoffs": [
     {"from": "conductor", "to": "planner"},
