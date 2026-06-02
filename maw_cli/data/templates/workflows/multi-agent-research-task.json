@@ -2,6 +2,7 @@
   "id": "multi-agent-research-task",
   "name": "Multi-Agent Research Task",
   "description": "Coordinate parallel research lanes, aggregate findings, and merge a sourced final answer.",
+  "caps": {"max_agents": 9, "max_parallel": 3},
   "agents": ["conductor", "planner", "research_worker_a", "research_worker_b", "research_worker_c", "aggregator", "merge_worker", "critic", "acceptance_gate"],
   "handoffs": [
     {"from": "conductor", "to": "planner"},

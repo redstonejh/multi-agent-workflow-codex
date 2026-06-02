@@ -2,6 +2,7 @@
   "id": "ml-validation-task",
   "name": "ML Validation Task",
   "description": "Audit model or experiment claims for leakage, overfitting, baselines, and reproducibility.",
+  "caps": {"max_agents": 10, "max_parallel": 3},
   "agents": ["conductor", "planner", "leakage_auditor", "data_quality_auditor", "baseline_enforcer", "overfitting_checker", "calibration_checker", "reproducibility_checker", "critic", "acceptance_gate"],
   "handoffs": [
     {"from": "conductor", "to": "planner"},

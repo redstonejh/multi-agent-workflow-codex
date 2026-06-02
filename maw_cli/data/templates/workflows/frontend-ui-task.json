@@ -2,6 +2,7 @@
   "id": "frontend-ui-task",
   "name": "Front-End UI Task",
   "description": "Build or audit front-end UI files with deterministic static checks for accessibility, contrast, budgets, links, and markup.",
+  "caps": {"max_agents": 13, "max_parallel": 3},
   "agents": ["conductor", "planner", "ui_builder", "change_verifier", "a11y_auditor", "responsive_checker", "perf_budgeter", "markup_validator", "style_drift_auditor", "visual_verifier", "ux_critic", "critic", "acceptance_gate"],
   "handoffs": [
     {"from": "conductor", "to": "planner"},

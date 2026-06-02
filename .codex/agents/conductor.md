@@ -18,3 +18,8 @@ uv run python maw-tools/plan_check.py --file artifacts/conductor-plan.json
 ```
 
 Ask `plan_reviewer` to review the plan. If `plan_check.py` fails or `plan_reviewer` returns `REVISE`, replan and rerun the gate. Cap the replan loop at 2 revisions. Record the proposed plan, plan check result, plan reviewer verdict, final accepted plan, and revision count in `run.md` or artifacts before handing off to planner.
+
+Default caps apply only to generic core-agent runs. When using a workflow
+template or selecting required specialist agents, copy the template's explicit
+`caps` into the structured conductor plan. Do not fit a specialist task by
+dropping core roles.

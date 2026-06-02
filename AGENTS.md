@@ -25,6 +25,11 @@ Default caps:
 | `max_parallel` | 3 |
 | `max_iters` | 3 |
 
+The default `max_agents` cap is for generic core-agent runs. Workflow templates
+that require specialist agents must declare explicit larger caps, and the
+pre-execution plan gate rejects specialist plans whose `max_agents` cannot fit
+the full core roster plus required specialists.
+
 ## Deterministic Tools
 
 Use deterministic checks whenever possible before relying on model judgment:

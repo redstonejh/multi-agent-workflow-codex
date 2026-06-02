@@ -405,10 +405,72 @@ class MawToolTests(unittest.TestCase):
         finally:
             path.unlink(missing_ok=True)
 
+    def test_plan_check_default_caps_allow_generic_core_plan(self) -> None:
+        proc = self._run_plan_check(
+            {
+                "task_type": "generic",
+                "roles": ["conductor", "planner", "worker", "critic", "acceptance_gate"],
+            }
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        result = json.loads(proc.stdout)
+        self.assertTrue(result["passed"])
+        self.assertEqual(result["caps"]["max_agents"], 5)
+
+    def test_plan_check_specialist_default_caps_fail_with_clear_headroom_error(self) -> None:
+        ml_default = {
+            "task_type": "ml",
+            "roles": ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
+        }
+        proc = self._run_plan_check(ml_default)
+        self.assertNotEqual(proc.returncode, 0)
+        result = json.loads(proc.stdout)
+        cap_errors = [item for item in result["violations"] if item["type"] == "insufficient_role_cap_for_required_roles"]
+        self.assertEqual(len(cap_errors), 1)
+        self.assertEqual(cap_errors[0]["required_role_count"], 7)
+        self.assertEqual(cap_errors[0]["max_agents"], 5)
+        self.assertEqual(cap_errors[0]["missing_headroom"], 2)
+        self.assertEqual(cap_errors[0]["suggested_cap"], 7)
+
+        frontend_default = {
+            "task_type": "frontend",
+            "roles": ["conductor", "planner", "worker", "a11y_auditor", "change_verifier", "critic", "acceptance_gate"],
+        }
+        proc = self._run_plan_check(frontend_default)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertTrue(any(item["type"] == "insufficient_role_cap_for_required_roles" for item in json.loads(proc.stdout)["violations"]))
+
+    def test_plan_check_template_caps_allow_specialist_workflows(self) -> None:
+        ml_template_cap = {
+            "task_type": "ml-validation-task",
+            "roles": ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
+            "caps": {"max_agents": 10, "max_parallel": 3},
+        }
+        proc = self._run_plan_check(ml_template_cap)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+
+        frontend_template_cap = {
+            "task_type": "frontend-ui-task",
+            "roles": ["conductor", "planner", "worker", "a11y_auditor", "change_verifier", "critic", "acceptance_gate"],
+            "caps": {"max_agents": 13, "max_parallel": 3},
+        }
+        proc = self._run_plan_check(frontend_template_cap)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+
+    def test_plan_check_rejects_plans_that_drop_core_roles_to_fit_caps(self) -> None:
+        dropped_planner = {
+            "task_type": "ml",
+            "roles": ["conductor", "worker", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
+            "caps": {"max_agents": 7, "max_parallel": 3},
+        }
+        proc = self._run_plan_check(dropped_planner)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertTrue(any(item["type"] == "missing_core_role" and item["role"] == "planner" for item in json.loads(proc.stdout)["violations"]))
+
     def test_plan_check_rejects_missing_ml_validator_and_accepts_corrected_plan(self) -> None:
         missing = {
             "task_type": "ml",
-            "roles": ["conductor", "planner", "baseline_enforcer", "critic", "acceptance_gate"],
+            "roles": ["conductor", "planner", "worker", "baseline_enforcer", "critic", "acceptance_gate"],
             "caps": {"max_agents": 8, "max_parallel": 3},
         }
         proc = self._run_plan_check(missing)
@@ -419,7 +481,7 @@ class MawToolTests(unittest.TestCase):
 
         corrected = {
             "task_type": "ml",
-            "roles": ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
+            "roles": ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
             "caps": {"max_agents": 8, "max_parallel": 3},
         }
         proc = self._run_plan_check(corrected)
@@ -431,7 +493,7 @@ class MawToolTests(unittest.TestCase):
             (
                 {
                     "task_type": "ml",
-                    "roles": ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "critic", "acceptance_gate"],
+                    "roles": ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "critic", "critic", "acceptance_gate"],
                     "caps": {"max_agents": 8, "max_parallel": 3},
                 },
                 "duplicate_role",
@@ -439,7 +501,7 @@ class MawToolTests(unittest.TestCase):
             (
                 {
                     "task_type": "ml",
-                    "roles": ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "mystery_agent", "acceptance_gate"],
+                    "roles": ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "mystery_agent", "acceptance_gate"],
                     "caps": {"max_agents": 8, "max_parallel": 3},
                 },
                 "unknown_role",
@@ -447,7 +509,7 @@ class MawToolTests(unittest.TestCase):
             (
                 {
                     "task_type": "ml",
-                    "roles": ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic"],
+                    "roles": ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "critic"],
                     "caps": {"max_agents": 8, "max_parallel": 3},
                 },
                 "missing_acceptance_gate",
@@ -455,7 +517,7 @@ class MawToolTests(unittest.TestCase):
             (
                 {
                     "task_type": "ml",
-                    "roles": ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
+                    "roles": ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
                     "caps": {"max_agents": 3, "max_parallel": 3},
                 },
                 "role_cap_exceeded",
@@ -463,7 +525,7 @@ class MawToolTests(unittest.TestCase):
             (
                 {
                     "task_type": "ml",
-                    "roles": ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
+                    "roles": ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
                     "parallel_roles": ["planner", "leakage_auditor"],
                     "caps": {"max_agents": 8, "max_parallel": 1},
                 },
@@ -479,7 +541,7 @@ class MawToolTests(unittest.TestCase):
     def test_plan_check_enforces_frontend_and_code_required_roles(self) -> None:
         frontend_missing = {
             "task_type": "frontend",
-            "roles": ["conductor", "planner", "a11y_auditor", "critic", "acceptance_gate"],
+            "roles": ["conductor", "planner", "worker", "a11y_auditor", "critic", "acceptance_gate"],
             "caps": {"max_agents": 8, "max_parallel": 3},
         }
         proc = self._run_plan_check(frontend_missing)
@@ -488,14 +550,14 @@ class MawToolTests(unittest.TestCase):
 
         frontend_ok = {
             "task_type": "frontend",
-            "roles": ["conductor", "planner", "a11y_auditor", "change_verifier", "critic", "acceptance_gate"],
+            "roles": ["conductor", "planner", "worker", "a11y_auditor", "change_verifier", "critic", "acceptance_gate"],
             "caps": {"max_agents": 8, "max_parallel": 3},
         }
         self.assertEqual(self._run_plan_check(frontend_ok).returncode, 0)
 
         code_missing = {
             "task_type": "code",
-            "roles": ["conductor", "planner", "critic", "acceptance_gate"],
+            "roles": ["conductor", "planner", "worker", "critic", "acceptance_gate"],
             "caps": {"max_agents": 8, "max_parallel": 3},
         }
         proc = self._run_plan_check(code_missing)
@@ -504,7 +566,7 @@ class MawToolTests(unittest.TestCase):
 
         code_ok = {
             "task_type": "code",
-            "roles": ["conductor", "planner", "critic", "dependency_mapper", "acceptance_gate"],
+            "roles": ["conductor", "planner", "worker", "critic", "dependency_mapper", "acceptance_gate"],
             "caps": {"max_agents": 8, "max_parallel": 3},
             "role_justifications": {"dependency_mapper": "Map code dependencies before execution."},
         }

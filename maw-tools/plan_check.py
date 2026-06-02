@@ -38,21 +38,36 @@ KNOWN_ROLES = {
     "worker",
 }
 
-# Keep task-type rules and prompt-name mappings in one obvious place.
+# Keep task-type rules, aliases, and prompt-name mappings in one obvious place.
 ROLE_ALIASES = {
     "code_reviewer": "critic",
     "dep_mapper": "dependency_mapper",
 }
+TASK_TYPE_ALIASES = {
+    "bug-investigation": "debugging",
+    "frontend-ui-task": "frontend",
+    "ml-training-task": "ml",
+    "ml-validation-task": "ml",
+    "refactor-task": "refactor",
+    "standard-software-task": "generic",
+}
 REQUIRED_ROLE_RULES = {
+    "debugging": ["debugger", "bug_hunter", "dependency_mapper"],
+    "generic": [],
     "ml": ["leakage_auditor", "baseline_enforcer"],
     "frontend": ["a11y_auditor", "change_verifier"],
     "code": ["critic", "dependency_mapper"],
+    "refactor": [],
 }
 DEFAULT_CAPS = {"max_agents": 5, "max_parallel": 3}
 
 
 def canonical_role(role: str) -> str:
     return ROLE_ALIASES.get(role, role)
+
+
+def canonical_task_type(task_type: str) -> str:
+    return TASK_TYPE_ALIASES.get(task_type, task_type)
 
 
 def as_list(value: Any) -> list[Any]:
@@ -99,7 +114,8 @@ def violation(kind: str, message: str, **extra: Any) -> dict[str, Any]:
 
 
 def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
-    task_type = str(plan.get("task_type", "")).strip().lower()
+    raw_task_type = str(plan.get("task_type", "")).strip().lower()
+    task_type = canonical_task_type(raw_task_type)
     raw_roles = [str(role) for role in as_list(plan.get("roles"))]
     roles = [canonical_role(role) for role in raw_roles]
     caps = normalize_caps(plan.get("caps"))
@@ -108,10 +124,10 @@ def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
     violations: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
 
-    if not task_type:
+    if not raw_task_type:
         warnings.append({"type": "missing_task_type", "message": "task_type is missing or empty"})
     elif task_type not in REQUIRED_ROLE_RULES:
-        warnings.append({"type": "unknown_task_type", "message": f"no required-role rule for task_type: {task_type}"})
+        warnings.append({"type": "unknown_task_type", "message": f"no required-role rule for task_type: {raw_task_type}"})
 
     for raw, role in zip(raw_roles, roles):
         if role not in KNOWN_ROLES:
@@ -129,9 +145,28 @@ def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
     if "acceptance_gate" not in roles:
         violations.append(violation("missing_acceptance_gate", "acceptance_gate is required", role="acceptance_gate"))
 
+    for role in sorted(CORE_ROLES):
+        if role not in roles:
+            violations.append(violation("missing_core_role", f"core role is required: {role}", role=role))
+
     for role in required_roles:
         if role not in roles:
             violations.append(violation("missing_required_role", f"{task_type} requires {role}", role=role, task_type=task_type))
+
+    minimum_required_roles = sorted(CORE_ROLES | set(required_roles))
+    required_role_count = len(minimum_required_roles)
+    if required_role_count > caps["max_agents"]:
+        violations.append(
+            violation(
+                "insufficient_role_cap_for_required_roles",
+                f"{task_type or 'task'} requires {required_role_count} core/required roles but max_agents is {caps['max_agents']}; raise max_agents to at least {required_role_count}",
+                required_role_count=required_role_count,
+                max_agents=caps["max_agents"],
+                missing_headroom=required_role_count - caps["max_agents"],
+                suggested_cap=required_role_count,
+                required_roles=minimum_required_roles,
+            )
+        )
 
     if len(roles) > caps["max_agents"]:
         violations.append(
@@ -160,10 +195,12 @@ def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
         "violation_count": len(violations),
         "warning_count": len(warnings),
         "role_aliases": alias_notes,
+        "required_role_count": required_role_count,
     }
     return {
         "passed": not violations,
         "task_type": task_type,
+        "raw_task_type": raw_task_type,
         "roles": roles,
         "violations": violations,
         "warnings": warnings,

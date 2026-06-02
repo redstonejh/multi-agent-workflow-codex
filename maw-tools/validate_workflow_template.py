@@ -14,6 +14,7 @@ REQUIRED_FIELDS = {
     "id",
     "name",
     "description",
+    "caps",
     "agents",
     "handoffs",
     "required_artifacts",
@@ -56,6 +57,21 @@ def validate_template(path: Path) -> list[str]:
     agents = data.get("agents")
     if not isinstance(agents, list) or not agents or not all(isinstance(agent, str) and agent for agent in agents):
         errors.append(f"{path}: agents must be a non-empty list of strings")
+
+    caps = data.get("caps")
+    if not isinstance(caps, dict):
+        errors.append(f"{path}: caps must be an object with max_agents and max_parallel")
+    else:
+        max_agents = caps.get("max_agents")
+        max_parallel = caps.get("max_parallel")
+        if not isinstance(max_agents, int) or max_agents < 1:
+            errors.append(f"{path}: caps.max_agents must be a positive integer")
+        if not isinstance(max_parallel, int) or max_parallel < 1:
+            errors.append(f"{path}: caps.max_parallel must be a positive integer")
+        if isinstance(max_agents, int) and isinstance(agents, list) and max_agents < len(agents):
+            errors.append(f"{path}: caps.max_agents {max_agents} is smaller than agent roster size {len(agents)}")
+        if isinstance(max_agents, int) and isinstance(max_parallel, int) and max_parallel > max_agents:
+            errors.append(f"{path}: caps.max_parallel cannot exceed caps.max_agents")
 
     handoffs = data.get("handoffs")
     if not isinstance(handoffs, list) or not handoffs:

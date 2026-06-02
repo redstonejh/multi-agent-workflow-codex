@@ -2,6 +2,7 @@
   "id": "bug-investigation",
   "name": "Bug Investigation",
   "description": "Reproduce, diagnose, fix, and verify a bug with regression evidence.",
+  "caps": {"max_agents": 8, "max_parallel": 3},
   "agents": ["conductor", "planner", "debugger", "dependency_mapper", "bug_hunter", "worker", "critic", "acceptance_gate"],
   "handoffs": [
     {"from": "conductor", "to": "planner"},

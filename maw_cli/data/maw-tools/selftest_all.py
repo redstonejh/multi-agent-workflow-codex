@@ -181,15 +181,21 @@ def main() -> int:
         missing_plan_code, missing_plan, missing_plan_stdout, missing_plan_stderr = run_plan(
             {
                 "task_type": "ml",
-                "roles": ["conductor", "planner", "baseline_enforcer", "critic", "acceptance_gate"],
+                "roles": ["conductor", "planner", "worker", "baseline_enforcer", "critic", "acceptance_gate"],
                 "caps": {"max_agents": 8, "max_parallel": 3},
             }
         )
         corrected_plan_code, corrected_plan, corrected_plan_stdout, corrected_plan_stderr = run_plan(
             {
                 "task_type": "ml",
-                "roles": ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
+                "roles": ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
                 "caps": {"max_agents": 8, "max_parallel": 3},
+            }
+        )
+        insufficient_cap_code, insufficient_cap, insufficient_cap_stdout, insufficient_cap_stderr = run_plan(
+            {
+                "task_type": "frontend",
+                "roles": ["conductor", "planner", "worker", "a11y_auditor", "change_verifier", "critic", "acceptance_gate"],
             }
         )
 
@@ -207,6 +213,7 @@ def main() -> int:
             "missing_validator_plan_passed": missing_plan["passed"],
             "corrected_plan_passed": corrected_plan["passed"],
             "required_role_violation_type": missing_plan["violations"][0]["type"] if missing_plan["violations"] else "",
+            "insufficient_cap_violation_type": next((item["type"] for item in insufficient_cap["violations"] if item["type"] == "insufficient_role_cap_for_required_roles"), ""),
         }
         expected = {
             "bad_contrast_ratio": 2.640526,
@@ -221,6 +228,7 @@ def main() -> int:
             "missing_validator_plan_passed": False,
             "corrected_plan_passed": True,
             "required_role_violation_type": "missing_required_role",
+            "insufficient_cap_violation_type": "insufficient_role_cap_for_required_roles",
         }
         results.extend(
             [
@@ -319,6 +327,14 @@ def main() -> int:
                     "actual": pinned["required_role_violation_type"],
                     "stdout": missing_plan_stdout.strip(),
                     "stderr": missing_plan_stderr.strip(),
+                },
+                {
+                    "name": "pinned_insufficient_cap_violation_type",
+                    "passed": insufficient_cap_code != 0 and pinned["insufficient_cap_violation_type"] == expected["insufficient_cap_violation_type"],
+                    "expected": expected["insufficient_cap_violation_type"],
+                    "actual": pinned["insufficient_cap_violation_type"],
+                    "stdout": insufficient_cap_stdout.strip(),
+                    "stderr": insufficient_cap_stderr.strip(),
                 },
             ]
         )

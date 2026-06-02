@@ -186,18 +186,23 @@ The check reads JSON with `task_type`, `roles`, `caps`, and optional
 known roles only
 no duplicate roles
 acceptance_gate is present
+all core roles are present
 role count is within max_agents
 parallel role count is within max_parallel
 optional/specialized roles have justifications
 required-role rules are satisfied for the task type
+max_agents has enough headroom for core + required specialist roles
 ```
 
 Required-role rules:
 
 ```text
+generic: core agents only
 ml: leakage_auditor, baseline_enforcer
 frontend: a11y_auditor, change_verifier
 code: critic, dependency_mapper
+debugging: debugger, bug_hunter, dependency_mapper
+refactor: core agents only
 ```
 
 The `code` task mapping uses this repo's existing names:
@@ -210,6 +215,39 @@ dep_mapper -> dependency_mapper
 The `plan_reviewer` agent is advisory. It independently reviews the conductor's
 objective and proposed plan and returns `APPROVE` or `REVISE`, but
 `maw-tools/plan_check.py` is the hard gate.
+
+Default caps vs template caps:
+
+```text
+DEFAULT_CAPS = {"max_agents": 5, "max_parallel": 3}
+```
+
+`DEFAULT_CAPS` is for generic core-agent runs only. Specialist workflows must
+declare explicit template caps large enough for the core roster plus required
+specialists. `plan_check.py` fails with
+`insufficient_role_cap_for_required_roles` when required core/specialist roles
+cannot fit under `max_agents`; the violation includes required role count,
+`max_agents`, missing headroom, and a suggested cap. Do not fit a specialist
+task by dropping `planner`, `worker`, or `critic`.
+
+Example specialist caps:
+
+```json
+{"task_type": "ml", "caps": {"max_agents": 10, "max_parallel": 3}}
+{"task_type": "frontend", "caps": {"max_agents": 13, "max_parallel": 3}}
+```
+
+Current workflow-template caps:
+
+```text
+standard-software-task: max_agents 5
+refactor-task: max_agents 5
+bug-investigation: max_agents 8
+ml-validation-task: max_agents 10
+ml-training-task: max_agents 10
+frontend-ui-task: max_agents 13
+multi-agent-research-task: max_agents 9
+```
 
 The MAW flow is:
 

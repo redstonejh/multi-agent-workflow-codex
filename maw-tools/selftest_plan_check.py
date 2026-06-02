@@ -40,51 +40,84 @@ def has_violation(data: dict, kind: str) -> bool:
 def main() -> int:
     cases = [
         (
+            "default_generic_core_green",
+            {
+                "task_type": "generic",
+                "roles": ["conductor", "planner", "worker", "critic", "acceptance_gate"],
+            },
+            True,
+            None,
+        ),
+        (
+            "ml_default_cap_insufficient_red",
+            {
+                "task_type": "ml",
+                "roles": ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
+            },
+            False,
+            "insufficient_role_cap_for_required_roles",
+        ),
+        (
             "missing_ml_validator_red",
-            base_plan("ml", ["conductor", "planner", "baseline_enforcer", "critic", "acceptance_gate"]),
+            base_plan("ml", ["conductor", "planner", "worker", "baseline_enforcer", "critic", "acceptance_gate"]),
             False,
             "missing_required_role",
         ),
         (
             "corrected_ml_green",
-            base_plan("ml", ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"]),
+            base_plan("ml", ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"]),
             True,
             None,
         ),
         (
+            "frontend_default_cap_insufficient_red",
+            {
+                "task_type": "frontend",
+                "roles": ["conductor", "planner", "worker", "a11y_auditor", "change_verifier", "critic", "acceptance_gate"],
+            },
+            False,
+            "insufficient_role_cap_for_required_roles",
+        ),
+        (
             "required_role_rules_fire",
-            base_plan("frontend", ["conductor", "planner", "a11y_auditor", "critic", "acceptance_gate"]),
+            base_plan("frontend", ["conductor", "planner", "worker", "a11y_auditor", "critic", "acceptance_gate"]),
             False,
             "missing_required_role",
         ),
         (
             "duplicate_roles_fail",
-            base_plan("ml", ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "critic", "acceptance_gate"]),
+            base_plan("ml", ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "critic", "critic", "acceptance_gate"]),
             False,
             "duplicate_role",
         ),
         (
             "unknown_roles_fail",
-            base_plan("ml", ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "mystery_agent", "acceptance_gate"]),
+            base_plan("ml", ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "mystery_agent", "acceptance_gate"]),
             False,
             "unknown_role",
         ),
         (
             "missing_acceptance_gate_fails",
-            base_plan("ml", ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic"]),
+            base_plan("ml", ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "critic"]),
             False,
             "missing_acceptance_gate",
         ),
         (
+            "missing_core_role_fails",
+            base_plan("ml", ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"]),
+            False,
+            "missing_core_role",
+        ),
+        (
             "role_caps_enforced",
-            base_plan("ml", ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"], max_agents=3),
+            base_plan("ml", ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"], max_agents=3),
             False,
             "role_cap_exceeded",
         ),
         (
             "parallel_caps_enforced",
             {
-                **base_plan("ml", ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"], max_parallel=1),
+                **base_plan("ml", ["conductor", "planner", "worker", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"], max_parallel=1),
                 "parallel_roles": ["planner", "leakage_auditor"],
             },
             False,
@@ -92,13 +125,13 @@ def main() -> int:
         ),
         (
             "frontend_required_roles_enforced",
-            base_plan("frontend", ["conductor", "planner", "a11y_auditor", "change_verifier", "critic", "acceptance_gate"]),
+            base_plan("frontend", ["conductor", "planner", "worker", "a11y_auditor", "change_verifier", "critic", "acceptance_gate"]),
             True,
             None,
         ),
         (
             "code_required_roles_enforced",
-            base_plan("code", ["conductor", "planner", "critic", "dependency_mapper", "acceptance_gate"]),
+            base_plan("code", ["conductor", "planner", "worker", "critic", "dependency_mapper", "acceptance_gate"], max_agents=6),
             True,
             None,
         ),
@@ -106,7 +139,7 @@ def main() -> int:
             "unjustified_optional_role_fails",
             {
                 "task_type": "frontend",
-                "roles": ["conductor", "planner", "a11y_auditor", "change_verifier", "ux_critic", "critic", "acceptance_gate"],
+                "roles": ["conductor", "planner", "worker", "a11y_auditor", "change_verifier", "ux_critic", "critic", "acceptance_gate"],
                 "caps": {"max_agents": 8, "max_parallel": 3},
             },
             False,

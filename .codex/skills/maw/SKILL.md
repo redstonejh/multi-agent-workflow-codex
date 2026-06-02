@@ -21,7 +21,7 @@ capabilities.
    python maw-tools/scaffold_run.py init "<task>" --agents conductor,planner,worker,critic,acceptance_gate --json
    ```
 
-3. Conductor proposes a structured plan in `artifacts/conductor-plan.json`, including `task_type`, `roles`, `caps`, optional `parallel_roles`, and optional `role_justifications`.
+3. Conductor proposes a structured plan in `artifacts/conductor-plan.json`, including `task_type`, `roles`, `caps`, optional `parallel_roles`, and optional `role_justifications`. Generic core-agent tasks may use the default caps. Workflow templates and specialist tasks must use the template's explicit caps; do not drop core roles to fit a cap.
 4. Run the pre-execution plan gate:
 
    ```bash
