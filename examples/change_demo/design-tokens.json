@@ -1,0 +1,29 @@
+{
+  "colors": {
+    "background": "#ffffff",
+    "button_primary": "#1a73e8",
+    "button_primary_text": "#ffffff",
+    "button_before": "#e0e0e0",
+    "button_before_text": "#202124",
+    "page_text": "#202124"
+  },
+  "spacing": {
+    "button_y_before": "0.5rem",
+    "button_x_before": "0.75rem",
+    "button_y_after": "0.75rem",
+    "button_x_after": "1.25rem",
+    "page": "1rem"
+  },
+  "font_sizes": {
+    "body": "1rem",
+    "button_before": "1rem",
+    "button_after": "1.125rem"
+  },
+  "fonts": {
+    "body": "Arial, sans-serif"
+  },
+  "misc": {
+    "radius": "6px",
+    "border": "0"
+  }
+}

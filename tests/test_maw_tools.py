@@ -42,6 +42,9 @@ SPECIALIZED_AGENTS = [
     "perf_budgeter",
     "markup_validator",
     "ux_critic",
+    "change_verifier",
+    "style_drift_auditor",
+    "visual_verifier",
 ]
 RISK_FIELDS = [
     "file",
@@ -427,7 +430,17 @@ class MawToolTests(unittest.TestCase):
             },
             "bug-investigation": {"debugger", "bug_hunter", "dependency_mapper"},
             "multi-agent-research-task": {"aggregator"},
-            "frontend-ui-task": {"ui_builder", "a11y_auditor", "responsive_checker", "perf_budgeter", "markup_validator", "ux_critic"},
+            "frontend-ui-task": {
+                "ui_builder",
+                "a11y_auditor",
+                "responsive_checker",
+                "perf_budgeter",
+                "markup_validator",
+                "ux_critic",
+                "change_verifier",
+                "style_drift_auditor",
+                "visual_verifier",
+            },
         }
 
         for template_id, agents in expected.items():

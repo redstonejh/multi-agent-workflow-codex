@@ -41,6 +41,22 @@ LOCAL_ASSET_ATTRS = {
 }
 URL_RE = re.compile(r"url\((?P<quote>['\"]?)(?P<url>[^)'\"]+)(?P=quote)\)")
 HEX_RE = re.compile(r"^#?(?P<value>[0-9a-fA-F]{6})$")
+CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
+CSS_RULE_RE = re.compile(r"(?P<selectors>[^{}]+)\{(?P<body>[^{}]*)\}", re.DOTALL)
+CSS_DECL_RE = re.compile(r"(?P<property>[-_a-zA-Z][-_a-zA-Z0-9]*)\s*:\s*(?P<value>[^;]+)")
+DEFAULT_ALLOWED_CSS_VALUES = {
+    "0",
+    "auto",
+    "border-box",
+    "bold",
+    "inherit",
+    "initial",
+    "none",
+    "normal",
+    "solid",
+    "transparent",
+    "unset",
+}
 
 
 def emit(result: dict) -> int:
@@ -71,6 +87,70 @@ def normalize_hex(value: str) -> str:
     if not match:
         raise ValueError(f"invalid hex color: {value}")
     return "#" + match.group("value").lower()
+
+
+def normalize_css_value(value: str) -> str:
+    text = re.sub(r"\s+", " ", value.strip()).lower()
+    if HEX_RE.match(text):
+        return normalize_hex(text)
+    return text
+
+
+def strip_css_comments(text: str) -> str:
+    return CSS_COMMENT_RE.sub("", text)
+
+
+def parse_css_rules(path: Path) -> list[dict]:
+    text = strip_css_comments(read_text(path))
+    rules: list[dict] = []
+    for match in CSS_RULE_RE.finditer(text):
+        selectors = [selector.strip() for selector in match.group("selectors").split(",") if selector.strip()]
+        declarations = []
+        for decl in CSS_DECL_RE.finditer(match.group("body")):
+            declarations.append(
+                {
+                    "property": decl.group("property").strip().lower(),
+                    "value": decl.group("value").strip(),
+                    "line": text[: match.start()].count("\n") + 1,
+                }
+            )
+        rules.append({"selectors": selectors, "declarations": declarations, "source_file": str(path)})
+    return rules
+
+
+def css_property_value(path: Path, selector: str, property_name: str) -> str | None:
+    wanted = property_name.strip().lower()
+    value: str | None = None
+    for rule in parse_css_rules(path):
+        if selector in rule["selectors"]:
+            for decl in rule["declarations"]:
+                if decl["property"] == wanted:
+                    value = decl["value"]
+    return value
+
+
+def flatten_token_values(value: object) -> set[str]:
+    values: set[str] = set()
+    if isinstance(value, dict):
+        for item in value.values():
+            values.update(flatten_token_values(item))
+    elif isinstance(value, list):
+        for item in value:
+            values.update(flatten_token_values(item))
+    elif isinstance(value, (str, int, float)):
+        values.add(normalize_css_value(str(value)))
+    return values
+
+
+def token_value_allowed(value: str, allowed: set[str]) -> bool:
+    normalized = normalize_css_value(value)
+    if normalized in allowed:
+        return True
+    if normalized.startswith("var("):
+        token_name = normalized[4:-1].strip()
+        return token_name in allowed
+    parts = [part for part in re.split(r"\s+", normalized) if part]
+    return len(parts) > 1 and all(part in allowed for part in parts)
 
 
 def relative_luminance(hex_color: str) -> float:
@@ -386,6 +466,93 @@ def cmd_markup(args: argparse.Namespace) -> int:
     return emit({"check": "markup", "file": str(path), "passed": not violations, "violation_count": len(violations), "violations": violations})
 
 
+def cmd_style(args: argparse.Namespace) -> int:
+    path = Path(args.css)
+    value = css_property_value(path, args.selector, args.property)
+    reason = "value found" if value is not None else "selector/property not found"
+    return emit(
+        {
+            "check": "style",
+            "passed": value is not None,
+            "selector": args.selector,
+            "property": args.property,
+            "value": value,
+            "source_file": str(path),
+            "reason": reason,
+        }
+    )
+
+
+def target_value(path: Path, selector: str | None, property_name: str | None) -> str | None:
+    if selector or property_name:
+        if not selector or not property_name:
+            return None
+        return css_property_value(path, selector, property_name)
+    return read_text(path)
+
+
+def cmd_changed(args: argparse.Namespace) -> int:
+    before_path = Path(args.before)
+    after_path = Path(args.after)
+    before = target_value(before_path, args.selector, args.property)
+    after = target_value(after_path, args.selector, args.property)
+    target = {
+        "before_file": str(before_path),
+        "after_file": str(after_path),
+        "selector": args.selector,
+        "property": args.property,
+    }
+    expected = args.expected
+    passed = True
+    reason = "target changed"
+    if before is None:
+        passed = False
+        reason = "target not found in before snapshot"
+    elif after is None:
+        passed = False
+        reason = "target not found in after file"
+    elif before == after:
+        passed = False
+        reason = "target did not change"
+    elif expected is not None and normalize_css_value(after) != normalize_css_value(expected):
+        passed = False
+        reason = "target changed to unexpected value"
+    elif expected is not None:
+        reason = "target changed to expected value"
+    return emit({"check": "changed", "passed": passed, "target": target, "before": before, "after": after, "expected": expected, "reason": reason})
+
+
+def cmd_tokens(args: argparse.Namespace) -> int:
+    token_path = Path(args.token_file)
+    token_data = json.loads(read_text(token_path))
+    allowed = flatten_token_values(token_data) | DEFAULT_ALLOWED_CSS_VALUES
+    drift_items: list[dict] = []
+    css_files = [Path(path) for path in args.css_files]
+    for css_file in css_files:
+        for rule in parse_css_rules(css_file):
+            for decl in rule["declarations"]:
+                if not token_value_allowed(decl["value"], allowed):
+                    drift_items.append(
+                        {
+                            "source_file": str(css_file),
+                            "selectors": rule["selectors"],
+                            "property": decl["property"],
+                            "value": decl["value"],
+                            "line": decl["line"],
+                        }
+                    )
+    return emit(
+        {
+            "check": "tokens",
+            "passed": not drift_items,
+            "token_file": str(token_path),
+            "css_files": [str(path) for path in css_files],
+            "drift_count": len(drift_items),
+            "drift_items": drift_items,
+        }
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run deterministic front-end/UI checks.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -414,6 +581,25 @@ def build_parser() -> argparse.ArgumentParser:
     markup = sub.add_parser("markup", help="check duplicate ids and unclosed tags")
     markup.add_argument("html")
     markup.set_defaults(func=cmd_markup)
+
+    style = sub.add_parser("style", help="extract a selector/property value from CSS")
+    style.add_argument("css")
+    style.add_argument("--selector", required=True)
+    style.add_argument("--property", required=True)
+    style.set_defaults(func=cmd_style)
+
+    changed = sub.add_parser("changed", help="verify a file or selector/property target changed from a snapshot")
+    changed.add_argument("--before", required=True)
+    changed.add_argument("--after", required=True)
+    changed.add_argument("--selector")
+    changed.add_argument("--property")
+    changed.add_argument("--expected")
+    changed.set_defaults(func=cmd_changed)
+
+    tokens = sub.add_parser("tokens", help="check CSS values against a design token file")
+    tokens.add_argument("--token-file", required=True)
+    tokens.add_argument("css_files", nargs="+")
+    tokens.set_defaults(func=cmd_tokens)
     return parser
 
 

@@ -56,6 +56,36 @@ BAD_HTML = """<!doctype html>
 </html>
 """
 
+CHANGE_BEFORE_CSS = """.btn {
+  color: #202124;
+  background: #e0e0e0;
+  font-size: 1rem;
+  padding: 0.5rem 0.75rem;
+}
+"""
+
+CHANGE_AFTER_CSS = """.btn {
+  color: #ffffff;
+  background: #1a73e8;
+  font-size: 1.125rem;
+  padding: 0.75rem 1.25rem;
+}
+"""
+
+CHANGE_DRIFT_CSS = """.btn {
+  color: #ffffff;
+  background: #0057ff;
+  font-size: 1.125rem;
+  padding: 0.75rem 1.25rem;
+}
+"""
+
+DESIGN_TOKENS = {
+    "colors": ["#202124", "#ffffff", "#e0e0e0", "#1a73e8"],
+    "font_sizes": ["1rem", "1.125rem"],
+    "spacing": ["0.5rem", "0.75rem", "1.25rem"],
+}
+
 
 def run_check(*args: str) -> tuple[int, dict, str, str]:
     proc = subprocess.run([sys.executable, str(WEB_CHECKS), *args], capture_output=True, text=True)
@@ -81,6 +111,16 @@ def main() -> int:
         bad_dir.mkdir()
         good_page = write_fixture(good_dir, GOOD_HTML)
         bad_page = write_fixture(bad_dir, BAD_HTML + ("x" * 2048))
+        before_css = tmp / "change.before.css"
+        after_css = tmp / "change.after.css"
+        noop_css = tmp / "change.noop.css"
+        drift_css = tmp / "change.drift.css"
+        tokens = tmp / "design-tokens.json"
+        before_css.write_text(CHANGE_BEFORE_CSS, encoding="utf-8")
+        after_css.write_text(CHANGE_AFTER_CSS, encoding="utf-8")
+        noop_css.write_text(CHANGE_BEFORE_CSS, encoding="utf-8")
+        drift_css.write_text(CHANGE_DRIFT_CSS, encoding="utf-8")
+        tokens.write_text(json.dumps(DESIGN_TOKENS), encoding="utf-8")
 
         checks = [
             ("contrast_good", ("contrast", "--foreground", "#111827", "--background", "#ffffff"), True),
@@ -93,6 +133,13 @@ def main() -> int:
             ("links_bad", ("links", str(bad_page)), False),
             ("markup_good", ("markup", str(good_page)), True),
             ("markup_bad", ("markup", str(bad_page)), False),
+            ("style_before", ("style", str(before_css), "--selector", ".btn", "--property", "background"), True),
+            ("style_after", ("style", str(after_css), "--selector", ".btn", "--property", "background"), True),
+            ("changed_good", ("changed", "--before", str(before_css), "--after", str(after_css), "--selector", ".btn", "--property", "background", "--expected", "#1a73e8"), True),
+            ("changed_noop", ("changed", "--before", str(before_css), "--after", str(noop_css), "--selector", ".btn", "--property", "background", "--expected", "#1a73e8"), False),
+            ("changed_wrong_target", ("changed", "--before", str(before_css), "--after", str(after_css), "--selector", ".missing", "--property", "background"), False),
+            ("tokens_good", ("tokens", "--token-file", str(tokens), str(after_css)), True),
+            ("tokens_drift", ("tokens", "--token-file", str(tokens), str(drift_css)), False),
         ]
 
         for name, args, expected_passed in checks:

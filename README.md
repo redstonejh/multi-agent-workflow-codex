@@ -146,9 +146,10 @@ Workflow templates may add specialized agents such as
 `leakage_auditor`, `overfitting_checker`, `baseline_enforcer`,
 `calibration_checker`, `reproducibility_checker`, `data_quality_auditor`,
 `debugger`, `bug_hunter`, `dependency_mapper`, `aggregator`, `ui_builder`,
-`a11y_auditor`, `responsive_checker`, `perf_budgeter`, `markup_validator`, and
-`ux_critic`. These roles are activated only when the selected workflow template
-declares them.
+`a11y_auditor`, `responsive_checker`, `perf_budgeter`, `markup_validator`,
+`change_verifier`, `style_drift_auditor`, `visual_verifier`, and `ux_critic`.
+These roles are activated only when the selected workflow template declares
+them.
 
 MAW has one unified workflow system. Specialized agents are optional and
 template-driven capabilities used when a
@@ -294,6 +295,9 @@ a11y_auditor
 responsive_checker
 perf_budgeter
 markup_validator
+change_verifier
+style_drift_auditor
+visual_verifier
 ux_critic
 ```
 
@@ -305,6 +309,9 @@ uv run python maw-tools/web_checks.py a11y examples/frontend_demo/index.html
 uv run python maw-tools/web_checks.py budget examples/frontend_demo/index.html --max-bytes 4096 --max-elements 80 --max-assets 5
 uv run python maw-tools/web_checks.py links examples/frontend_demo/index.html
 uv run python maw-tools/web_checks.py markup examples/frontend_demo/index.html
+uv run python maw-tools/web_checks.py style examples/change_demo/style.after.css --selector ".btn" --property background
+uv run python maw-tools/web_checks.py changed --before examples/change_demo/style.before.css --after examples/change_demo/style.after.css --selector ".btn" --property background --expected "#1a73e8"
+uv run python maw-tools/web_checks.py tokens --token-file examples/change_demo/design-tokens.json examples/change_demo/style.after.css
 ```
 
 Checks implemented:
@@ -315,16 +322,22 @@ a11y: missing image alt, unlabeled controls, skipped heading levels, missing htm
 budget: local HTML/CSS/JS/assets byte budget and element/asset counts
 links: internal links, anchors, and local assets resolve
 markup: unclosed tags and duplicate ids using html.parser
+style: extract a selector/property value from CSS
+changed: prove a file or selector/property target changed from a pre-change snapshot, optionally to an expected value
+tokens: scan CSS against design-tokens.json and fail on design-token drift
 ```
 
 Demo path:
 
 ```text
 examples/frontend_demo/
+examples/change_demo/
 ```
 
-The demo keeps `index.initial.html` as the planted red fixture and `index.html`
-as the fixed green fixture.
+The front-end demo keeps `index.initial.html` as the planted red fixture and
+`index.html` as the fixed green fixture. The change demo proves the request
+"make the primary button blue (`#1a73e8`) and larger" with happy-path,
+no-op-failure, and token-drift-failure fixtures.
 
 Run the front-end pack self-tests:
 
@@ -340,6 +353,9 @@ comes from deterministic checks.
 `# MAW-TODO`: browser rendering checks.
 `# MAW-TODO`: hard-gated aesthetic judgment.
 `# MAW-TODO`: real viewport screenshot testing.
+`# MAW-TODO`: automated browser screenshot diff.
+`# MAW-TODO`: hard-gated visual judgment.
+`# MAW-TODO`: real rendered viewport comparison.
 
 ## Dependency Risk Audit
 
