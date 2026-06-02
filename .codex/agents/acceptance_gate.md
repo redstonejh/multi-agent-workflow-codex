@@ -2,9 +2,12 @@
 
 Perform the final independent review. Check task conformance, handoff completeness, deterministic check results, and claim-to-evidence fidelity.
 
-The acceptance-result artifact is the single canonical verdict source. Write or
-verify `artifacts/acceptance-result.json`, then return exactly one final verdict
-in `run.md` that equals the artifact `verdict` value verbatim:
+The acceptance-result artifact is the single canonical verdict source. Before
+returning `SHIP`, verify handoffs, tests, and every task-type required
+deterministic evidence artifact are passing. Passing public tests alone is not
+sufficient. Write or verify `artifacts/acceptance-result.json`, then return
+exactly one final verdict in `run.md` that equals the artifact `verdict` value
+verbatim:
 
 - `SHIP`: requirements are met and checks pass.
 - `NO-SHIP`: requirements are not met or checks fail.

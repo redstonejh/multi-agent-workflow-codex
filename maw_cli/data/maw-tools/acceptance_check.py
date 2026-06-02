@@ -4,14 +4,59 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import validate_handoffs
 
 
 ACCEPTANCE_RESULT = "acceptance-result.json"
+DEFAULT_TASK_TYPE = "standard-software-task"
+WORKFLOW_TEMPLATE_RE = re.compile(r"(?m)^-\s*Workflow template:\s*(?P<value>[a-zA-Z0-9_-]+)\s*$")
+TASK_TYPE_RE = re.compile(r"(?m)^-\s*Task type:\s*(?P<value>[a-zA-Z0-9_-]+)\s*$")
+TASK_TYPE_ALIASES = {
+    "generic": "standard-software-task",
+    "code": "standard-software-task",
+}
+REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
+    "standard-software-task": ("artifacts/test-result.json",),
+    "refactor-task": ("artifacts/behavior-baseline.json", "artifacts/test-result.json"),
+    "bug-investigation": (
+        "artifacts/dependency-map.json",
+        "artifacts/dependency-risk-report.json",
+        "artifacts/regression-test.json",
+    ),
+    "frontend-ui-task": (
+        "artifacts/change-verification.json",
+        "artifacts/style-extraction.json",
+        "artifacts/a11y-audit.json",
+        "artifacts/contrast-check.json",
+        "artifacts/perf-budget.json",
+        "artifacts/markup-validation.json",
+        "artifacts/link-check.json",
+        "artifacts/style-drift-audit.json",
+    ),
+    "ml-training-task": (
+        "artifacts/leakage-audit.json",
+        "artifacts/data-quality-report.json",
+        "artifacts/reproducibility-check.json",
+        "artifacts/baseline-comparison.json",
+        "artifacts/fit-diagnosis.json",
+        "artifacts/calibration-report.json",
+    ),
+    "ml-validation-task": (
+        "artifacts/leakage-audit.json",
+        "artifacts/data-quality-report.json",
+        "artifacts/baseline-comparison.json",
+        "artifacts/fit-diagnosis.json",
+        "artifacts/calibration-report.json",
+        "artifacts/reproducibility-check.json",
+    ),
+    "multi-agent-research-task": ("artifacts/dependency-risk-report.json", "artifacts/aggregation.json"),
+}
 
 
 def run_test(command: str | None, cwd: str | None, timeout: float) -> dict:
@@ -31,10 +76,152 @@ def run_test(command: str | None, cwd: str | None, timeout: float) -> dict:
     return data
 
 
-def verdict(handoffs: dict, test: dict) -> str:
+def normalize_task_type(task_type: str | None) -> str:
+    value = (task_type or DEFAULT_TASK_TYPE).strip()
+    return TASK_TYPE_ALIASES.get(value, value)
+
+
+def infer_task_type(run_dir: Path) -> str:
+    run_md = run_dir / "run.md"
+    try:
+        text = run_md.read_text(encoding="utf-8")
+    except OSError:
+        return DEFAULT_TASK_TYPE
+    for pattern in (WORKFLOW_TEMPLATE_RE, TASK_TYPE_RE):
+        match = pattern.search(text)
+        if match:
+            return normalize_task_type(match.group("value"))
+    return DEFAULT_TASK_TYPE
+
+
+def violation(kind: str, message: str, **extra: Any) -> dict[str, Any]:
+    item = {"type": kind, "message": message}
+    item.update(extra)
+    return item
+
+
+def artifact_reports_pass(data: Any) -> tuple[bool, str]:
+    if not isinstance(data, dict):
+        return False, "artifact JSON must be an object"
+    passed = data.get("passed")
+    if isinstance(passed, bool):
+        return passed, "passed is true" if passed else "passed is false"
+
+    acceptance = data.get("acceptance")
+    if isinstance(acceptance, dict) and isinstance(acceptance.get("passed"), bool):
+        return acceptance["passed"], "acceptance.passed is true" if acceptance["passed"] else "acceptance.passed is false"
+
+    checks = data.get("checks")
+    if isinstance(checks, list) and checks and all(isinstance(item, dict) and isinstance(item.get("passed"), bool) for item in checks):
+        all_passed = all(item["passed"] for item in checks)
+        return all_passed, "all checks passed" if all_passed else "one or more checks failed"
+
+    status = data.get("status")
+    if isinstance(status, str) and status.lower() in {"pass", "passed", "ok"}:
+        return True, f"status is {status}"
+    if isinstance(status, str) and status.lower() in {"fail", "failed", "invalid", "error"}:
+        return False, f"status is {status}"
+
+    ok = data.get("ok")
+    if isinstance(ok, bool):
+        return ok, "ok is true" if ok else "ok is false"
+
+    return False, "artifact does not report pass/fail"
+
+
+def check_required_evidence(run_dir: Path, task_type: str) -> dict[str, Any]:
+    if task_type not in REQUIRED_EVIDENCE:
+        item = violation(
+            "unknown_task_type_evidence",
+            f"no required evidence map for task type: {task_type}",
+            task_type=task_type,
+        )
+        return {
+            "task_type": task_type,
+            "required": [],
+            "items": [],
+            "passed": False,
+            "violations": [item],
+        }
+
+    required = list(REQUIRED_EVIDENCE[task_type])
+    items: list[dict[str, Any]] = []
+    violations: list[dict[str, Any]] = []
+
+    for artifact in required:
+        path = run_dir / artifact
+        item: dict[str, Any] = {"artifact": artifact, "path": str(path)}
+        if not path.is_file():
+            item.update({"passed": False, "reason": "missing"})
+            violations.append(
+                violation(
+                    "missing_required_evidence",
+                    f"missing required evidence artifact: {artifact}",
+                    artifact=artifact,
+                    path=str(path),
+                    task_type=task_type,
+                )
+            )
+            items.append(item)
+            continue
+
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            item.update({"passed": False, "reason": str(exc)})
+            violations.append(
+                violation(
+                    "failing_required_evidence",
+                    f"required evidence artifact did not pass: {artifact}",
+                    artifact=artifact,
+                    path=str(path),
+                    task_type=task_type,
+                    reason=str(exc),
+                )
+            )
+            items.append(item)
+            continue
+
+        passed, reason = artifact_reports_pass(data)
+        item.update({"passed": passed, "reason": reason})
+        if not passed:
+            violations.append(
+                violation(
+                    "failing_required_evidence",
+                    f"required evidence artifact did not pass: {artifact}",
+                    artifact=artifact,
+                    path=str(path),
+                    task_type=task_type,
+                    reason=reason,
+                )
+            )
+        items.append(item)
+
+    return {
+        "task_type": task_type,
+        "required": required,
+        "items": items,
+        "passed": not violations,
+        "violations": violations,
+    }
+
+
+def acceptance_violations(handoffs: dict, test: dict, evidence: dict) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    if not handoffs.get("passed"):
+        result.append(violation("handoffs_invalid", "handoff validation failed"))
+    if not test.get("passed"):
+        result.append(violation("tests_failed", "test command failed"))
+    result.extend(evidence.get("violations", []))
+    return result
+
+
+def verdict(handoffs: dict, test: dict, evidence: dict) -> str:
     if not handoffs.get("passed"):
         return "NO-SHIP"
     if not test.get("passed"):
+        return "NO-SHIP"
+    if not evidence.get("passed"):
         return "NO-SHIP"
     return "SHIP"
 
@@ -61,11 +248,17 @@ def main(argv: list[str] | None = None) -> int:
     run_dir = Path(args.run)
     handoffs = validate_handoffs.validate_run(run_dir)
     test = run_test(args.test_cmd, args.test_cwd, args.timeout)
+    task_type = infer_task_type(run_dir)
+    evidence = check_required_evidence(run_dir, task_type)
+    violations = acceptance_violations(handoffs, test, evidence)
     result = {
         "run": str(run_dir),
+        "task_type": task_type,
         "handoffs": handoffs,
         "test": test,
-        "verdict": verdict(handoffs, test),
+        "evidence": evidence,
+        "violations": violations,
+        "verdict": verdict(handoffs, test, evidence),
     }
     write_acceptance_artifact(run_dir, result)
     print(json.dumps(result, indent=2))

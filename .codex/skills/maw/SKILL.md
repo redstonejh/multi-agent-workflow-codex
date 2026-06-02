@@ -35,7 +35,7 @@ capabilities.
 9. Worker implements or drafts the requested output and creates a `worker -> critic` handoff.
 10. Critic runs deterministic checks where possible and returns PASS or a specific revision request.
 11. Repeat worker/critic up to `max_iters` if needed.
-12. Acceptance gate validates handoffs, plan-gate evidence, and deterministic results, writes `artifacts/acceptance-result.json`, then records `SHIP`, `NO-SHIP`, or `NEEDS-HUMAN` in `run.md`. The acceptance-result artifact is the single canonical verdict source.
+12. Acceptance gate validates handoffs, plan-gate evidence, public test results, and every task-type required deterministic evidence artifact. Passing public tests alone is not sufficient. The gate writes `artifacts/acceptance-result.json`, then records `SHIP`, `NO-SHIP`, or `NEEDS-HUMAN` in `run.md`. The acceptance-result artifact is the single canonical verdict source.
 13. Run the verdict post-check:
 
    ```bash

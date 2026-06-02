@@ -187,21 +187,74 @@ class MawToolTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             run_dir = Path(tmp_dir) / "sample_run"
             shutil.copytree(ROOT / "examples" / "sample_run", run_dir)
-            proc = run_tool(
-                str(ACCEPTANCE),
-                "--run",
-                str(run_dir),
-                "--test-cmd",
-                "python test_textutil.py",
-                "--test-cwd",
-                "examples/sample_app",
-            )
+            proc = self._run_sample_acceptance(run_dir)
             self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
             result = json.loads(proc.stdout)
             artifact = run_dir / "artifacts" / "acceptance-result.json"
             self.assertTrue(artifact.is_file())
             self.assertEqual(result["verdict"], "SHIP")
+            self.assertEqual(result["task_type"], "standard-software-task")
+            self.assertTrue(result["evidence"]["passed"])
             self.assertEqual(json.loads(artifact.read_text(encoding="utf-8"))["verdict"], "SHIP")
+
+    def _run_sample_acceptance(self, run_dir: Path) -> subprocess.CompletedProcess[str]:
+        return run_tool(
+            str(ACCEPTANCE),
+            "--run",
+            str(run_dir),
+            "--test-cmd",
+            "python test_textutil.py",
+            "--test-cwd",
+            "examples/sample_app",
+        )
+
+    def test_acceptance_check_missing_required_evidence_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = Path(tmp_dir) / "sample_run"
+            shutil.copytree(ROOT / "examples" / "sample_run", run_dir)
+            (run_dir / "artifacts" / "test-result.json").unlink()
+
+            proc = self._run_sample_acceptance(run_dir)
+
+            self.assertNotEqual(proc.returncode, 0)
+            result = json.loads(proc.stdout)
+            self.assertEqual(result["verdict"], "NO-SHIP")
+            self.assertTrue(result["handoffs"]["passed"])
+            self.assertTrue(result["test"]["passed"])
+            missing = next(item for item in result["violations"] if item["type"] == "missing_required_evidence")
+            self.assertEqual(missing["artifact"], "artifacts/test-result.json")
+
+    def test_acceptance_check_failing_required_evidence_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = Path(tmp_dir) / "sample_run"
+            shutil.copytree(ROOT / "examples" / "sample_run", run_dir)
+            (run_dir / "artifacts" / "test-result.json").write_text(json.dumps({"passed": False}) + "\n", encoding="utf-8")
+
+            proc = self._run_sample_acceptance(run_dir)
+
+            self.assertNotEqual(proc.returncode, 0)
+            result = json.loads(proc.stdout)
+            self.assertEqual(result["verdict"], "NO-SHIP")
+            failing = next(item for item in result["violations"] if item["type"] == "failing_required_evidence")
+            self.assertEqual(failing["artifact"], "artifacts/test-result.json")
+            self.assertEqual(failing["reason"], "passed is false")
+
+    def test_acceptance_check_public_tests_only_without_evidence_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = Path(tmp_dir) / "sample_run"
+            shutil.copytree(ROOT / "examples" / "sample_run", run_dir)
+            for artifact in (run_dir / "artifacts").glob("*.json"):
+                artifact.unlink()
+
+            proc = self._run_sample_acceptance(run_dir)
+
+            self.assertNotEqual(proc.returncode, 0)
+            result = json.loads(proc.stdout)
+            self.assertEqual(result["verdict"], "NO-SHIP")
+            self.assertTrue(result["handoffs"]["passed"])
+            self.assertTrue(result["test"]["passed"])
+            self.assertFalse(result["evidence"]["passed"])
+            self.assertTrue(any(item["type"] == "missing_required_evidence" for item in result["violations"]))
 
     def _write_verdict_run(self, root: Path, artifact_verdict: str | None, run_verdict: str) -> Path:
         run_dir = root / "run"
