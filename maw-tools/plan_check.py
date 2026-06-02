@@ -8,58 +8,17 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import registry
 
-CORE_ROLES = {"conductor", "planner", "worker", "critic", "acceptance_gate"}
-KNOWN_ROLES = {
-    "a11y_auditor",
-    "acceptance_gate",
-    "aggregator",
-    "baseline_enforcer",
-    "bug_hunter",
-    "calibration_checker",
-    "change_verifier",
-    "conductor",
-    "critic",
-    "data_quality_auditor",
-    "debugger",
-    "dependency_mapper",
-    "leakage_auditor",
-    "markup_validator",
-    "overfitting_checker",
-    "perf_budgeter",
-    "plan_reviewer",
-    "planner",
-    "reproducibility_checker",
-    "responsive_checker",
-    "style_drift_auditor",
-    "ui_builder",
-    "ux_critic",
-    "visual_verifier",
-    "worker",
-}
 
-# Keep task-type rules, aliases, and prompt-name mappings in one obvious place.
-ROLE_ALIASES = {
-    "code_reviewer": "critic",
-    "dep_mapper": "dependency_mapper",
-}
-TASK_TYPE_ALIASES = {
-    "bug-investigation": "debugging",
-    "frontend-ui-task": "frontend",
-    "ml-training-task": "ml",
-    "ml-validation-task": "ml",
-    "refactor-task": "refactor",
-    "standard-software-task": "generic",
-}
-REQUIRED_ROLE_RULES = {
-    "debugging": ["debugger", "bug_hunter", "dependency_mapper"],
-    "generic": [],
-    "ml": ["leakage_auditor", "baseline_enforcer"],
-    "frontend": ["a11y_auditor", "change_verifier"],
-    "code": ["critic", "dependency_mapper"],
-    "refactor": [],
-}
-DEFAULT_CAPS = {"max_agents": 5, "max_parallel": 3}
+REGISTRY = registry.load_registry()
+CORE_ROLES = REGISTRY["core_roles"]
+KNOWN_ROLES = REGISTRY["known_roles"]
+ROLE_ALIASES = REGISTRY["role_aliases"]
+TASK_TYPE_ALIASES = REGISTRY["task_type_aliases"]
+REQUIRED_ROLE_RULES = REGISTRY["required_role_rules"]
+TASK_TYPE_CAPS = REGISTRY["task_type_caps"]
+DEFAULT_CAPS = REGISTRY["default_caps"]
 
 
 def canonical_role(role: str) -> str:

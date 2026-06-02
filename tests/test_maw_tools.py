@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import shutil
@@ -22,6 +23,7 @@ WORKFLOW_TEMPLATE = ROOT / "maw-tools" / "validate_workflow_template.py"
 START_WORKFLOW = ROOT / "maw-tools" / "start_workflow.py"
 DEPENDENCY_AUDIT = ROOT / "maw-tools" / "dependency_risk_audit.py"
 PLAN_CHECK = ROOT / "maw-tools" / "plan_check.py"
+REGISTRY = ROOT / "maw-tools" / "registry.py"
 BEHAVIOR_BASELINE = ROOT / "maw-tools" / "behavior_baseline.py"
 CHECKLIST_CHECK = ROOT / "maw-tools" / "checklist_check.py"
 MAW = ROOT / "maw.py"
@@ -70,6 +72,17 @@ def run_tool(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess
 
 
 class MawToolTests(unittest.TestCase):
+    def _load_tool_module(self, name: str, path: Path):
+        tools_dir = str(path.parent)
+        if tools_dir not in sys.path:
+            sys.path.insert(0, tools_dir)
+        spec = importlib.util.spec_from_file_location(name, path)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
     def test_scaffold_creates_run_and_handoff(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             root = Path(tmp_dir) / "runs"
@@ -667,6 +680,123 @@ class MawToolTests(unittest.TestCase):
             return run_tool(str(PLAN_CHECK), "--file", str(path))
         finally:
             path.unlink(missing_ok=True)
+
+    def test_registry_loads_pack_fixture(self) -> None:
+        registry_module = self._load_tool_module("registry_fixture_test", REGISTRY)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            packs = Path(tmp_dir) / "packs"
+            alpha = packs / "alpha"
+            beta = packs / "beta"
+            alpha.mkdir(parents=True)
+            beta.mkdir(parents=True)
+            (alpha / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "id": "alpha",
+                        "task_types": ["generic"],
+                        "core_roles": ["conductor"],
+                        "roles": ["worker"],
+                        "role_aliases": {"builder": "worker"},
+                        "caps": {"max_agents": 2, "max_parallel": 1},
+                        "required_roles": {"generic": ["worker"]},
+                        "required_evidence": [
+                            {"artifact": "artifacts/alpha.json", "check": "alpha", "schema": "schemas/check-result.json"}
+                        ],
+                        "depends_on": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (beta / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "id": "beta",
+                        "task_types": ["code"],
+                        "task_type_aliases": {"standard": "generic"},
+                        "roles": ["critic"],
+                        "role_aliases": {"reviewer": "critic"},
+                        "caps": {"max_agents": 3, "max_parallel": 2},
+                        "required_roles": ["critic"],
+                        "required_evidence": [
+                            {"artifact": "artifacts/beta.json", "check": "beta", "schema": "schemas/check-result.json"}
+                        ],
+                        "depends_on": ["alpha"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            data = registry_module.load_registry(packs)
+
+        self.assertEqual(data["core_roles"], {"conductor"})
+        self.assertEqual(data["known_roles"], {"conductor", "worker", "critic"})
+        self.assertEqual(data["role_aliases"], {"builder": "worker", "reviewer": "critic"})
+        self.assertEqual(data["task_type_aliases"], {"standard": "generic"})
+        self.assertEqual(data["required_role_rules"], {"generic": ["worker"], "code": ["critic"]})
+        self.assertEqual(data["default_caps"], {"max_agents": 2, "max_parallel": 1})
+        self.assertEqual(data["task_type_caps"]["generic"], {"max_agents": 2, "max_parallel": 1})
+        self.assertEqual(data["task_type_caps"]["code"], {"max_agents": 3, "max_parallel": 2})
+        self.assertEqual(data["required_evidence"]["generic"][0]["artifact"], "artifacts/alpha.json")
+        self.assertEqual(data["required_evidence"]["code"][0]["schema"], "schemas/check-result.json")
+
+    def test_plan_check_registry_tables_match_previous_literals(self) -> None:
+        plan_check = self._load_tool_module("plan_check_registry_parity_test", PLAN_CHECK)
+
+        self.assertEqual(plan_check.CORE_ROLES, {"conductor", "planner", "worker", "critic", "acceptance_gate"})
+        self.assertEqual(
+            plan_check.KNOWN_ROLES,
+            {
+                "a11y_auditor",
+                "acceptance_gate",
+                "aggregator",
+                "baseline_enforcer",
+                "bug_hunter",
+                "calibration_checker",
+                "change_verifier",
+                "conductor",
+                "critic",
+                "data_quality_auditor",
+                "debugger",
+                "dependency_mapper",
+                "leakage_auditor",
+                "markup_validator",
+                "overfitting_checker",
+                "perf_budgeter",
+                "plan_reviewer",
+                "planner",
+                "reproducibility_checker",
+                "responsive_checker",
+                "style_drift_auditor",
+                "ui_builder",
+                "ux_critic",
+                "visual_verifier",
+                "worker",
+            },
+        )
+        self.assertEqual(plan_check.ROLE_ALIASES, {"code_reviewer": "critic", "dep_mapper": "dependency_mapper"})
+        self.assertEqual(
+            plan_check.TASK_TYPE_ALIASES,
+            {
+                "bug-investigation": "debugging",
+                "frontend-ui-task": "frontend",
+                "ml-training-task": "ml",
+                "ml-validation-task": "ml",
+                "refactor-task": "refactor",
+                "standard-software-task": "generic",
+            },
+        )
+        self.assertEqual(
+            plan_check.REQUIRED_ROLE_RULES,
+            {
+                "debugging": ["debugger", "bug_hunter", "dependency_mapper"],
+                "generic": [],
+                "ml": ["leakage_auditor", "baseline_enforcer"],
+                "frontend": ["a11y_auditor", "change_verifier"],
+                "code": ["critic", "dependency_mapper"],
+                "refactor": [],
+            },
+        )
+        self.assertEqual(plan_check.DEFAULT_CAPS, {"max_agents": 5, "max_parallel": 3})
 
     def test_plan_check_default_caps_allow_generic_core_plan(self) -> None:
         proc = self._run_plan_check(

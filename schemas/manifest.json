@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/manifest.json",
+  "title": "MAW Capability Pack Manifest",
+  "type": "object",
+  "required": ["id", "task_types", "roles", "role_aliases", "caps", "required_roles", "required_evidence", "depends_on"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "task_types": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "task_type_aliases": {
+      "type": "object",
+      "additionalProperties": {"type": "string", "minLength": 1}
+    },
+    "core_roles": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "roles": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "role_aliases": {
+      "type": "object",
+      "additionalProperties": {"type": "string", "minLength": 1}
+    },
+    "caps": {
+      "type": "object",
+      "required": ["max_agents", "max_parallel"],
+      "properties": {
+        "max_agents": {"type": "integer", "minimum": 1},
+        "max_parallel": {"type": "integer", "minimum": 1},
+        "max_iters": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "task_type_caps": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["max_agents", "max_parallel"],
+        "properties": {
+          "max_agents": {"type": "integer", "minimum": 1},
+          "max_parallel": {"type": "integer", "minimum": 1},
+          "max_iters": {"type": "integer", "minimum": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "required_roles": {
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1}
+          }
+        }
+      ]
+    },
+    "required_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["artifact", "check", "schema"],
+        "properties": {
+          "artifact": {"type": "string", "pattern": "^artifacts/.+"},
+          "check": {"type": "string", "minLength": 1},
+          "schema": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "depends_on": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "smoke_test": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": false
+}
