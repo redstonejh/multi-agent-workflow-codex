@@ -35,7 +35,14 @@ capabilities.
 9. Worker implements or drafts the requested output and creates a `worker -> critic` handoff.
 10. Critic runs deterministic checks where possible and returns PASS or a specific revision request.
 11. Repeat worker/critic up to `max_iters` if needed.
-12. Acceptance gate validates handoffs, plan-gate evidence, and deterministic results, then records `SHIP`, `NO-SHIP`, or `NEEDS-HUMAN`.
+12. Acceptance gate validates handoffs, plan-gate evidence, and deterministic results, writes `artifacts/acceptance-result.json`, then records `SHIP`, `NO-SHIP`, or `NEEDS-HUMAN` in `run.md`. The acceptance-result artifact is the single canonical verdict source.
+13. Run the verdict post-check:
+
+   ```bash
+   python maw-tools/verdict_check.py <run_dir>
+   ```
+
+   The final chat verdict MUST equal the acceptance_gate artifact verdict verbatim. If the artifact is `NO-SHIP` or `NEEDS-HUMAN`, the final answer must not say `SHIP`.
 
 ## Deterministic Commands
 
@@ -45,6 +52,7 @@ python maw-tools/validate_handoffs.py <run_dir>
 python maw-tools/checks.py test --cmd "<test command>" --cwd <path>
 python maw-tools/acceptance_check.py --run <run_dir> --test-cmd "<test command>" --test-cwd <path>
 uv run python maw-tools/plan_check.py --file <conductor-plan.json>
+python maw-tools/verdict_check.py <run_dir>
 ```
 
 ## Handoff Rules

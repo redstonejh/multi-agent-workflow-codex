@@ -11,6 +11,9 @@ from pathlib import Path
 import validate_handoffs
 
 
+ACCEPTANCE_RESULT = "acceptance-result.json"
+
+
 def run_test(command: str | None, cwd: str | None, timeout: float) -> dict:
     if not command:
         return {"configured": False, "passed": True}
@@ -36,6 +39,17 @@ def verdict(handoffs: dict, test: dict) -> str:
     return "SHIP"
 
 
+def acceptance_artifact_path(run_dir: Path) -> Path:
+    return run_dir / "artifacts" / ACCEPTANCE_RESULT
+
+
+def write_acceptance_artifact(run_dir: Path, result: dict) -> Path:
+    path = acceptance_artifact_path(run_dir)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run final deterministic MAW acceptance checks.")
     parser.add_argument("--run", required=True)
@@ -53,6 +67,7 @@ def main(argv: list[str] | None = None) -> int:
         "test": test,
         "verdict": verdict(handoffs, test),
     }
+    write_acceptance_artifact(run_dir, result)
     print(json.dumps(result, indent=2))
     return 0 if result["verdict"] == "SHIP" else 1
 

@@ -15,6 +15,7 @@ SCAFFOLD = ROOT / "maw-tools" / "scaffold_run.py"
 CHECKS = ROOT / "maw-tools" / "checks.py"
 VALIDATE = ROOT / "maw-tools" / "validate_handoffs.py"
 ACCEPTANCE = ROOT / "maw-tools" / "acceptance_check.py"
+VERDICT_CHECK = ROOT / "maw-tools" / "verdict_check.py"
 TASK_GRAPH = ROOT / "maw-tools" / "task_graph.py"
 WORKFLOW_TEMPLATE = ROOT / "maw-tools" / "validate_workflow_template.py"
 START_WORKFLOW = ROOT / "maw-tools" / "start_workflow.py"
@@ -183,17 +184,74 @@ class MawToolTests(unittest.TestCase):
         self.assertFalse(json.loads(proc.stdout)["passed"])
 
     def test_acceptance_check_ships_sample_run(self) -> None:
-        proc = run_tool(
-            str(ACCEPTANCE),
-            "--run",
-            "examples/sample_run",
-            "--test-cmd",
-            "python test_textutil.py",
-            "--test-cwd",
-            "examples/sample_app",
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = Path(tmp_dir) / "sample_run"
+            shutil.copytree(ROOT / "examples" / "sample_run", run_dir)
+            proc = run_tool(
+                str(ACCEPTANCE),
+                "--run",
+                str(run_dir),
+                "--test-cmd",
+                "python test_textutil.py",
+                "--test-cwd",
+                "examples/sample_app",
+            )
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            result = json.loads(proc.stdout)
+            artifact = run_dir / "artifacts" / "acceptance-result.json"
+            self.assertTrue(artifact.is_file())
+            self.assertEqual(result["verdict"], "SHIP")
+            self.assertEqual(json.loads(artifact.read_text(encoding="utf-8"))["verdict"], "SHIP")
+
+    def _write_verdict_run(self, root: Path, artifact_verdict: str | None, run_verdict: str) -> Path:
+        run_dir = root / "run"
+        (run_dir / "artifacts").mkdir(parents=True)
+        (run_dir / "run.md").write_text(
+            f"# Run demo\n\n## Final result summary\nFinal verdict: {run_verdict}\n",
+            encoding="utf-8",
         )
-        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        self.assertEqual(json.loads(proc.stdout)["verdict"], "SHIP")
+        if artifact_verdict is not None:
+            (run_dir / "artifacts" / "acceptance-result.json").write_text(
+                json.dumps({"verdict": artifact_verdict}) + "\n",
+                encoding="utf-8",
+            )
+        return run_dir
+
+    def test_verdict_check_matching_ship_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = self._write_verdict_run(Path(tmp_dir), "SHIP", "SHIP")
+
+            proc = run_tool(str(VERDICT_CHECK), str(run_dir))
+
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            result = json.loads(proc.stdout)
+            self.assertTrue(result["passed"])
+            self.assertEqual(result["artifact_verdict"], "SHIP")
+            self.assertEqual(result["run_verdict"], "SHIP")
+
+    def test_verdict_check_no_ship_artifact_ship_run_fails_with_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = self._write_verdict_run(Path(tmp_dir), "NO-SHIP", "SHIP")
+
+            proc = run_tool(str(VERDICT_CHECK), str(run_dir))
+
+            self.assertNotEqual(proc.returncode, 0)
+            result = json.loads(proc.stdout)
+            self.assertFalse(result["passed"])
+            mismatch = next(item for item in result["violations"] if item["type"] == "verdict_mismatch")
+            self.assertEqual(mismatch["artifact_verdict"], "NO-SHIP")
+            self.assertEqual(mismatch["run_verdict"], "SHIP")
+
+    def test_verdict_check_missing_artifact_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = self._write_verdict_run(Path(tmp_dir), None, "SHIP")
+
+            proc = run_tool(str(VERDICT_CHECK), str(run_dir))
+
+            self.assertNotEqual(proc.returncode, 0)
+            result = json.loads(proc.stdout)
+            self.assertFalse(result["passed"])
+            self.assertTrue(any(item["type"] == "missing_acceptance_artifact" for item in result["violations"]))
 
     def test_task_graph_plans_parallel_workers_then_aggregate_and_merge(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -818,18 +876,31 @@ class MawToolTests(unittest.TestCase):
         self.assertTrue(json.loads(proc.stdout)["passed"])
 
     def test_maw_acceptance(self) -> None:
-        proc = run_tool(
-            str(MAW),
-            "acceptance",
-            "examples/sample_run",
-            "--test-cmd",
-            "python test_textutil.py",
-            "--test-cwd",
-            "examples/sample_app",
-        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = Path(tmp_dir) / "sample_run"
+            shutil.copytree(ROOT / "examples" / "sample_run", run_dir)
+            proc = run_tool(
+                str(MAW),
+                "acceptance",
+                str(run_dir),
+                "--test-cmd",
+                "python test_textutil.py",
+                "--test-cwd",
+                "examples/sample_app",
+            )
 
-        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-        self.assertEqual(json.loads(proc.stdout)["verdict"], "SHIP")
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertEqual(json.loads(proc.stdout)["verdict"], "SHIP")
+            self.assertTrue((run_dir / "artifacts" / "acceptance-result.json").is_file())
+
+    def test_maw_verdict_check(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = self._write_verdict_run(Path(tmp_dir), "SHIP", "SHIP")
+
+            proc = run_tool(str(MAW), "verdict-check", str(run_dir))
+
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertTrue(json.loads(proc.stdout)["passed"])
 
     def test_maw_plan_graph(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:

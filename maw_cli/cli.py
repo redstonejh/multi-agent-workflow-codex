@@ -20,6 +20,7 @@ import start_workflow  # noqa: E402
 import task_graph  # noqa: E402
 import validate_handoffs  # noqa: E402
 import validate_workflow_template  # noqa: E402
+import verdict_check  # noqa: E402
 
 
 def emit(data: dict) -> None:
@@ -94,6 +95,10 @@ def cmd_acceptance(args: argparse.Namespace) -> int:
     return acceptance_check.main(argv)
 
 
+def cmd_verdict_check(args: argparse.Namespace) -> int:
+    return verdict_check.main([args.run_folder])
+
+
 def cmd_plan_graph(args: argparse.Namespace) -> int:
     return task_graph.main(["plan", "--file", args.graph_json])
 
@@ -144,6 +149,10 @@ def build_parser() -> argparse.ArgumentParser:
     acceptance.add_argument("--test-cwd")
     acceptance.add_argument("--timeout", type=float, default=600)
     acceptance.set_defaults(func=cmd_acceptance)
+
+    verdict = sub.add_parser("verdict-check", help="verify run.md final verdict matches acceptance artifact")
+    verdict.add_argument("run_folder")
+    verdict.set_defaults(func=cmd_verdict_check)
 
     plan_graph = sub.add_parser("plan-graph", help="plan a MAW dependency graph")
     plan_graph.add_argument("graph_json")
