@@ -23,6 +23,7 @@ START_WORKFLOW = ROOT / "maw-tools" / "start_workflow.py"
 DEPENDENCY_AUDIT = ROOT / "maw-tools" / "dependency_risk_audit.py"
 PLAN_CHECK = ROOT / "maw-tools" / "plan_check.py"
 BEHAVIOR_BASELINE = ROOT / "maw-tools" / "behavior_baseline.py"
+CHECKLIST_CHECK = ROOT / "maw-tools" / "checklist_check.py"
 MAW = ROOT / "maw.py"
 PYPROJECT = ROOT / "pyproject.toml"
 ML_CHECKS = ROOT / "examples" / "ml_problems" / "ml_checks.py"
@@ -735,6 +736,33 @@ class MawToolTests(unittest.TestCase):
             "role_justifications": {"dependency_mapper": "Map code dependencies before execution."},
         }
         self.assertEqual(self._run_plan_check(code_ok).returncode, 0)
+
+    def test_task_type_checklists_validate(self) -> None:
+        proc = run_tool(str(CHECKLIST_CHECK), "--root", str(ROOT))
+
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        result = json.loads(proc.stdout)
+        self.assertTrue(result["passed"])
+        self.assertEqual(set(result["checklists"]), {"refactor", "ml", "frontend", "debugging", "code", "generic"})
+
+    def test_task_type_checklists_reject_unknown_deterministic_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            checklist_dir = root / ".codex" / "checklists"
+            checklist_dir.mkdir(parents=True)
+            for name in ("refactor", "ml", "frontend", "debugging", "code", "generic"):
+                artifact = "artifacts/not-a-real-check.json" if name == "code" else "artifacts/test-result.json"
+                (checklist_dir / f"{name}.md").write_text(
+                    f"# {name}\n\n- Demo invariant. Evidence: `{artifact}`\n",
+                    encoding="utf-8",
+                )
+
+            proc = run_tool(str(CHECKLIST_CHECK), "--root", str(root))
+
+            self.assertNotEqual(proc.returncode, 0)
+            result = json.loads(proc.stdout)
+            self.assertFalse(result["passed"])
+            self.assertTrue(any(item["type"] == "unknown_deterministic_artifact" for item in result["violations"]))
 
     def test_specialized_agent_prompts_have_required_contract_sections(self) -> None:
         required_sections = [

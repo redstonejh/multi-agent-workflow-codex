@@ -15,6 +15,8 @@ SELFTEST_CHECKS = TOOLS / "selftest_checks.py"
 SELFTEST_WEB = TOOLS / "selftest_web_checks.py"
 SELFTEST_PLAN = TOOLS / "selftest_plan_check.py"
 PLAN_CHECK = TOOLS / "plan_check.py"
+CHECKLIST_CHECK = TOOLS / "checklist_check.py"
+REPO_ROOT = TOOLS.parent
 
 
 GOOD_HTML = """<!doctype html>
@@ -102,8 +104,13 @@ def run_plan(plan: dict) -> tuple[int, dict, str, str]:
 def main() -> int:
     results: list[dict] = []
 
-    for name, script in (("core_checks", SELFTEST_CHECKS), ("web_checks", SELFTEST_WEB), ("plan_check", SELFTEST_PLAN)):
-        code, data, stdout, stderr = run_json([sys.executable, str(script)])
+    for name, command in (
+        ("core_checks", [sys.executable, str(SELFTEST_CHECKS)]),
+        ("web_checks", [sys.executable, str(SELFTEST_WEB)]),
+        ("plan_check", [sys.executable, str(SELFTEST_PLAN)]),
+        ("checklists", [sys.executable, str(CHECKLIST_CHECK), "--root", str(REPO_ROOT)]),
+    ):
+        code, data, stdout, stderr = run_json(command)
         results.append({"name": name, "passed": code == 0 and data.get("passed") is True, "exit_code": code, "stdout": stdout.strip(), "stderr": stderr.strip()})
 
     with tempfile.TemporaryDirectory() as tmp_dir:

@@ -19,10 +19,15 @@ WORKFLOW_TEMPLATE_RE = re.compile(r"(?m)^-\s*Workflow template:\s*(?P<value>[a-z
 TASK_TYPE_RE = re.compile(r"(?m)^-\s*Task type:\s*(?P<value>[a-zA-Z0-9_-]+)\s*$")
 TASK_TYPE_ALIASES = {
     "generic": "standard-software-task",
-    "code": "standard-software-task",
 }
 REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
     "standard-software-task": ("artifacts/test-result.json",),
+    "code": (
+        "artifacts/test-result.json",
+        "artifacts/checklist-validation.json",
+        "artifacts/dependency-map.json",
+        "artifacts/dependency-risk-report.json",
+    ),
     "refactor-task": ("artifacts/behavior-baseline.json", "artifacts/behavior-diff.json", "artifacts/test-result.json"),
     "bug-investigation": (
         "artifacts/dependency-map.json",

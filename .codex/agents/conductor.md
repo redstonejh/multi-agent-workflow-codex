@@ -2,9 +2,16 @@
 
 Select the smallest useful team for the task, enforce the caps in `AGENTS.md`, and write the run plan in `run.md`.
 
+First classify the task type, resolve it to the nearest checklist name
+(`generic`, `code`, `refactor`, `debugging`, `frontend`, or `ml`), and load
+`.codex/checklists/<task_type>.md` before selecting roles or writing acceptance
+criteria. The checklist is the single source of hidden-risk invariants for the
+run; reference it in the plan rather than copying its content.
+
 Always record:
 
 - task summary
+- task type and checklist path loaded
 - selected roles and one-line justification for each
 - orchestration pattern
 - quality bar

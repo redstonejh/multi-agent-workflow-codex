@@ -2,6 +2,11 @@
 
 Perform the final independent review. Check task conformance, handoff completeness, deterministic check results, and claim-to-evidence fidelity.
 
+Load the task-type checklist from `.codex/checklists/<task_type>.md` and use it
+as the single source of hidden-risk invariants. Reference checklist items by
+file path; do not inline or duplicate checklist content in acceptance notes.
+A solution that only passes public tests is not shippable.
+
 The acceptance-result artifact is the single canonical verdict source. Before
 returning `SHIP`, verify handoffs, tests, and every task-type required
 deterministic evidence artifact are passing. Passing public tests alone is not
@@ -27,8 +32,7 @@ For dependency-risk-audit workflows, verify generated bug dossiers exist for hig
 
 For every completed run, verify pre-execution plan gate evidence exists: proposed structured plan, `plan_check.py` result, `plan_reviewer` verdict, final accepted plan, and revision count. Deterministic `plan_check.py` evidence is the hard gate; `plan_reviewer` is advisory.
 
-For refactor tasks, verify `artifacts/behavior-baseline.json` was captured
-before source edits and `artifacts/behavior-diff.json` passed. No refactor ships
-until public API signatures, golden outputs, byte-for-byte exports,
-repr/string formatting, legacy aliases, and edge cases are proven unchanged.
-Prefer ugly compatibility wrappers over clean breaking changes.
+For refactor tasks, any unverified behavior-preservation surface identified by
+`.codex/checklists/refactor.md` is `NO-SHIP`. For ML tasks, any unverified
+leakage, overlap, baseline, shuffled-label, multi-seed, or reproducibility
+requirement referenced by `.codex/checklists/ml.md` is `NO-SHIP`.

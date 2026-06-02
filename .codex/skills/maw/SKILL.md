@@ -21,7 +21,7 @@ capabilities.
    python maw-tools/scaffold_run.py init "<task>" --agents conductor,planner,worker,critic,acceptance_gate --json
    ```
 
-3. Conductor proposes a structured plan in `artifacts/conductor-plan.json`, including `task_type`, `roles`, `caps`, optional `parallel_roles`, and optional `role_justifications`. Generic core-agent tasks may use the default caps. Workflow templates and specialist tasks must use the template's explicit caps; do not drop core roles to fit a cap.
+3. Conductor classifies the task type, loads the matching `.codex/checklists/<task_type>.md`, and proposes a structured plan in `artifacts/conductor-plan.json`, including `task_type`, checklist path, `roles`, `caps`, optional `parallel_roles`, and optional `role_justifications`. Generic core-agent tasks may use the default caps. Workflow templates and specialist tasks must use the template's explicit caps; do not drop core roles to fit a cap.
 4. Run the pre-execution plan gate:
 
    ```bash
@@ -44,11 +44,9 @@ capabilities.
 
    The final chat verdict MUST equal the acceptance_gate artifact verdict verbatim. If the artifact is `NO-SHIP` or `NEEDS-HUMAN`, the final answer must not say `SHIP`.
 
-For refactor tasks, `artifacts/behavior-baseline.json` must be captured before
-source edits and `artifacts/behavior-diff.json` must pass after edits. No
-refactor ships until public API signatures, golden outputs, byte-for-byte
-exports, repr/string formatting, legacy aliases, and edge cases are proven
-unchanged. Prefer ugly compatibility wrappers over clean breaking changes.
+Task-type risk checklists live in `.codex/checklists/` and are the single
+source of hidden-risk invariants. Critic and acceptance gate must reference
+these files rather than maintaining duplicate checklist text.
 
 ## Deterministic Commands
 
