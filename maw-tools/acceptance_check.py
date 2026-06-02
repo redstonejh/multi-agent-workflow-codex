@@ -39,6 +39,16 @@ REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
         "artifacts/link-check.json",
         "artifacts/style-drift-audit.json",
     ),
+    "ml": (
+        "artifacts/leakage-audit.json",
+        "artifacts/data-quality-report.json",
+        "artifacts/reproducibility-check.json",
+        "artifacts/baseline-comparison.json",
+        "artifacts/fit-diagnosis.json",
+        "artifacts/calibration-report.json",
+        "artifacts/shuffled-label-check.json",
+        "artifacts/multi-seed-stability.json",
+    ),
     "ml-training-task": (
         "artifacts/leakage-audit.json",
         "artifacts/data-quality-report.json",
@@ -46,6 +56,8 @@ REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
         "artifacts/baseline-comparison.json",
         "artifacts/fit-diagnosis.json",
         "artifacts/calibration-report.json",
+        "artifacts/shuffled-label-check.json",
+        "artifacts/multi-seed-stability.json",
     ),
     "ml-validation-task": (
         "artifacts/leakage-audit.json",
@@ -54,6 +66,8 @@ REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
         "artifacts/fit-diagnosis.json",
         "artifacts/calibration-report.json",
         "artifacts/reproducibility-check.json",
+        "artifacts/shuffled-label-check.json",
+        "artifacts/multi-seed-stability.json",
     ),
     "multi-agent-research-task": ("artifacts/dependency-risk-report.json", "artifacts/aggregation.json"),
 }

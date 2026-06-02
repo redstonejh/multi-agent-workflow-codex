@@ -26,9 +26,11 @@
     "artifacts/evaluation-report.json",
     "artifacts/fit-diagnosis.json",
     "artifacts/calibration-report.json",
+    "artifacts/shuffled-label-check.json",
+    "artifacts/multi-seed-stability.json",
     "artifacts/acceptance-result.json"
   ],
-  "acceptance_gates": ["split-recorded", "no-known-leakage", "data-quality-within-thresholds", "config-reproducible", "baseline-checked", "evaluation-complete", "fit-diagnosis-healthy", "calibration-within-threshold", "claims-supported"],
+  "acceptance_gates": ["split-recorded", "no-known-leakage", "data-quality-within-thresholds", "config-reproducible", "baseline-checked", "evaluation-complete", "fit-diagnosis-healthy", "calibration-within-threshold", "shuffled-label-collapses", "multi-seed-stable", "claims-supported"],
   "deterministic_checks": [
     {"name": "training-command", "command": "<project training command>"},
     {"name": "evaluation-command", "command": "<project evaluation command>"},
@@ -38,6 +40,8 @@
     {"name": "baseline", "command": "py examples/ml_problems/ml_checks.py baseline --metrics-file <metrics.json> --output artifacts/baseline-comparison.json"},
     {"name": "fit-diagnosis", "command": "py examples/ml_problems/ml_checks.py fit-diagnosis --problem-type <classification|regression> --metrics-file <metrics.json> --output artifacts/fit-diagnosis.json"},
     {"name": "calibration", "command": "py examples/ml_problems/ml_checks.py calibration --data-file <calibration.json> --output artifacts/calibration-report.json"},
+    {"name": "shuffled-label", "command": "py examples/ml_problems/ml_checks.py shuffled-label --data-file <shuffled-label.json> --output artifacts/shuffled-label-check.json"},
+    {"name": "multi-seed", "command": "py examples/ml_problems/ml_checks.py multi-seed --data-file <multi-seed.json> --output artifacts/multi-seed-stability.json"},
     {"name": "handoffs", "command": "py maw-tools/validate_handoffs.py <run_dir>"}
   ]
 }

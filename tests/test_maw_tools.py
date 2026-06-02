@@ -1177,6 +1177,94 @@ class MawToolTests(unittest.TestCase):
         self.assertNotEqual(failing.returncode, 0)
         self.assertFalse(json.loads(failing.stdout)["passed"])
 
+    def test_ml_shuffled_label_clean_classification_passes(self) -> None:
+        proc = run_tool(
+            str(ML_CHECKS),
+            "shuffled-label",
+            "--problem-type",
+            "classification",
+            "--real-score",
+            "0.86",
+            "--shuffled-scores-json",
+            json.dumps([0.49, 0.51, 0.52]),
+            "--class-count",
+            "2",
+            "--tolerance",
+            "0.05",
+            "--min-real-margin",
+            "0.20",
+        )
+
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        result = json.loads(proc.stdout)
+        self.assertTrue(result["passed"])
+        self.assertEqual(result["status"], "pass")
+        self.assertEqual(result["thresholds"]["chance_score"], 0.5)
+
+    def test_ml_shuffled_label_leakage_case_fails(self) -> None:
+        proc = run_tool(
+            str(ML_CHECKS),
+            "shuffled-label",
+            "--problem-type",
+            "classification",
+            "--real-score",
+            "0.91",
+            "--shuffled-scores-json",
+            json.dumps([0.82, 0.86, 0.84]),
+            "--class-count",
+            "2",
+            "--tolerance",
+            "0.05",
+        )
+
+        self.assertNotEqual(proc.returncode, 0)
+        result = json.loads(proc.stdout)
+        self.assertFalse(result["passed"])
+        self.assertEqual(result["status"], "fail")
+        self.assertTrue(any("shuffled score max" in reason for reason in result["reasons"]))
+
+    def test_ml_multi_seed_clean_case_passes(self) -> None:
+        proc = run_tool(
+            str(ML_CHECKS),
+            "multi-seed",
+            "--scores-json",
+            json.dumps([0.82, 0.83, 0.81, 0.82]),
+            "--min-score",
+            "0.80",
+            "--max-variance",
+            "0.0002",
+            "--min-seeds",
+            "3",
+            "--metric-name",
+            "accuracy",
+        )
+
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        result = json.loads(proc.stdout)
+        self.assertTrue(result["passed"])
+        self.assertEqual(result["status"], "pass")
+        self.assertEqual(result["metrics"]["seed_count"], 4)
+
+    def test_ml_multi_seed_unstable_case_fails(self) -> None:
+        proc = run_tool(
+            str(ML_CHECKS),
+            "multi-seed",
+            "--scores-json",
+            json.dumps([0.90, 0.70, 0.88]),
+            "--min-score",
+            "0.70",
+            "--max-variance",
+            "0.0004",
+            "--min-seeds",
+            "3",
+        )
+
+        self.assertNotEqual(proc.returncode, 0)
+        result = json.loads(proc.stdout)
+        self.assertFalse(result["passed"])
+        self.assertEqual(result["status"], "fail")
+        self.assertTrue(any("variance" in reason for reason in result["reasons"]))
+
     def test_ml_calibration_reproducibility_and_data_quality_checks(self) -> None:
         calibration = run_tool(
             str(ML_CHECKS),

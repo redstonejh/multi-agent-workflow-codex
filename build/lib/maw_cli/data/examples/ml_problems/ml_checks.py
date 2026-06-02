@@ -224,6 +224,248 @@ def data_quality_check(data: dict[str, Any], max_missing_rate: float = 0.0, max_
     }
 
 
+def _float_list(values: Any, name: str) -> list[float]:
+    if not isinstance(values, list) or not values:
+        raise ValueError(f"{name} must be a non-empty JSON array")
+    scores = [float(value) for value in values]
+    if any(not math.isfinite(score) for score in scores):
+        raise ValueError(f"{name} must contain only finite numbers")
+    return scores
+
+
+def _mean(values: list[float]) -> float:
+    return sum(values) / len(values)
+
+
+def _population_variance(values: list[float]) -> float:
+    if not values:
+        return math.nan
+    mean = _mean(values)
+    return sum((value - mean) ** 2 for value in values) / len(values)
+
+
+def _default_chance_score(problem_type: str, direction: str, class_count: int) -> float:
+    if problem_type == "classification":
+        return 1.0 / class_count
+    if problem_type == "regression":
+        return 0.0 if direction == "higher" else 1.0
+    raise ValueError(f"unknown problem_type: {problem_type}")
+
+
+def shuffled_label_check(
+    problem_type: str,
+    real_score: float,
+    shuffled_scores: list[float],
+    class_count: int = 2,
+    chance_score: float | None = None,
+    tolerance: float = 0.05,
+    min_real_margin: float = 0.0,
+    direction: str = "higher",
+) -> dict[str, Any]:
+    metrics: dict[str, Any] = {
+        "problem_type": problem_type,
+        "direction": direction,
+        "real_score": real_score,
+        "shuffled_scores": shuffled_scores,
+    }
+    thresholds: dict[str, Any] = {
+        "tolerance": tolerance,
+        "min_real_margin": min_real_margin,
+    }
+    reasons: list[str] = []
+
+    if direction not in {"higher", "lower"}:
+        return {
+            "check": "shuffled_label",
+            "passed": False,
+            "status": "invalid",
+            "metrics": metrics,
+            "thresholds": thresholds,
+            "reasons": [f"unknown direction: {direction}"],
+        }
+    if class_count <= 0:
+        return {
+            "check": "shuffled_label",
+            "passed": False,
+            "status": "invalid",
+            "metrics": metrics,
+            "thresholds": thresholds,
+            "reasons": ["class_count must be positive"],
+        }
+    if tolerance < 0:
+        reasons.append("tolerance must be non-negative")
+    if min_real_margin < 0:
+        reasons.append("min_real_margin must be non-negative")
+    if chance_score is not None and not math.isfinite(float(chance_score)):
+        reasons.append("chance_score must be finite")
+    if not math.isfinite(tolerance):
+        reasons.append("tolerance must be finite")
+    if not math.isfinite(min_real_margin):
+        reasons.append("min_real_margin must be finite")
+    if not math.isfinite(real_score):
+        reasons.append("real_score must be finite")
+    if not shuffled_scores:
+        reasons.append("shuffled_scores must be non-empty")
+    if any(not math.isfinite(score) for score in shuffled_scores):
+        reasons.append("shuffled_scores must contain only finite numbers")
+    if reasons:
+        return {
+            "check": "shuffled_label",
+            "passed": False,
+            "status": "invalid",
+            "metrics": metrics,
+            "thresholds": thresholds,
+            "reasons": reasons,
+        }
+
+    chance = float(chance_score) if chance_score is not None else _default_chance_score(problem_type, direction, class_count)
+    shuffled_mean = _mean(shuffled_scores)
+    shuffled_variance = _population_variance(shuffled_scores)
+    metrics.update(
+        {
+            "chance_score": chance,
+            "shuffled_mean": round(shuffled_mean, 6),
+            "shuffled_variance": round(shuffled_variance, 6),
+            "shuffled_std": round(math.sqrt(shuffled_variance), 6),
+            "shuffled_min": min(shuffled_scores),
+            "shuffled_max": max(shuffled_scores),
+        }
+    )
+
+    if direction == "higher":
+        real_threshold = chance + min_real_margin
+        shuffled_threshold = chance + tolerance
+        real_ok = real_score >= real_threshold
+        shuffled_ok = max(shuffled_scores) <= shuffled_threshold
+        thresholds.update(
+            {
+                "chance_score": chance,
+                "class_count": class_count if problem_type == "classification" else None,
+                "real_minimum": real_threshold,
+                "shuffled_maximum": shuffled_threshold,
+            }
+        )
+        if not real_ok:
+            reasons.append(f"real_score {real_score:.6f} is below required {real_threshold:.6f}")
+        if not shuffled_ok:
+            reasons.append(f"shuffled score max {max(shuffled_scores):.6f} exceeds allowed {shuffled_threshold:.6f}")
+    else:
+        real_threshold = chance - min_real_margin
+        shuffled_threshold = chance - tolerance
+        real_ok = real_score <= real_threshold
+        shuffled_ok = min(shuffled_scores) >= shuffled_threshold
+        thresholds.update(
+            {
+                "chance_score": chance,
+                "class_count": class_count if problem_type == "classification" else None,
+                "real_maximum": real_threshold,
+                "shuffled_minimum": shuffled_threshold,
+            }
+        )
+        if not real_ok:
+            reasons.append(f"real_score {real_score:.6f} is above required {real_threshold:.6f}")
+        if not shuffled_ok:
+            reasons.append(f"shuffled score min {min(shuffled_scores):.6f} is below allowed {shuffled_threshold:.6f}")
+
+    passed = real_ok and shuffled_ok
+    return {
+        "check": "shuffled_label",
+        "passed": passed,
+        "status": "pass" if passed else "fail",
+        "metrics": metrics,
+        "thresholds": thresholds,
+        "reasons": [] if passed else reasons,
+    }
+
+
+def multi_seed_check(
+    scores: list[float],
+    min_score: float = 0.0,
+    max_score: float | None = None,
+    max_variance: float = 0.0004,
+    min_seeds: int = 2,
+    direction: str = "higher",
+    metric_name: str = "score",
+) -> dict[str, Any]:
+    thresholds: dict[str, Any] = {
+        "direction": direction,
+        "max_variance": max_variance,
+        "min_seeds": min_seeds,
+    }
+    reasons: list[str] = []
+    if direction not in {"higher", "lower"}:
+        reasons.append(f"unknown direction: {direction}")
+    if max_variance < 0:
+        reasons.append("max_variance must be non-negative")
+    if not math.isfinite(max_variance):
+        reasons.append("max_variance must be finite")
+    if not math.isfinite(min_score):
+        reasons.append("min_score must be finite")
+    if max_score is not None and not math.isfinite(max_score):
+        reasons.append("max_score must be finite")
+    if min_seeds <= 0:
+        reasons.append("min_seeds must be positive")
+    if len(scores) < min_seeds:
+        reasons.append(f"seed count {len(scores)} is below required {min_seeds}")
+    if any(not math.isfinite(score) for score in scores):
+        reasons.append("scores must contain only finite numbers")
+    if direction == "lower" and max_score is None:
+        reasons.append("max_score is required when direction is lower")
+
+    if direction == "higher":
+        thresholds["min_score"] = min_score
+    else:
+        thresholds["max_score"] = max_score
+
+    if reasons:
+        return {
+            "check": "multi_seed",
+            "passed": False,
+            "status": "invalid",
+            "metrics": {"metric_name": metric_name, "scores": scores, "seed_count": len(scores)},
+            "thresholds": thresholds,
+            "reasons": reasons,
+        }
+
+    mean = _mean(scores)
+    variance = _population_variance(scores)
+    std = math.sqrt(variance)
+    metrics = {
+        "metric_name": metric_name,
+        "scores": scores,
+        "seed_count": len(scores),
+        "mean": round(mean, 6),
+        "variance": round(variance, 6),
+        "std": round(std, 6),
+        "min": min(scores),
+        "max": max(scores),
+    }
+
+    if direction == "higher":
+        floor_ok = all(score >= min_score for score in scores)
+        if not floor_ok:
+            reasons.append(f"one or more seeds are below min_score {min_score:.6f}")
+    else:
+        ceiling = float(max_score)
+        floor_ok = all(score <= ceiling for score in scores)
+        if not floor_ok:
+            reasons.append(f"one or more seeds exceed max_score {ceiling:.6f}")
+
+    variance_ok = variance <= max_variance
+    if not variance_ok:
+        reasons.append(f"variance {variance:.6f} exceeds {max_variance:.6f}")
+
+    passed = floor_ok and variance_ok
+    return {
+        "check": "multi_seed",
+        "passed": passed,
+        "status": "pass" if passed else "fail",
+        "metrics": metrics,
+        "thresholds": thresholds,
+        "reasons": [] if passed else reasons,
+    }
+
+
 def _missing(metrics: dict[str, float], names: list[str]) -> list[str]:
     return [name for name in names if name not in metrics or metrics[name] is None]
 
@@ -512,9 +754,96 @@ def cmd_data_quality(args: argparse.Namespace) -> int:
     return write_result(result, args.output)
 
 
+def cmd_shuffled_label(args: argparse.Namespace) -> int:
+    try:
+        if args.data_json or args.data_file:
+            data = load_json_arg(args.data_json, args.data_file)
+            problem_type = str(data["problem_type"])
+            real_score = float(data["real_score"])
+            shuffled_scores = _float_list(data["shuffled_scores"], "shuffled_scores")
+            class_count = int(data.get("class_count", args.class_count))
+            chance_score = data.get("chance_score", args.chance_score)
+            tolerance = float(data.get("tolerance", args.tolerance))
+            min_real_margin = float(data.get("min_real_margin", args.min_real_margin))
+            direction = str(data.get("direction", args.direction))
+        else:
+            if args.problem_type is None or args.real_score is None or args.shuffled_scores_json is None:
+                raise ValueError("provide --problem-type, --real-score, and --shuffled-scores-json or a data JSON object")
+            problem_type = args.problem_type
+            real_score = args.real_score
+            shuffled_scores = _float_list(json.loads(args.shuffled_scores_json), "shuffled_scores")
+            class_count = args.class_count
+            chance_score = args.chance_score
+            tolerance = args.tolerance
+            min_real_margin = args.min_real_margin
+            direction = args.direction
+
+        result = shuffled_label_check(
+            problem_type=problem_type,
+            real_score=real_score,
+            shuffled_scores=shuffled_scores,
+            class_count=class_count,
+            chance_score=None if chance_score is None else float(chance_score),
+            tolerance=tolerance,
+            min_real_margin=min_real_margin,
+            direction=direction,
+        )
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        result = {"check": "shuffled_label", "passed": False, "status": "invalid", "metrics": {}, "thresholds": {}, "reasons": [str(exc)]}
+    return write_result(result, args.output)
+
+
+def cmd_multi_seed(args: argparse.Namespace) -> int:
+    try:
+        if args.data_json or args.data_file:
+            data = load_json_arg(args.data_json, args.data_file)
+            scores = _float_list(data["scores"], "scores")
+            min_score = float(data.get("min_score", args.min_score))
+            max_score_value = data.get("max_score", args.max_score)
+            max_score = None if max_score_value is None else float(max_score_value)
+            max_variance = float(data.get("max_variance", args.max_variance))
+            min_seeds = int(data.get("min_seeds", args.min_seeds))
+            direction = str(data.get("direction", args.direction))
+            metric_name = str(data.get("metric_name", args.metric_name))
+        else:
+            if args.scores_json is None:
+                raise ValueError("provide --scores-json or a data JSON object")
+            scores = _float_list(json.loads(args.scores_json), "scores")
+            min_score = args.min_score
+            max_score = args.max_score
+            max_variance = args.max_variance
+            min_seeds = args.min_seeds
+            direction = args.direction
+            metric_name = args.metric_name
+
+        result = multi_seed_check(
+            scores=scores,
+            min_score=min_score,
+            max_score=max_score,
+            max_variance=max_variance,
+            min_seeds=min_seeds,
+            direction=direction,
+            metric_name=metric_name,
+        )
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        result = {"check": "multi_seed", "passed": False, "status": "invalid", "metrics": {}, "thresholds": {}, "reasons": [str(exc)]}
+    return write_result(result, args.output)
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    commands = {"validate", "fit-diagnosis", "baseline", "calibration", "reproducibility", "data-quality", "-h", "--help"}
+    commands = {
+        "validate",
+        "fit-diagnosis",
+        "baseline",
+        "calibration",
+        "reproducibility",
+        "data-quality",
+        "shuffled-label",
+        "multi-seed",
+        "-h",
+        "--help",
+    }
     if argv and argv[0] not in commands:
         argv = ["validate", *argv]
 
@@ -568,6 +897,33 @@ def main(argv: list[str] | None = None) -> int:
     quality.add_argument("--max-duplicate-rate", type=float, default=0.0)
     quality.add_argument("--output")
     quality.set_defaults(func=cmd_data_quality)
+
+    shuffled = sub.add_parser("shuffled-label", help="verify shuffled-label performance collapses to chance or baseline")
+    shuffled.add_argument("--data-json")
+    shuffled.add_argument("--data-file")
+    shuffled.add_argument("--problem-type", choices=["classification", "regression"])
+    shuffled.add_argument("--real-score", type=float)
+    shuffled.add_argument("--shuffled-scores-json")
+    shuffled.add_argument("--class-count", type=int, default=2)
+    shuffled.add_argument("--chance-score", type=float)
+    shuffled.add_argument("--tolerance", type=float, default=0.05)
+    shuffled.add_argument("--min-real-margin", type=float, default=0.0)
+    shuffled.add_argument("--direction", choices=["higher", "lower"], default="higher")
+    shuffled.add_argument("--output")
+    shuffled.set_defaults(func=cmd_shuffled_label)
+
+    multi_seed = sub.add_parser("multi-seed", help="verify metric stability across multiple random seeds")
+    multi_seed.add_argument("--data-json")
+    multi_seed.add_argument("--data-file")
+    multi_seed.add_argument("--scores-json")
+    multi_seed.add_argument("--min-score", type=float, default=0.0)
+    multi_seed.add_argument("--max-score", type=float)
+    multi_seed.add_argument("--max-variance", type=float, default=0.0004)
+    multi_seed.add_argument("--min-seeds", type=int, default=2)
+    multi_seed.add_argument("--direction", choices=["higher", "lower"], default="higher")
+    multi_seed.add_argument("--metric-name", default="score")
+    multi_seed.add_argument("--output")
+    multi_seed.set_defaults(func=cmd_multi_seed)
 
     args = parser.parse_args(argv)
     if hasattr(args, "func"):
