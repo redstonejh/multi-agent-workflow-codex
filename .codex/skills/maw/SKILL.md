@@ -21,12 +21,21 @@ capabilities.
    python maw-tools/scaffold_run.py init "<task>" --agents conductor,planner,worker,critic,acceptance_gate --json
    ```
 
-3. Conductor records the team, caps, quality bar, and one-line role justification in `run.md`.
-4. Planner writes a concrete plan and creates a `planner -> worker` handoff.
-5. Worker implements or drafts the requested output and creates a `worker -> critic` handoff.
-6. Critic runs deterministic checks where possible and returns PASS or a specific revision request.
-7. Repeat worker/critic up to `max_iters` if needed.
-8. Acceptance gate validates handoffs and deterministic results, then records `SHIP`, `NO-SHIP`, or `NEEDS-HUMAN`.
+3. Conductor proposes a structured plan in `artifacts/conductor-plan.json`, including `task_type`, `roles`, `caps`, optional `parallel_roles`, and optional `role_justifications`.
+4. Run the pre-execution plan gate:
+
+   ```bash
+   uv run python maw-tools/plan_check.py --file artifacts/conductor-plan.json
+   ```
+
+5. `plan_reviewer` reviews the plan and returns `APPROVE` or `REVISE`. The reviewer is advisory; `plan_check.py` is the hard deterministic gate.
+6. If `plan_check.py` fails or `plan_reviewer` returns `REVISE`, conductor replans and reruns the gate. Cap the replan loop at 2 revisions.
+7. Only execute after the plan gate passes. Record the proposed plan, plan check result, plan reviewer verdict, final accepted plan, and revision count in `run.md` or artifacts.
+8. Planner writes a concrete plan and creates a `planner -> worker` handoff.
+9. Worker implements or drafts the requested output and creates a `worker -> critic` handoff.
+10. Critic runs deterministic checks where possible and returns PASS or a specific revision request.
+11. Repeat worker/critic up to `max_iters` if needed.
+12. Acceptance gate validates handoffs, plan-gate evidence, and deterministic results, then records `SHIP`, `NO-SHIP`, or `NEEDS-HUMAN`.
 
 ## Deterministic Commands
 
@@ -35,6 +44,7 @@ python maw-tools/scaffold_run.py handoff --run <run_dir> --from <from_agent> --t
 python maw-tools/validate_handoffs.py <run_dir>
 python maw-tools/checks.py test --cmd "<test command>" --cwd <path>
 python maw-tools/acceptance_check.py --run <run_dir> --test-cmd "<test command>" --test-cwd <path>
+uv run python maw-tools/plan_check.py --file <conductor-plan.json>
 ```
 
 ## Handoff Rules

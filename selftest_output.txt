@@ -1,171 +1,145 @@
-COMMAND: uv run python maw-tools\selftest_web_checks.py
+COMMAND: uv run python maw-tools/plan_check.py --help
+STDOUT:
+usage: plan_check.py [-h] [--file FILE]
+
+Validate a structured MAW conductor plan before execution.
+
+options:
+  -h, --help   show this help message and exit
+  --file FILE  JSON conductor plan file; reads stdin when omitted
+STDERR:
+
+EXIT_CODE: 0
+
+COMMAND: uv run python maw-tools/selftest_plan_check.py
+STDOUT:
 {
   "passed": true,
-  "assertions": 17,
-  "ok": 17,
+  "assertions": 11,
+  "ok": 11,
   "results": [
     {
-      "name": "contrast_good",
+      "name": "missing_ml_validator_red",
       "passed": true,
-      "expected_check_passed": true,
-      "tool_exit_code": 0,
-      "tool_passed": true,
-      "stdout": "{\n  \"background\": \"#ffffff\",\n  \"check\": \"contrast\",\n  \"foreground\": \"#111827\",\n  \"large\": false,\n  \"passed\": true,\n  \"ratio\": 17.739717,\n  \"threshold\": 4.5\n}",
-      "stderr": ""
-    },
-    {
-      "name": "contrast_bad",
-      "passed": true,
-      "expected_check_passed": false,
-      "tool_exit_code": 1,
+      "expected_passed": false,
+      "expected_violation": "missing_required_role",
+      "exit_code": 1,
       "tool_passed": false,
-      "stdout": "{\n  \"background\": \"#ffffff\",\n  \"check\": \"contrast\",\n  \"foreground\": \"#9aa0a6\",\n  \"large\": false,\n  \"passed\": false,\n  \"ratio\": 2.640526,\n  \"threshold\": 4.5\n}",
+      "stdout": "{\n  \"caps\": {\n    \"max_agents\": 8,\n    \"max_parallel\": 3\n  },\n  \"passed\": false,\n  \"required_roles\": [\n    \"leakage_auditor\",\n    \"baseline_enforcer\"\n  ],\n  \"roles\": [\n    \"conductor\",\n    \"planner\",\n    \"baseline_enforcer\",\n    \"critic\",\n    \"acceptance_gate\"\n  ],\n  \"summary\": {\n    \"parallel_count\": 2,\n    \"role_aliases\": [\n      {\n        \"requested\": \"code_reviewer\",\n        \"used\": \"critic\"\n      },\n      {\n        \"requested\": \"dep_mapper\",\n        \"used\": \"dependency_mapper\"\n      }\n    ],\n    \"role_count\": 5,\n    \"violation_count\": 1,\n    \"warning_count\": 0\n  },\n  \"task_type\": \"ml\",\n  \"violations\": [\n    {\n      \"message\": \"ml requires leakage_auditor\",\n      \"role\": \"leakage_auditor\",\n      \"task_type\": \"ml\",\n      \"type\": \"missing_required_role\"\n    }\n  ],\n  \"warnings\": []\n}",
       "stderr": ""
     },
     {
-      "name": "a11y_good",
+      "name": "corrected_ml_green",
       "passed": true,
-      "expected_check_passed": true,
-      "tool_exit_code": 0,
+      "expected_passed": true,
+      "expected_violation": null,
+      "exit_code": 0,
       "tool_passed": true,
-      "stdout": "{\n  \"check\": \"a11y\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\good\\\\index.html\",\n  \"passed\": true,\n  \"violation_count\": 0,\n  \"violations\": []\n}",
+      "stdout": "{\n  \"caps\": {\n    \"max_agents\": 8,\n    \"max_parallel\": 3\n  },\n  \"passed\": true,\n  \"required_roles\": [\n    \"leakage_auditor\",\n    \"baseline_enforcer\"\n  ],\n  \"roles\": [\n    \"conductor\",\n    \"planner\",\n    \"leakage_auditor\",\n    \"baseline_enforcer\",\n    \"critic\",\n    \"acceptance_gate\"\n  ],\n  \"summary\": {\n    \"parallel_count\": 2,\n    \"role_aliases\": [\n      {\n        \"requested\": \"code_reviewer\",\n        \"used\": \"critic\"\n      },\n      {\n        \"requested\": \"dep_mapper\",\n        \"used\": \"dependency_mapper\"\n      }\n    ],\n    \"role_count\": 6,\n    \"violation_count\": 0,\n    \"warning_count\": 0\n  },\n  \"task_type\": \"ml\",\n  \"violations\": [],\n  \"warnings\": []\n}",
       "stderr": ""
     },
     {
-      "name": "a11y_bad",
+      "name": "required_role_rules_fire",
       "passed": true,
-      "expected_check_passed": false,
-      "tool_exit_code": 1,
+      "expected_passed": false,
+      "expected_violation": "missing_required_role",
+      "exit_code": 1,
       "tool_passed": false,
-      "stdout": "{\n  \"check\": \"a11y\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\bad\\\\index.html\",\n  \"passed\": false,\n  \"violation_count\": 6,\n  \"violations\": [\n    {\n      \"message\": \"html element is missing lang\",\n      \"type\": \"missing_html_lang\"\n    },\n    {\n      \"message\": \"document is missing title\",\n      \"type\": \"missing_title\"\n    },\n    {\n      \"message\": \"document is missing viewport meta\",\n      \"type\": \"missing_viewport\"\n    },\n    {\n      \"line\": 11,\n      \"message\": \"img missing alt\",\n      \"type\": \"img_missing_alt\"\n    },\n    {\n      \"line\": 12,\n      \"message\": \"input missing accessible label\",\n      \"tag\": \"input\",\n      \"type\": \"control_missing_label\"\n    },\n    {\n      \"line\": 9,\n      \"message\": \"heading jumps from h1 to h3\",\n      \"type\": \"skipped_heading_level\"\n    }\n  ]\n}",
+      "stdout": "{\n  \"caps\": {\n    \"max_agents\": 8,\n    \"max_parallel\": 3\n  },\n  \"passed\": false,\n  \"required_roles\": [\n    \"a11y_auditor\",\n    \"change_verifier\"\n  ],\n  \"roles\": [\n    \"conductor\",\n    \"planner\",\n    \"a11y_auditor\",\n    \"critic\",\n    \"acceptance_gate\"\n  ],\n  \"summary\": {\n    \"parallel_count\": 2,\n    \"role_aliases\": [\n      {\n        \"requested\": \"code_reviewer\",\n        \"used\": \"critic\"\n      },\n      {\n        \"requested\": \"dep_mapper\",\n        \"used\": \"dependency_mapper\"\n      }\n    ],\n    \"role_count\": 5,\n    \"violation_count\": 1,\n    \"warning_count\": 0\n  },\n  \"task_type\": \"frontend\",\n  \"violations\": [\n    {\n      \"message\": \"frontend requires change_verifier\",\n      \"role\": \"change_verifier\",\n      \"task_type\": \"frontend\",\n      \"type\": \"missing_required_role\"\n    }\n  ],\n  \"warnings\": []\n}",
       "stderr": ""
     },
     {
-      "name": "budget_good",
+      "name": "duplicate_roles_fail",
       "passed": true,
-      "expected_check_passed": true,
-      "tool_exit_code": 0,
-      "tool_passed": true,
-      "stdout": "{\n  \"asset_count\": 2,\n  \"check\": \"budget\",\n  \"element_count\": 17,\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\good\\\\index.html\",\n  \"files\": [\n    {\n      \"bytes\": 579,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\good\\\\index.html\"\n    },\n    {\n      \"bytes\": 47,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\good\\\\style.css\"\n    },\n    {\n      \"bytes\": 15,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\good\\\\hero.txt\"\n    }\n  ],\n  \"limits\": {\n    \"max_assets\": 5,\n    \"max_bytes\": 4096,\n    \"max_elements\": 50\n  },\n  \"passed\": true,\n  \"total_bytes\": 641,\n  \"violations\": []\n}",
-      "stderr": ""
-    },
-    {
-      "name": "budget_bad",
-      "passed": true,
-      "expected_check_passed": false,
-      "tool_exit_code": 1,
+      "expected_passed": false,
+      "expected_violation": "duplicate_role",
+      "exit_code": 1,
       "tool_passed": false,
-      "stdout": "{\n  \"asset_count\": 0,\n  \"check\": \"budget\",\n  \"element_count\": 14,\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\bad\\\\index.html\",\n  \"files\": [\n    {\n      \"bytes\": 2434,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\bad\\\\index.html\"\n    }\n  ],\n  \"limits\": {\n    \"max_assets\": 5,\n    \"max_bytes\": 512,\n    \"max_elements\": 50\n  },\n  \"passed\": false,\n  \"total_bytes\": 2434,\n  \"violations\": [\n    {\n      \"actual\": 2434,\n      \"limit\": 512,\n      \"type\": \"byte_budget_exceeded\"\n    }\n  ]\n}",
+      "stdout": "{\n  \"caps\": {\n    \"max_agents\": 8,\n    \"max_parallel\": 3\n  },\n  \"passed\": false,\n  \"required_roles\": [\n    \"leakage_auditor\",\n    \"baseline_enforcer\"\n  ],\n  \"roles\": [\n    \"conductor\",\n    \"planner\",\n    \"leakage_auditor\",\n    \"baseline_enforcer\",\n    \"critic\",\n    \"critic\",\n    \"acceptance_gate\"\n  ],\n  \"summary\": {\n    \"parallel_count\": 2,\n    \"role_aliases\": [\n      {\n        \"requested\": \"code_reviewer\",\n        \"used\": \"critic\"\n      },\n      {\n        \"requested\": \"dep_mapper\",\n        \"used\": \"dependency_mapper\"\n      }\n    ],\n    \"role_count\": 7,\n    \"violation_count\": 1,\n    \"warning_count\": 0\n  },\n  \"task_type\": \"ml\",\n  \"violations\": [\n    {\n      \"message\": \"duplicate role: critic\",\n      \"role\": \"critic\",\n      \"type\": \"duplicate_role\"\n    }\n  ],\n  \"warnings\": []\n}",
       "stderr": ""
     },
     {
-      "name": "links_good",
+      "name": "unknown_roles_fail",
       "passed": true,
-      "expected_check_passed": true,
-      "tool_exit_code": 0,
-      "tool_passed": true,
-      "stdout": "{\n  \"check\": \"links\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\good\\\\index.html\",\n  \"passed\": true,\n  \"reference_count\": 3,\n  \"violations\": []\n}",
-      "stderr": ""
-    },
-    {
-      "name": "links_bad",
-      "passed": true,
-      "expected_check_passed": false,
-      "tool_exit_code": 1,
+      "expected_passed": false,
+      "expected_violation": "unknown_role",
+      "exit_code": 1,
       "tool_passed": false,
-      "stdout": "{\n  \"check\": \"links\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\bad\\\\index.html\",\n  \"passed\": false,\n  \"reference_count\": 3,\n  \"violations\": [\n    {\n      \"line\": 5,\n      \"target\": \"missing.css\",\n      \"type\": \"missing_internal_link\"\n    },\n    {\n      \"line\": 10,\n      \"target\": \"#missing\",\n      \"type\": \"missing_anchor\"\n    },\n    {\n      \"target\": \"missing.css\",\n      \"type\": \"missing_asset\"\n    },\n    {\n      \"target\": \"missing-image.txt\",\n      \"type\": \"missing_asset\"\n    }\n  ]\n}",
+      "stdout": "{\n  \"caps\": {\n    \"max_agents\": 8,\n    \"max_parallel\": 3\n  },\n  \"passed\": false,\n  \"required_roles\": [\n    \"leakage_auditor\",\n    \"baseline_enforcer\"\n  ],\n  \"roles\": [\n    \"conductor\",\n    \"planner\",\n    \"leakage_auditor\",\n    \"baseline_enforcer\",\n    \"mystery_agent\",\n    \"acceptance_gate\"\n  ],\n  \"summary\": {\n    \"parallel_count\": 2,\n    \"role_aliases\": [\n      {\n        \"requested\": \"code_reviewer\",\n        \"used\": \"critic\"\n      },\n      {\n        \"requested\": \"dep_mapper\",\n        \"used\": \"dependency_mapper\"\n      }\n    ],\n    \"role_count\": 6,\n    \"violation_count\": 1,\n    \"warning_count\": 0\n  },\n  \"task_type\": \"ml\",\n  \"violations\": [\n    {\n      \"message\": \"unknown role: mystery_agent\",\n      \"role\": \"mystery_agent\",\n      \"type\": \"unknown_role\"\n    }\n  ],\n  \"warnings\": []\n}",
       "stderr": ""
     },
     {
-      "name": "markup_good",
+      "name": "missing_acceptance_gate_fails",
       "passed": true,
-      "expected_check_passed": true,
-      "tool_exit_code": 0,
-      "tool_passed": true,
-      "stdout": "{\n  \"check\": \"markup\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\good\\\\index.html\",\n  \"passed\": true,\n  \"violation_count\": 0,\n  \"violations\": []\n}",
-      "stderr": ""
-    },
-    {
-      "name": "markup_bad",
-      "passed": true,
-      "expected_check_passed": false,
-      "tool_exit_code": 1,
+      "expected_passed": false,
+      "expected_violation": "missing_acceptance_gate",
+      "exit_code": 1,
       "tool_passed": false,
-      "stdout": "{\n  \"check\": \"markup\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\bad\\\\index.html\",\n  \"passed\": false,\n  \"violation_count\": 3,\n  \"violations\": [\n    {\n      \"line\": 15,\n      \"tag\": \"section\",\n      \"type\": \"unclosed_tag\"\n    },\n    {\n      \"line\": 15,\n      \"tag\": \"p\",\n      \"type\": \"unclosed_tag\"\n    },\n    {\n      \"first_line\": 13,\n      \"id\": \"dup\",\n      \"line\": 14,\n      \"type\": \"duplicate_id\"\n    }\n  ]\n}",
+      "stdout": "{\n  \"caps\": {\n    \"max_agents\": 8,\n    \"max_parallel\": 3\n  },\n  \"passed\": false,\n  \"required_roles\": [\n    \"leakage_auditor\",\n    \"baseline_enforcer\"\n  ],\n  \"roles\": [\n    \"conductor\",\n    \"planner\",\n    \"leakage_auditor\",\n    \"baseline_enforcer\",\n    \"critic\"\n  ],\n  \"summary\": {\n    \"parallel_count\": 2,\n    \"role_aliases\": [\n      {\n        \"requested\": \"code_reviewer\",\n        \"used\": \"critic\"\n      },\n      {\n        \"requested\": \"dep_mapper\",\n        \"used\": \"dependency_mapper\"\n      }\n    ],\n    \"role_count\": 5,\n    \"violation_count\": 1,\n    \"warning_count\": 0\n  },\n  \"task_type\": \"ml\",\n  \"violations\": [\n    {\n      \"message\": \"acceptance_gate is required\",\n      \"role\": \"acceptance_gate\",\n      \"type\": \"missing_acceptance_gate\"\n    }\n  ],\n  \"warnings\": []\n}",
       "stderr": ""
     },
     {
-      "name": "style_before",
+      "name": "role_caps_enforced",
       "passed": true,
-      "expected_check_passed": true,
-      "tool_exit_code": 0,
-      "tool_passed": true,
-      "stdout": "{\n  \"check\": \"style\",\n  \"passed\": true,\n  \"property\": \"background\",\n  \"reason\": \"value found\",\n  \"selector\": \".btn\",\n  \"source_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\change.before.css\",\n  \"value\": \"#e0e0e0\"\n}",
-      "stderr": ""
-    },
-    {
-      "name": "style_after",
-      "passed": true,
-      "expected_check_passed": true,
-      "tool_exit_code": 0,
-      "tool_passed": true,
-      "stdout": "{\n  \"check\": \"style\",\n  \"passed\": true,\n  \"property\": \"background\",\n  \"reason\": \"value found\",\n  \"selector\": \".btn\",\n  \"source_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\change.after.css\",\n  \"value\": \"#1a73e8\"\n}",
-      "stderr": ""
-    },
-    {
-      "name": "changed_good",
-      "passed": true,
-      "expected_check_passed": true,
-      "tool_exit_code": 0,
-      "tool_passed": true,
-      "stdout": "{\n  \"after\": \"#1a73e8\",\n  \"before\": \"#e0e0e0\",\n  \"check\": \"changed\",\n  \"expected\": \"#1a73e8\",\n  \"passed\": true,\n  \"reason\": \"target changed to expected value\",\n  \"target\": {\n    \"after_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\change.after.css\",\n    \"before_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\change.before.css\",\n    \"property\": \"background\",\n    \"selector\": \".btn\"\n  }\n}",
-      "stderr": ""
-    },
-    {
-      "name": "changed_noop",
-      "passed": true,
-      "expected_check_passed": false,
-      "tool_exit_code": 1,
+      "expected_passed": false,
+      "expected_violation": "role_cap_exceeded",
+      "exit_code": 1,
       "tool_passed": false,
-      "stdout": "{\n  \"after\": \"#e0e0e0\",\n  \"before\": \"#e0e0e0\",\n  \"check\": \"changed\",\n  \"expected\": \"#1a73e8\",\n  \"passed\": false,\n  \"reason\": \"target did not change\",\n  \"target\": {\n    \"after_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\change.noop.css\",\n    \"before_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\change.before.css\",\n    \"property\": \"background\",\n    \"selector\": \".btn\"\n  }\n}",
+      "stdout": "{\n  \"caps\": {\n    \"max_agents\": 3,\n    \"max_parallel\": 3\n  },\n  \"passed\": false,\n  \"required_roles\": [\n    \"leakage_auditor\",\n    \"baseline_enforcer\"\n  ],\n  \"roles\": [\n    \"conductor\",\n    \"planner\",\n    \"leakage_auditor\",\n    \"baseline_enforcer\",\n    \"critic\",\n    \"acceptance_gate\"\n  ],\n  \"summary\": {\n    \"parallel_count\": 2,\n    \"role_aliases\": [\n      {\n        \"requested\": \"code_reviewer\",\n        \"used\": \"critic\"\n      },\n      {\n        \"requested\": \"dep_mapper\",\n        \"used\": \"dependency_mapper\"\n      }\n    ],\n    \"role_count\": 6,\n    \"violation_count\": 1,\n    \"warning_count\": 0\n  },\n  \"task_type\": \"ml\",\n  \"violations\": [\n    {\n      \"actual\": 6,\n      \"limit\": 3,\n      \"message\": \"role count 6 exceeds max_agents 3\",\n      \"type\": \"role_cap_exceeded\"\n    }\n  ],\n  \"warnings\": []\n}",
       "stderr": ""
     },
     {
-      "name": "changed_wrong_target",
+      "name": "parallel_caps_enforced",
       "passed": true,
-      "expected_check_passed": false,
-      "tool_exit_code": 1,
+      "expected_passed": false,
+      "expected_violation": "parallel_cap_exceeded",
+      "exit_code": 1,
       "tool_passed": false,
-      "stdout": "{\n  \"after\": null,\n  \"before\": null,\n  \"check\": \"changed\",\n  \"expected\": null,\n  \"passed\": false,\n  \"reason\": \"target not found in before snapshot\",\n  \"target\": {\n    \"after_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\change.after.css\",\n    \"before_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\change.before.css\",\n    \"property\": \"background\",\n    \"selector\": \".missing\"\n  }\n}",
+      "stdout": "{\n  \"caps\": {\n    \"max_agents\": 8,\n    \"max_parallel\": 1\n  },\n  \"passed\": false,\n  \"required_roles\": [\n    \"leakage_auditor\",\n    \"baseline_enforcer\"\n  ],\n  \"roles\": [\n    \"conductor\",\n    \"planner\",\n    \"leakage_auditor\",\n    \"baseline_enforcer\",\n    \"critic\",\n    \"acceptance_gate\"\n  ],\n  \"summary\": {\n    \"parallel_count\": 2,\n    \"role_aliases\": [\n      {\n        \"requested\": \"code_reviewer\",\n        \"used\": \"critic\"\n      },\n      {\n        \"requested\": \"dep_mapper\",\n        \"used\": \"dependency_mapper\"\n      }\n    ],\n    \"role_count\": 6,\n    \"violation_count\": 1,\n    \"warning_count\": 0\n  },\n  \"task_type\": \"ml\",\n  \"violations\": [\n    {\n      \"actual\": 2,\n      \"limit\": 1,\n      \"message\": \"parallel role count 2 exceeds max_parallel 1\",\n      \"type\": \"parallel_cap_exceeded\"\n    }\n  ],\n  \"warnings\": []\n}",
       "stderr": ""
     },
     {
-      "name": "tokens_good",
+      "name": "frontend_required_roles_enforced",
       "passed": true,
-      "expected_check_passed": true,
-      "tool_exit_code": 0,
+      "expected_passed": true,
+      "expected_violation": null,
+      "exit_code": 0,
       "tool_passed": true,
-      "stdout": "{\n  \"check\": \"tokens\",\n  \"css_files\": [\n    \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\change.after.css\"\n  ],\n  \"drift_count\": 0,\n  \"drift_items\": [],\n  \"passed\": true,\n  \"token_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\design-tokens.json\"\n}",
+      "stdout": "{\n  \"caps\": {\n    \"max_agents\": 8,\n    \"max_parallel\": 3\n  },\n  \"passed\": true,\n  \"required_roles\": [\n    \"a11y_auditor\",\n    \"change_verifier\"\n  ],\n  \"roles\": [\n    \"conductor\",\n    \"planner\",\n    \"a11y_auditor\",\n    \"change_verifier\",\n    \"critic\",\n    \"acceptance_gate\"\n  ],\n  \"summary\": {\n    \"parallel_count\": 2,\n    \"role_aliases\": [\n      {\n        \"requested\": \"code_reviewer\",\n        \"used\": \"critic\"\n      },\n      {\n        \"requested\": \"dep_mapper\",\n        \"used\": \"dependency_mapper\"\n      }\n    ],\n    \"role_count\": 6,\n    \"violation_count\": 0,\n    \"warning_count\": 0\n  },\n  \"task_type\": \"frontend\",\n  \"violations\": [],\n  \"warnings\": []\n}",
       "stderr": ""
     },
     {
-      "name": "tokens_drift",
+      "name": "code_required_roles_enforced",
       "passed": true,
-      "expected_check_passed": false,
-      "tool_exit_code": 1,
+      "expected_passed": true,
+      "expected_violation": null,
+      "exit_code": 0,
+      "tool_passed": true,
+      "stdout": "{\n  \"caps\": {\n    \"max_agents\": 8,\n    \"max_parallel\": 3\n  },\n  \"passed\": true,\n  \"required_roles\": [\n    \"critic\",\n    \"dependency_mapper\"\n  ],\n  \"roles\": [\n    \"conductor\",\n    \"planner\",\n    \"critic\",\n    \"dependency_mapper\",\n    \"acceptance_gate\"\n  ],\n  \"summary\": {\n    \"parallel_count\": 2,\n    \"role_aliases\": [\n      {\n        \"requested\": \"code_reviewer\",\n        \"used\": \"critic\"\n      },\n      {\n        \"requested\": \"dep_mapper\",\n        \"used\": \"dependency_mapper\"\n      }\n    ],\n    \"role_count\": 5,\n    \"violation_count\": 0,\n    \"warning_count\": 0\n  },\n  \"task_type\": \"code\",\n  \"violations\": [],\n  \"warnings\": []\n}",
+      "stderr": ""
+    },
+    {
+      "name": "unjustified_optional_role_fails",
+      "passed": true,
+      "expected_passed": false,
+      "expected_violation": "unjustified_role",
+      "exit_code": 1,
       "tool_passed": false,
-      "stdout": "{\n  \"check\": \"tokens\",\n  \"css_files\": [\n    \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\change.drift.css\"\n  ],\n  \"drift_count\": 1,\n  \"drift_items\": [\n    {\n      \"line\": 1,\n      \"property\": \"background\",\n      \"selectors\": [\n        \".btn\"\n      ],\n      \"source_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\change.drift.css\",\n      \"value\": \"#0057ff\"\n    }\n  ],\n  \"passed\": false,\n  \"token_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpehdlhta_\\\\design-tokens.json\"\n}",
+      "stdout": "{\n  \"caps\": {\n    \"max_agents\": 8,\n    \"max_parallel\": 3\n  },\n  \"passed\": false,\n  \"required_roles\": [\n    \"a11y_auditor\",\n    \"change_verifier\"\n  ],\n  \"roles\": [\n    \"conductor\",\n    \"planner\",\n    \"a11y_auditor\",\n    \"change_verifier\",\n    \"ux_critic\",\n    \"critic\",\n    \"acceptance_gate\"\n  ],\n  \"summary\": {\n    \"parallel_count\": 0,\n    \"role_aliases\": [\n      {\n        \"requested\": \"code_reviewer\",\n        \"used\": \"critic\"\n      },\n      {\n        \"requested\": \"dep_mapper\",\n        \"used\": \"dependency_mapper\"\n      }\n    ],\n    \"role_count\": 7,\n    \"violation_count\": 1,\n    \"warning_count\": 0\n  },\n  \"task_type\": \"frontend\",\n  \"violations\": [\n    {\n      \"message\": \"optional/specialized role lacks justification: ux_critic\",\n      \"role\": \"ux_critic\",\n      \"type\": \"unjustified_role\"\n    }\n  ],\n  \"warnings\": []\n}",
       "stderr": ""
     }
   ]
 }
+STDERR:
+
 EXIT_CODE: 0
 
-COMMAND: uv run python maw-tools\selftest_all.py
+COMMAND: uv run python maw-tools/selftest_all.py
+STDOUT:
 {
   "passed": true,
-  "checks": 11,
-  "ok": 11,
+  "checks": 15,
+  "ok": 15,
   "results": [
     {
       "name": "core_checks",
@@ -178,7 +152,14 @@ COMMAND: uv run python maw-tools\selftest_all.py
       "name": "web_checks",
       "passed": true,
       "exit_code": 0,
-      "stdout": "{\n  \"passed\": true,\n  \"assertions\": 17,\n  \"ok\": 17,\n  \"results\": [\n    {\n      \"name\": \"contrast_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"background\\\": \\\"#ffffff\\\",\\n  \\\"check\\\": \\\"contrast\\\",\\n  \\\"foreground\\\": \\\"#111827\\\",\\n  \\\"large\\\": false,\\n  \\\"passed\\\": true,\\n  \\\"ratio\\\": 17.739717,\\n  \\\"threshold\\\": 4.5\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"contrast_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"background\\\": \\\"#ffffff\\\",\\n  \\\"check\\\": \\\"contrast\\\",\\n  \\\"foreground\\\": \\\"#9aa0a6\\\",\\n  \\\"large\\\": false,\\n  \\\"passed\\\": false,\\n  \\\"ratio\\\": 2.640526,\\n  \\\"threshold\\\": 4.5\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"a11y_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"a11y\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\good\\\\\\\\index.html\\\",\\n  \\\"passed\\\": true,\\n  \\\"violation_count\\\": 0,\\n  \\\"violations\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"a11y_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"a11y\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\bad\\\\\\\\index.html\\\",\\n  \\\"passed\\\": false,\\n  \\\"violation_count\\\": 6,\\n  \\\"violations\\\": [\\n    {\\n      \\\"message\\\": \\\"html element is missing lang\\\",\\n      \\\"type\\\": \\\"missing_html_lang\\\"\\n    },\\n    {\\n      \\\"message\\\": \\\"document is missing title\\\",\\n      \\\"type\\\": \\\"missing_title\\\"\\n    },\\n    {\\n      \\\"message\\\": \\\"document is missing viewport meta\\\",\\n      \\\"type\\\": \\\"missing_viewport\\\"\\n    },\\n    {\\n      \\\"line\\\": 11,\\n      \\\"message\\\": \\\"img missing alt\\\",\\n      \\\"type\\\": \\\"img_missing_alt\\\"\\n    },\\n    {\\n      \\\"line\\\": 12,\\n      \\\"message\\\": \\\"input missing accessible label\\\",\\n      \\\"tag\\\": \\\"input\\\",\\n      \\\"type\\\": \\\"control_missing_label\\\"\\n    },\\n    {\\n      \\\"line\\\": 9,\\n      \\\"message\\\": \\\"heading jumps from h1 to h3\\\",\\n      \\\"type\\\": \\\"skipped_heading_level\\\"\\n    }\\n  ]\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"budget_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"asset_count\\\": 2,\\n  \\\"check\\\": \\\"budget\\\",\\n  \\\"element_count\\\": 17,\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\good\\\\\\\\index.html\\\",\\n  \\\"files\\\": [\\n    {\\n      \\\"bytes\\\": 579,\\n      \\\"path\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\good\\\\\\\\index.html\\\"\\n    },\\n    {\\n      \\\"bytes\\\": 47,\\n      \\\"path\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\good\\\\\\\\style.css\\\"\\n    },\\n    {\\n      \\\"bytes\\\": 15,\\n      \\\"path\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\good\\\\\\\\hero.txt\\\"\\n    }\\n  ],\\n  \\\"limits\\\": {\\n    \\\"max_assets\\\": 5,\\n    \\\"max_bytes\\\": 4096,\\n    \\\"max_elements\\\": 50\\n  },\\n  \\\"passed\\\": true,\\n  \\\"total_bytes\\\": 641,\\n  \\\"violations\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"budget_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"asset_count\\\": 0,\\n  \\\"check\\\": \\\"budget\\\",\\n  \\\"element_count\\\": 14,\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\bad\\\\\\\\index.html\\\",\\n  \\\"files\\\": [\\n    {\\n      \\\"bytes\\\": 2434,\\n      \\\"path\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\bad\\\\\\\\index.html\\\"\\n    }\\n  ],\\n  \\\"limits\\\": {\\n    \\\"max_assets\\\": 5,\\n    \\\"max_bytes\\\": 512,\\n    \\\"max_elements\\\": 50\\n  },\\n  \\\"passed\\\": false,\\n  \\\"total_bytes\\\": 2434,\\n  \\\"violations\\\": [\\n    {\\n      \\\"actual\\\": 2434,\\n      \\\"limit\\\": 512,\\n      \\\"type\\\": \\\"byte_budget_exceeded\\\"\\n    }\\n  ]\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"links_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"links\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\good\\\\\\\\index.html\\\",\\n  \\\"passed\\\": true,\\n  \\\"reference_count\\\": 3,\\n  \\\"violations\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"links_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"links\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\bad\\\\\\\\index.html\\\",\\n  \\\"passed\\\": false,\\n  \\\"reference_count\\\": 3,\\n  \\\"violations\\\": [\\n    {\\n      \\\"line\\\": 5,\\n      \\\"target\\\": \\\"missing.css\\\",\\n      \\\"type\\\": \\\"missing_internal_link\\\"\\n    },\\n    {\\n      \\\"line\\\": 10,\\n      \\\"target\\\": \\\"#missing\\\",\\n      \\\"type\\\": \\\"missing_anchor\\\"\\n    },\\n    {\\n      \\\"target\\\": \\\"missing.css\\\",\\n      \\\"type\\\": \\\"missing_asset\\\"\\n    },\\n    {\\n      \\\"target\\\": \\\"missing-image.txt\\\",\\n      \\\"type\\\": \\\"missing_asset\\\"\\n    }\\n  ]\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"markup_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"markup\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\good\\\\\\\\index.html\\\",\\n  \\\"passed\\\": true,\\n  \\\"violation_count\\\": 0,\\n  \\\"violations\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"markup_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"markup\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\bad\\\\\\\\index.html\\\",\\n  \\\"passed\\\": false,\\n  \\\"violation_count\\\": 3,\\n  \\\"violations\\\": [\\n    {\\n      \\\"line\\\": 15,\\n      \\\"tag\\\": \\\"section\\\",\\n      \\\"type\\\": \\\"unclosed_tag\\\"\\n    },\\n    {\\n      \\\"line\\\": 15,\\n      \\\"tag\\\": \\\"p\\\",\\n      \\\"type\\\": \\\"unclosed_tag\\\"\\n    },\\n    {\\n      \\\"first_line\\\": 13,\\n      \\\"id\\\": \\\"dup\\\",\\n      \\\"line\\\": 14,\\n      \\\"type\\\": \\\"duplicate_id\\\"\\n    }\\n  ]\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"style_before\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"style\\\",\\n  \\\"passed\\\": true,\\n  \\\"property\\\": \\\"background\\\",\\n  \\\"reason\\\": \\\"value found\\\",\\n  \\\"selector\\\": \\\".btn\\\",\\n  \\\"source_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\change.before.css\\\",\\n  \\\"value\\\": \\\"#e0e0e0\\\"\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"style_after\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"style\\\",\\n  \\\"passed\\\": true,\\n  \\\"property\\\": \\\"background\\\",\\n  \\\"reason\\\": \\\"value found\\\",\\n  \\\"selector\\\": \\\".btn\\\",\\n  \\\"source_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\change.after.css\\\",\\n  \\\"value\\\": \\\"#1a73e8\\\"\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"changed_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"after\\\": \\\"#1a73e8\\\",\\n  \\\"before\\\": \\\"#e0e0e0\\\",\\n  \\\"check\\\": \\\"changed\\\",\\n  \\\"expected\\\": \\\"#1a73e8\\\",\\n  \\\"passed\\\": true,\\n  \\\"reason\\\": \\\"target changed to expected value\\\",\\n  \\\"target\\\": {\\n    \\\"after_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\change.after.css\\\",\\n    \\\"before_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\change.before.css\\\",\\n    \\\"property\\\": \\\"background\\\",\\n    \\\"selector\\\": \\\".btn\\\"\\n  }\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"changed_noop\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"after\\\": \\\"#e0e0e0\\\",\\n  \\\"before\\\": \\\"#e0e0e0\\\",\\n  \\\"check\\\": \\\"changed\\\",\\n  \\\"expected\\\": \\\"#1a73e8\\\",\\n  \\\"passed\\\": false,\\n  \\\"reason\\\": \\\"target did not change\\\",\\n  \\\"target\\\": {\\n    \\\"after_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\change.noop.css\\\",\\n    \\\"before_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\change.before.css\\\",\\n    \\\"property\\\": \\\"background\\\",\\n    \\\"selector\\\": \\\".btn\\\"\\n  }\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"changed_wrong_target\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"after\\\": null,\\n  \\\"before\\\": null,\\n  \\\"check\\\": \\\"changed\\\",\\n  \\\"expected\\\": null,\\n  \\\"passed\\\": false,\\n  \\\"reason\\\": \\\"target not found in before snapshot\\\",\\n  \\\"target\\\": {\\n    \\\"after_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\change.after.css\\\",\\n    \\\"before_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\change.before.css\\\",\\n    \\\"property\\\": \\\"background\\\",\\n    \\\"selector\\\": \\\".missing\\\"\\n  }\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"tokens_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"tokens\\\",\\n  \\\"css_files\\\": [\\n    \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\change.after.css\\\"\\n  ],\\n  \\\"drift_count\\\": 0,\\n  \\\"drift_items\\\": [],\\n  \\\"passed\\\": true,\\n  \\\"token_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\design-tokens.json\\\"\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"tokens_drift\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"tokens\\\",\\n  \\\"css_files\\\": [\\n    \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\change.drift.css\\\"\\n  ],\\n  \\\"drift_count\\\": 1,\\n  \\\"drift_items\\\": [\\n    {\\n      \\\"line\\\": 1,\\n      \\\"property\\\": \\\"background\\\",\\n      \\\"selectors\\\": [\\n        \\\".btn\\\"\\n      ],\\n      \\\"source_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\change.drift.css\\\",\\n      \\\"value\\\": \\\"#0057ff\\\"\\n    }\\n  ],\\n  \\\"passed\\\": false,\\n  \\\"token_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmp9kikzoq5\\\\\\\\design-tokens.json\\\"\\n}\",\n      \"stderr\": \"\"\n    }\n  ]\n}",
+      "stdout": "{\n  \"passed\": true,\n  \"assertions\": 17,\n  \"ok\": 17,\n  \"results\": [\n    {\n      \"name\": \"contrast_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"background\\\": \\\"#ffffff\\\",\\n  \\\"check\\\": \\\"contrast\\\",\\n  \\\"foreground\\\": \\\"#111827\\\",\\n  \\\"large\\\": false,\\n  \\\"passed\\\": true,\\n  \\\"ratio\\\": 17.739717,\\n  \\\"threshold\\\": 4.5\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"contrast_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"background\\\": \\\"#ffffff\\\",\\n  \\\"check\\\": \\\"contrast\\\",\\n  \\\"foreground\\\": \\\"#9aa0a6\\\",\\n  \\\"large\\\": false,\\n  \\\"passed\\\": false,\\n  \\\"ratio\\\": 2.640526,\\n  \\\"threshold\\\": 4.5\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"a11y_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"a11y\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\good\\\\\\\\index.html\\\",\\n  \\\"passed\\\": true,\\n  \\\"violation_count\\\": 0,\\n  \\\"violations\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"a11y_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"a11y\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\bad\\\\\\\\index.html\\\",\\n  \\\"passed\\\": false,\\n  \\\"violation_count\\\": 6,\\n  \\\"violations\\\": [\\n    {\\n      \\\"message\\\": \\\"html element is missing lang\\\",\\n      \\\"type\\\": \\\"missing_html_lang\\\"\\n    },\\n    {\\n      \\\"message\\\": \\\"document is missing title\\\",\\n      \\\"type\\\": \\\"missing_title\\\"\\n    },\\n    {\\n      \\\"message\\\": \\\"document is missing viewport meta\\\",\\n      \\\"type\\\": \\\"missing_viewport\\\"\\n    },\\n    {\\n      \\\"line\\\": 11,\\n      \\\"message\\\": \\\"img missing alt\\\",\\n      \\\"type\\\": \\\"img_missing_alt\\\"\\n    },\\n    {\\n      \\\"line\\\": 12,\\n      \\\"message\\\": \\\"input missing accessible label\\\",\\n      \\\"tag\\\": \\\"input\\\",\\n      \\\"type\\\": \\\"control_missing_label\\\"\\n    },\\n    {\\n      \\\"line\\\": 9,\\n      \\\"message\\\": \\\"heading jumps from h1 to h3\\\",\\n      \\\"type\\\": \\\"skipped_heading_level\\\"\\n    }\\n  ]\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"budget_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"asset_count\\\": 2,\\n  \\\"check\\\": \\\"budget\\\",\\n  \\\"element_count\\\": 17,\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\good\\\\\\\\index.html\\\",\\n  \\\"files\\\": [\\n    {\\n      \\\"bytes\\\": 579,\\n      \\\"path\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\good\\\\\\\\index.html\\\"\\n    },\\n    {\\n      \\\"bytes\\\": 47,\\n      \\\"path\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\good\\\\\\\\style.css\\\"\\n    },\\n    {\\n      \\\"bytes\\\": 15,\\n      \\\"path\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\good\\\\\\\\hero.txt\\\"\\n    }\\n  ],\\n  \\\"limits\\\": {\\n    \\\"max_assets\\\": 5,\\n    \\\"max_bytes\\\": 4096,\\n    \\\"max_elements\\\": 50\\n  },\\n  \\\"passed\\\": true,\\n  \\\"total_bytes\\\": 641,\\n  \\\"violations\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"budget_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"asset_count\\\": 0,\\n  \\\"check\\\": \\\"budget\\\",\\n  \\\"element_count\\\": 14,\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\bad\\\\\\\\index.html\\\",\\n  \\\"files\\\": [\\n    {\\n      \\\"bytes\\\": 2434,\\n      \\\"path\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\bad\\\\\\\\index.html\\\"\\n    }\\n  ],\\n  \\\"limits\\\": {\\n    \\\"max_assets\\\": 5,\\n    \\\"max_bytes\\\": 512,\\n    \\\"max_elements\\\": 50\\n  },\\n  \\\"passed\\\": false,\\n  \\\"total_bytes\\\": 2434,\\n  \\\"violations\\\": [\\n    {\\n      \\\"actual\\\": 2434,\\n      \\\"limit\\\": 512,\\n      \\\"type\\\": \\\"byte_budget_exceeded\\\"\\n    }\\n  ]\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"links_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"links\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\good\\\\\\\\index.html\\\",\\n  \\\"passed\\\": true,\\n  \\\"reference_count\\\": 3,\\n  \\\"violations\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"links_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"links\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\bad\\\\\\\\index.html\\\",\\n  \\\"passed\\\": false,\\n  \\\"reference_count\\\": 3,\\n  \\\"violations\\\": [\\n    {\\n      \\\"line\\\": 5,\\n      \\\"target\\\": \\\"missing.css\\\",\\n      \\\"type\\\": \\\"missing_internal_link\\\"\\n    },\\n    {\\n      \\\"line\\\": 10,\\n      \\\"target\\\": \\\"#missing\\\",\\n      \\\"type\\\": \\\"missing_anchor\\\"\\n    },\\n    {\\n      \\\"target\\\": \\\"missing.css\\\",\\n      \\\"type\\\": \\\"missing_asset\\\"\\n    },\\n    {\\n      \\\"target\\\": \\\"missing-image.txt\\\",\\n      \\\"type\\\": \\\"missing_asset\\\"\\n    }\\n  ]\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"markup_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"markup\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\good\\\\\\\\index.html\\\",\\n  \\\"passed\\\": true,\\n  \\\"violation_count\\\": 0,\\n  \\\"violations\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"markup_bad\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"markup\\\",\\n  \\\"file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\bad\\\\\\\\index.html\\\",\\n  \\\"passed\\\": false,\\n  \\\"violation_count\\\": 3,\\n  \\\"violations\\\": [\\n    {\\n      \\\"line\\\": 15,\\n      \\\"tag\\\": \\\"section\\\",\\n      \\\"type\\\": \\\"unclosed_tag\\\"\\n    },\\n    {\\n      \\\"line\\\": 15,\\n      \\\"tag\\\": \\\"p\\\",\\n      \\\"type\\\": \\\"unclosed_tag\\\"\\n    },\\n    {\\n      \\\"first_line\\\": 13,\\n      \\\"id\\\": \\\"dup\\\",\\n      \\\"line\\\": 14,\\n      \\\"type\\\": \\\"duplicate_id\\\"\\n    }\\n  ]\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"style_before\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"style\\\",\\n  \\\"passed\\\": true,\\n  \\\"property\\\": \\\"background\\\",\\n  \\\"reason\\\": \\\"value found\\\",\\n  \\\"selector\\\": \\\".btn\\\",\\n  \\\"source_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\change.before.css\\\",\\n  \\\"value\\\": \\\"#e0e0e0\\\"\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"style_after\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"style\\\",\\n  \\\"passed\\\": true,\\n  \\\"property\\\": \\\"background\\\",\\n  \\\"reason\\\": \\\"value found\\\",\\n  \\\"selector\\\": \\\".btn\\\",\\n  \\\"source_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\change.after.css\\\",\\n  \\\"value\\\": \\\"#1a73e8\\\"\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"changed_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"after\\\": \\\"#1a73e8\\\",\\n  \\\"before\\\": \\\"#e0e0e0\\\",\\n  \\\"check\\\": \\\"changed\\\",\\n  \\\"expected\\\": \\\"#1a73e8\\\",\\n  \\\"passed\\\": true,\\n  \\\"reason\\\": \\\"target changed to expected value\\\",\\n  \\\"target\\\": {\\n    \\\"after_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\change.after.css\\\",\\n    \\\"before_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\change.before.css\\\",\\n    \\\"property\\\": \\\"background\\\",\\n    \\\"selector\\\": \\\".btn\\\"\\n  }\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"changed_noop\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"after\\\": \\\"#e0e0e0\\\",\\n  \\\"before\\\": \\\"#e0e0e0\\\",\\n  \\\"check\\\": \\\"changed\\\",\\n  \\\"expected\\\": \\\"#1a73e8\\\",\\n  \\\"passed\\\": false,\\n  \\\"reason\\\": \\\"target did not change\\\",\\n  \\\"target\\\": {\\n    \\\"after_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\change.noop.css\\\",\\n    \\\"before_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\change.before.css\\\",\\n    \\\"property\\\": \\\"background\\\",\\n    \\\"selector\\\": \\\".btn\\\"\\n  }\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"changed_wrong_target\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"after\\\": null,\\n  \\\"before\\\": null,\\n  \\\"check\\\": \\\"changed\\\",\\n  \\\"expected\\\": null,\\n  \\\"passed\\\": false,\\n  \\\"reason\\\": \\\"target not found in before snapshot\\\",\\n  \\\"target\\\": {\\n    \\\"after_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\change.after.css\\\",\\n    \\\"before_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\change.before.css\\\",\\n    \\\"property\\\": \\\"background\\\",\\n    \\\"selector\\\": \\\".missing\\\"\\n  }\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"tokens_good\",\n      \"passed\": true,\n      \"expected_check_passed\": true,\n      \"tool_exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"tokens\\\",\\n  \\\"css_files\\\": [\\n    \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\change.after.css\\\"\\n  ],\\n  \\\"drift_count\\\": 0,\\n  \\\"drift_items\\\": [],\\n  \\\"passed\\\": true,\\n  \\\"token_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\design-tokens.json\\\"\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"tokens_drift\",\n      \"passed\": true,\n      \"expected_check_passed\": false,\n      \"tool_exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"check\\\": \\\"tokens\\\",\\n  \\\"css_files\\\": [\\n    \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\change.drift.css\\\"\\n  ],\\n  \\\"drift_count\\\": 1,\\n  \\\"drift_items\\\": [\\n    {\\n      \\\"line\\\": 1,\\n      \\\"property\\\": \\\"background\\\",\\n      \\\"selectors\\\": [\\n        \\\".btn\\\"\\n      ],\\n      \\\"source_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\change.drift.css\\\",\\n      \\\"value\\\": \\\"#0057ff\\\"\\n    }\\n  ],\\n  \\\"passed\\\": false,\\n  \\\"token_file\\\": \\\"C:\\\\\\\\Users\\\\\\\\Biztech\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\tmpnsaqvipa\\\\\\\\design-tokens.json\\\"\\n}\",\n      \"stderr\": \"\"\n    }\n  ]\n}",
+      "stderr": ""
+    },
+    {
+      "name": "plan_check",
+      "passed": true,
+      "exit_code": 0,
+      "stdout": "{\n  \"passed\": true,\n  \"assertions\": 11,\n  \"ok\": 11,\n  \"results\": [\n    {\n      \"name\": \"missing_ml_validator_red\",\n      \"passed\": true,\n      \"expected_passed\": false,\n      \"expected_violation\": \"missing_required_role\",\n      \"exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"caps\\\": {\\n    \\\"max_agents\\\": 8,\\n    \\\"max_parallel\\\": 3\\n  },\\n  \\\"passed\\\": false,\\n  \\\"required_roles\\\": [\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\"\\n  ],\\n  \\\"roles\\\": [\\n    \\\"conductor\\\",\\n    \\\"planner\\\",\\n    \\\"baseline_enforcer\\\",\\n    \\\"critic\\\",\\n    \\\"acceptance_gate\\\"\\n  ],\\n  \\\"summary\\\": {\\n    \\\"parallel_count\\\": 2,\\n    \\\"role_aliases\\\": [\\n      {\\n        \\\"requested\\\": \\\"code_reviewer\\\",\\n        \\\"used\\\": \\\"critic\\\"\\n      },\\n      {\\n        \\\"requested\\\": \\\"dep_mapper\\\",\\n        \\\"used\\\": \\\"dependency_mapper\\\"\\n      }\\n    ],\\n    \\\"role_count\\\": 5,\\n    \\\"violation_count\\\": 1,\\n    \\\"warning_count\\\": 0\\n  },\\n  \\\"task_type\\\": \\\"ml\\\",\\n  \\\"violations\\\": [\\n    {\\n      \\\"message\\\": \\\"ml requires leakage_auditor\\\",\\n      \\\"role\\\": \\\"leakage_auditor\\\",\\n      \\\"task_type\\\": \\\"ml\\\",\\n      \\\"type\\\": \\\"missing_required_role\\\"\\n    }\\n  ],\\n  \\\"warnings\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"corrected_ml_green\",\n      \"passed\": true,\n      \"expected_passed\": true,\n      \"expected_violation\": null,\n      \"exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"caps\\\": {\\n    \\\"max_agents\\\": 8,\\n    \\\"max_parallel\\\": 3\\n  },\\n  \\\"passed\\\": true,\\n  \\\"required_roles\\\": [\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\"\\n  ],\\n  \\\"roles\\\": [\\n    \\\"conductor\\\",\\n    \\\"planner\\\",\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\",\\n    \\\"critic\\\",\\n    \\\"acceptance_gate\\\"\\n  ],\\n  \\\"summary\\\": {\\n    \\\"parallel_count\\\": 2,\\n    \\\"role_aliases\\\": [\\n      {\\n        \\\"requested\\\": \\\"code_reviewer\\\",\\n        \\\"used\\\": \\\"critic\\\"\\n      },\\n      {\\n        \\\"requested\\\": \\\"dep_mapper\\\",\\n        \\\"used\\\": \\\"dependency_mapper\\\"\\n      }\\n    ],\\n    \\\"role_count\\\": 6,\\n    \\\"violation_count\\\": 0,\\n    \\\"warning_count\\\": 0\\n  },\\n  \\\"task_type\\\": \\\"ml\\\",\\n  \\\"violations\\\": [],\\n  \\\"warnings\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"required_role_rules_fire\",\n      \"passed\": true,\n      \"expected_passed\": false,\n      \"expected_violation\": \"missing_required_role\",\n      \"exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"caps\\\": {\\n    \\\"max_agents\\\": 8,\\n    \\\"max_parallel\\\": 3\\n  },\\n  \\\"passed\\\": false,\\n  \\\"required_roles\\\": [\\n    \\\"a11y_auditor\\\",\\n    \\\"change_verifier\\\"\\n  ],\\n  \\\"roles\\\": [\\n    \\\"conductor\\\",\\n    \\\"planner\\\",\\n    \\\"a11y_auditor\\\",\\n    \\\"critic\\\",\\n    \\\"acceptance_gate\\\"\\n  ],\\n  \\\"summary\\\": {\\n    \\\"parallel_count\\\": 2,\\n    \\\"role_aliases\\\": [\\n      {\\n        \\\"requested\\\": \\\"code_reviewer\\\",\\n        \\\"used\\\": \\\"critic\\\"\\n      },\\n      {\\n        \\\"requested\\\": \\\"dep_mapper\\\",\\n        \\\"used\\\": \\\"dependency_mapper\\\"\\n      }\\n    ],\\n    \\\"role_count\\\": 5,\\n    \\\"violation_count\\\": 1,\\n    \\\"warning_count\\\": 0\\n  },\\n  \\\"task_type\\\": \\\"frontend\\\",\\n  \\\"violations\\\": [\\n    {\\n      \\\"message\\\": \\\"frontend requires change_verifier\\\",\\n      \\\"role\\\": \\\"change_verifier\\\",\\n      \\\"task_type\\\": \\\"frontend\\\",\\n      \\\"type\\\": \\\"missing_required_role\\\"\\n    }\\n  ],\\n  \\\"warnings\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"duplicate_roles_fail\",\n      \"passed\": true,\n      \"expected_passed\": false,\n      \"expected_violation\": \"duplicate_role\",\n      \"exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"caps\\\": {\\n    \\\"max_agents\\\": 8,\\n    \\\"max_parallel\\\": 3\\n  },\\n  \\\"passed\\\": false,\\n  \\\"required_roles\\\": [\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\"\\n  ],\\n  \\\"roles\\\": [\\n    \\\"conductor\\\",\\n    \\\"planner\\\",\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\",\\n    \\\"critic\\\",\\n    \\\"critic\\\",\\n    \\\"acceptance_gate\\\"\\n  ],\\n  \\\"summary\\\": {\\n    \\\"parallel_count\\\": 2,\\n    \\\"role_aliases\\\": [\\n      {\\n        \\\"requested\\\": \\\"code_reviewer\\\",\\n        \\\"used\\\": \\\"critic\\\"\\n      },\\n      {\\n        \\\"requested\\\": \\\"dep_mapper\\\",\\n        \\\"used\\\": \\\"dependency_mapper\\\"\\n      }\\n    ],\\n    \\\"role_count\\\": 7,\\n    \\\"violation_count\\\": 1,\\n    \\\"warning_count\\\": 0\\n  },\\n  \\\"task_type\\\": \\\"ml\\\",\\n  \\\"violations\\\": [\\n    {\\n      \\\"message\\\": \\\"duplicate role: critic\\\",\\n      \\\"role\\\": \\\"critic\\\",\\n      \\\"type\\\": \\\"duplicate_role\\\"\\n    }\\n  ],\\n  \\\"warnings\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"unknown_roles_fail\",\n      \"passed\": true,\n      \"expected_passed\": false,\n      \"expected_violation\": \"unknown_role\",\n      \"exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"caps\\\": {\\n    \\\"max_agents\\\": 8,\\n    \\\"max_parallel\\\": 3\\n  },\\n  \\\"passed\\\": false,\\n  \\\"required_roles\\\": [\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\"\\n  ],\\n  \\\"roles\\\": [\\n    \\\"conductor\\\",\\n    \\\"planner\\\",\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\",\\n    \\\"mystery_agent\\\",\\n    \\\"acceptance_gate\\\"\\n  ],\\n  \\\"summary\\\": {\\n    \\\"parallel_count\\\": 2,\\n    \\\"role_aliases\\\": [\\n      {\\n        \\\"requested\\\": \\\"code_reviewer\\\",\\n        \\\"used\\\": \\\"critic\\\"\\n      },\\n      {\\n        \\\"requested\\\": \\\"dep_mapper\\\",\\n        \\\"used\\\": \\\"dependency_mapper\\\"\\n      }\\n    ],\\n    \\\"role_count\\\": 6,\\n    \\\"violation_count\\\": 1,\\n    \\\"warning_count\\\": 0\\n  },\\n  \\\"task_type\\\": \\\"ml\\\",\\n  \\\"violations\\\": [\\n    {\\n      \\\"message\\\": \\\"unknown role: mystery_agent\\\",\\n      \\\"role\\\": \\\"mystery_agent\\\",\\n      \\\"type\\\": \\\"unknown_role\\\"\\n    }\\n  ],\\n  \\\"warnings\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"missing_acceptance_gate_fails\",\n      \"passed\": true,\n      \"expected_passed\": false,\n      \"expected_violation\": \"missing_acceptance_gate\",\n      \"exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"caps\\\": {\\n    \\\"max_agents\\\": 8,\\n    \\\"max_parallel\\\": 3\\n  },\\n  \\\"passed\\\": false,\\n  \\\"required_roles\\\": [\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\"\\n  ],\\n  \\\"roles\\\": [\\n    \\\"conductor\\\",\\n    \\\"planner\\\",\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\",\\n    \\\"critic\\\"\\n  ],\\n  \\\"summary\\\": {\\n    \\\"parallel_count\\\": 2,\\n    \\\"role_aliases\\\": [\\n      {\\n        \\\"requested\\\": \\\"code_reviewer\\\",\\n        \\\"used\\\": \\\"critic\\\"\\n      },\\n      {\\n        \\\"requested\\\": \\\"dep_mapper\\\",\\n        \\\"used\\\": \\\"dependency_mapper\\\"\\n      }\\n    ],\\n    \\\"role_count\\\": 5,\\n    \\\"violation_count\\\": 1,\\n    \\\"warning_count\\\": 0\\n  },\\n  \\\"task_type\\\": \\\"ml\\\",\\n  \\\"violations\\\": [\\n    {\\n      \\\"message\\\": \\\"acceptance_gate is required\\\",\\n      \\\"role\\\": \\\"acceptance_gate\\\",\\n      \\\"type\\\": \\\"missing_acceptance_gate\\\"\\n    }\\n  ],\\n  \\\"warnings\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"role_caps_enforced\",\n      \"passed\": true,\n      \"expected_passed\": false,\n      \"expected_violation\": \"role_cap_exceeded\",\n      \"exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"caps\\\": {\\n    \\\"max_agents\\\": 3,\\n    \\\"max_parallel\\\": 3\\n  },\\n  \\\"passed\\\": false,\\n  \\\"required_roles\\\": [\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\"\\n  ],\\n  \\\"roles\\\": [\\n    \\\"conductor\\\",\\n    \\\"planner\\\",\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\",\\n    \\\"critic\\\",\\n    \\\"acceptance_gate\\\"\\n  ],\\n  \\\"summary\\\": {\\n    \\\"parallel_count\\\": 2,\\n    \\\"role_aliases\\\": [\\n      {\\n        \\\"requested\\\": \\\"code_reviewer\\\",\\n        \\\"used\\\": \\\"critic\\\"\\n      },\\n      {\\n        \\\"requested\\\": \\\"dep_mapper\\\",\\n        \\\"used\\\": \\\"dependency_mapper\\\"\\n      }\\n    ],\\n    \\\"role_count\\\": 6,\\n    \\\"violation_count\\\": 1,\\n    \\\"warning_count\\\": 0\\n  },\\n  \\\"task_type\\\": \\\"ml\\\",\\n  \\\"violations\\\": [\\n    {\\n      \\\"actual\\\": 6,\\n      \\\"limit\\\": 3,\\n      \\\"message\\\": \\\"role count 6 exceeds max_agents 3\\\",\\n      \\\"type\\\": \\\"role_cap_exceeded\\\"\\n    }\\n  ],\\n  \\\"warnings\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"parallel_caps_enforced\",\n      \"passed\": true,\n      \"expected_passed\": false,\n      \"expected_violation\": \"parallel_cap_exceeded\",\n      \"exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"caps\\\": {\\n    \\\"max_agents\\\": 8,\\n    \\\"max_parallel\\\": 1\\n  },\\n  \\\"passed\\\": false,\\n  \\\"required_roles\\\": [\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\"\\n  ],\\n  \\\"roles\\\": [\\n    \\\"conductor\\\",\\n    \\\"planner\\\",\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\",\\n    \\\"critic\\\",\\n    \\\"acceptance_gate\\\"\\n  ],\\n  \\\"summary\\\": {\\n    \\\"parallel_count\\\": 2,\\n    \\\"role_aliases\\\": [\\n      {\\n        \\\"requested\\\": \\\"code_reviewer\\\",\\n        \\\"used\\\": \\\"critic\\\"\\n      },\\n      {\\n        \\\"requested\\\": \\\"dep_mapper\\\",\\n        \\\"used\\\": \\\"dependency_mapper\\\"\\n      }\\n    ],\\n    \\\"role_count\\\": 6,\\n    \\\"violation_count\\\": 1,\\n    \\\"warning_count\\\": 0\\n  },\\n  \\\"task_type\\\": \\\"ml\\\",\\n  \\\"violations\\\": [\\n    {\\n      \\\"actual\\\": 2,\\n      \\\"limit\\\": 1,\\n      \\\"message\\\": \\\"parallel role count 2 exceeds max_parallel 1\\\",\\n      \\\"type\\\": \\\"parallel_cap_exceeded\\\"\\n    }\\n  ],\\n  \\\"warnings\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"frontend_required_roles_enforced\",\n      \"passed\": true,\n      \"expected_passed\": true,\n      \"expected_violation\": null,\n      \"exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"caps\\\": {\\n    \\\"max_agents\\\": 8,\\n    \\\"max_parallel\\\": 3\\n  },\\n  \\\"passed\\\": true,\\n  \\\"required_roles\\\": [\\n    \\\"a11y_auditor\\\",\\n    \\\"change_verifier\\\"\\n  ],\\n  \\\"roles\\\": [\\n    \\\"conductor\\\",\\n    \\\"planner\\\",\\n    \\\"a11y_auditor\\\",\\n    \\\"change_verifier\\\",\\n    \\\"critic\\\",\\n    \\\"acceptance_gate\\\"\\n  ],\\n  \\\"summary\\\": {\\n    \\\"parallel_count\\\": 2,\\n    \\\"role_aliases\\\": [\\n      {\\n        \\\"requested\\\": \\\"code_reviewer\\\",\\n        \\\"used\\\": \\\"critic\\\"\\n      },\\n      {\\n        \\\"requested\\\": \\\"dep_mapper\\\",\\n        \\\"used\\\": \\\"dependency_mapper\\\"\\n      }\\n    ],\\n    \\\"role_count\\\": 6,\\n    \\\"violation_count\\\": 0,\\n    \\\"warning_count\\\": 0\\n  },\\n  \\\"task_type\\\": \\\"frontend\\\",\\n  \\\"violations\\\": [],\\n  \\\"warnings\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"code_required_roles_enforced\",\n      \"passed\": true,\n      \"expected_passed\": true,\n      \"expected_violation\": null,\n      \"exit_code\": 0,\n      \"tool_passed\": true,\n      \"stdout\": \"{\\n  \\\"caps\\\": {\\n    \\\"max_agents\\\": 8,\\n    \\\"max_parallel\\\": 3\\n  },\\n  \\\"passed\\\": true,\\n  \\\"required_roles\\\": [\\n    \\\"critic\\\",\\n    \\\"dependency_mapper\\\"\\n  ],\\n  \\\"roles\\\": [\\n    \\\"conductor\\\",\\n    \\\"planner\\\",\\n    \\\"critic\\\",\\n    \\\"dependency_mapper\\\",\\n    \\\"acceptance_gate\\\"\\n  ],\\n  \\\"summary\\\": {\\n    \\\"parallel_count\\\": 2,\\n    \\\"role_aliases\\\": [\\n      {\\n        \\\"requested\\\": \\\"code_reviewer\\\",\\n        \\\"used\\\": \\\"critic\\\"\\n      },\\n      {\\n        \\\"requested\\\": \\\"dep_mapper\\\",\\n        \\\"used\\\": \\\"dependency_mapper\\\"\\n      }\\n    ],\\n    \\\"role_count\\\": 5,\\n    \\\"violation_count\\\": 0,\\n    \\\"warning_count\\\": 0\\n  },\\n  \\\"task_type\\\": \\\"code\\\",\\n  \\\"violations\\\": [],\\n  \\\"warnings\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"unjustified_optional_role_fails\",\n      \"passed\": true,\n      \"expected_passed\": false,\n      \"expected_violation\": \"unjustified_role\",\n      \"exit_code\": 1,\n      \"tool_passed\": false,\n      \"stdout\": \"{\\n  \\\"caps\\\": {\\n    \\\"max_agents\\\": 8,\\n    \\\"max_parallel\\\": 3\\n  },\\n  \\\"passed\\\": false,\\n  \\\"required_roles\\\": [\\n    \\\"a11y_auditor\\\",\\n    \\\"change_verifier\\\"\\n  ],\\n  \\\"roles\\\": [\\n    \\\"conductor\\\",\\n    \\\"planner\\\",\\n    \\\"a11y_auditor\\\",\\n    \\\"change_verifier\\\",\\n    \\\"ux_critic\\\",\\n    \\\"critic\\\",\\n    \\\"acceptance_gate\\\"\\n  ],\\n  \\\"summary\\\": {\\n    \\\"parallel_count\\\": 0,\\n    \\\"role_aliases\\\": [\\n      {\\n        \\\"requested\\\": \\\"code_reviewer\\\",\\n        \\\"used\\\": \\\"critic\\\"\\n      },\\n      {\\n        \\\"requested\\\": \\\"dep_mapper\\\",\\n        \\\"used\\\": \\\"dependency_mapper\\\"\\n      }\\n    ],\\n    \\\"role_count\\\": 7,\\n    \\\"violation_count\\\": 1,\\n    \\\"warning_count\\\": 0\\n  },\\n  \\\"task_type\\\": \\\"frontend\\\",\\n  \\\"violations\\\": [\\n    {\\n      \\\"message\\\": \\\"optional/specialized role lacks justification: ux_critic\\\",\\n      \\\"role\\\": \\\"ux_critic\\\",\\n      \\\"type\\\": \\\"unjustified_role\\\"\\n    }\\n  ],\\n  \\\"warnings\\\": []\\n}\",\n      \"stderr\": \"\"\n    }\n  ]\n}",
       "stderr": ""
     },
     {
@@ -194,7 +175,7 @@ COMMAND: uv run python maw-tools\selftest_all.py
       "passed": true,
       "expected": 6,
       "actual": 6,
-      "stdout": "{\n  \"check\": \"a11y\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\bad.html\",\n  \"passed\": false,\n  \"violation_count\": 6,\n  \"violations\": [\n    {\n      \"message\": \"html element is missing lang\",\n      \"type\": \"missing_html_lang\"\n    },\n    {\n      \"message\": \"document is missing title\",\n      \"type\": \"missing_title\"\n    },\n    {\n      \"message\": \"document is missing viewport meta\",\n      \"type\": \"missing_viewport\"\n    },\n    {\n      \"line\": 9,\n      \"message\": \"img missing alt\",\n      \"type\": \"img_missing_alt\"\n    },\n    {\n      \"line\": 10,\n      \"message\": \"input missing accessible label\",\n      \"tag\": \"input\",\n      \"type\": \"control_missing_label\"\n    },\n    {\n      \"line\": 8,\n      \"message\": \"heading jumps from h1 to h3\",\n      \"type\": \"skipped_heading_level\"\n    }\n  ]\n}",
+      "stdout": "{\n  \"check\": \"a11y\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\bad.html\",\n  \"passed\": false,\n  \"violation_count\": 6,\n  \"violations\": [\n    {\n      \"message\": \"html element is missing lang\",\n      \"type\": \"missing_html_lang\"\n    },\n    {\n      \"message\": \"document is missing title\",\n      \"type\": \"missing_title\"\n    },\n    {\n      \"message\": \"document is missing viewport meta\",\n      \"type\": \"missing_viewport\"\n    },\n    {\n      \"line\": 9,\n      \"message\": \"img missing alt\",\n      \"type\": \"img_missing_alt\"\n    },\n    {\n      \"line\": 10,\n      \"message\": \"input missing accessible label\",\n      \"tag\": \"input\",\n      \"type\": \"control_missing_label\"\n    },\n    {\n      \"line\": 8,\n      \"message\": \"heading jumps from h1 to h3\",\n      \"type\": \"skipped_heading_level\"\n    }\n  ]\n}",
       "stderr": ""
     },
     {
@@ -202,7 +183,7 @@ COMMAND: uv run python maw-tools\selftest_all.py
       "passed": true,
       "expected": 0,
       "actual": 0,
-      "stdout": "{\n  \"check\": \"a11y\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\good.html\",\n  \"passed\": true,\n  \"violation_count\": 0,\n  \"violations\": []\n}",
+      "stdout": "{\n  \"check\": \"a11y\",\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\good.html\",\n  \"passed\": true,\n  \"violation_count\": 0,\n  \"violations\": []\n}",
       "stderr": ""
     },
     {
@@ -210,7 +191,7 @@ COMMAND: uv run python maw-tools\selftest_all.py
       "passed": true,
       "expected": true,
       "actual": true,
-      "stdout": "{\n  \"asset_count\": 2,\n  \"check\": \"budget\",\n  \"element_count\": 14,\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\good.html\",\n  \"files\": [\n    {\n      \"bytes\": 494,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\good.html\"\n    },\n    {\n      \"bytes\": 47,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\style.css\"\n    },\n    {\n      \"bytes\": 15,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\hero.txt\"\n    }\n  ],\n  \"limits\": {\n    \"max_assets\": 5,\n    \"max_bytes\": 4096,\n    \"max_elements\": 50\n  },\n  \"passed\": true,\n  \"total_bytes\": 556,\n  \"violations\": []\n}",
+      "stdout": "{\n  \"asset_count\": 2,\n  \"check\": \"budget\",\n  \"element_count\": 14,\n  \"file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\good.html\",\n  \"files\": [\n    {\n      \"bytes\": 494,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\good.html\"\n    },\n    {\n      \"bytes\": 47,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\style.css\"\n    },\n    {\n      \"bytes\": 15,\n      \"path\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\hero.txt\"\n    }\n  ],\n  \"limits\": {\n    \"max_assets\": 5,\n    \"max_bytes\": 4096,\n    \"max_elements\": 50\n  },\n  \"passed\": true,\n  \"total_bytes\": 556,\n  \"violations\": []\n}",
       "stderr": ""
     },
     {
@@ -218,7 +199,7 @@ COMMAND: uv run python maw-tools\selftest_all.py
       "passed": true,
       "expected": "#e0e0e0",
       "actual": "#e0e0e0",
-      "stdout": "{\n  \"check\": \"style\",\n  \"passed\": true,\n  \"property\": \"background\",\n  \"reason\": \"value found\",\n  \"selector\": \".btn\",\n  \"source_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\change.before.css\",\n  \"value\": \"#e0e0e0\"\n}",
+      "stdout": "{\n  \"check\": \"style\",\n  \"passed\": true,\n  \"property\": \"background\",\n  \"reason\": \"value found\",\n  \"selector\": \".btn\",\n  \"source_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\change.before.css\",\n  \"value\": \"#e0e0e0\"\n}",
       "stderr": ""
     },
     {
@@ -226,7 +207,7 @@ COMMAND: uv run python maw-tools\selftest_all.py
       "passed": true,
       "expected": "#1a73e8",
       "actual": "#1a73e8",
-      "stdout": "{\n  \"check\": \"style\",\n  \"passed\": true,\n  \"property\": \"background\",\n  \"reason\": \"value found\",\n  \"selector\": \".btn\",\n  \"source_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\change.after.css\",\n  \"value\": \"#1a73e8\"\n}",
+      "stdout": "{\n  \"check\": \"style\",\n  \"passed\": true,\n  \"property\": \"background\",\n  \"reason\": \"value found\",\n  \"selector\": \".btn\",\n  \"source_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\change.after.css\",\n  \"value\": \"#1a73e8\"\n}",
       "stderr": ""
     },
     {
@@ -234,7 +215,7 @@ COMMAND: uv run python maw-tools\selftest_all.py
       "passed": true,
       "expected": false,
       "actual": false,
-      "stdout": "{\n  \"after\": \"#e0e0e0\",\n  \"before\": \"#e0e0e0\",\n  \"check\": \"changed\",\n  \"expected\": \"#1a73e8\",\n  \"passed\": false,\n  \"reason\": \"target did not change\",\n  \"target\": {\n    \"after_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\change.noop.css\",\n    \"before_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\change.before.css\",\n    \"property\": \"background\",\n    \"selector\": \".btn\"\n  }\n}",
+      "stdout": "{\n  \"after\": \"#e0e0e0\",\n  \"before\": \"#e0e0e0\",\n  \"check\": \"changed\",\n  \"expected\": \"#1a73e8\",\n  \"passed\": false,\n  \"reason\": \"target did not change\",\n  \"target\": {\n    \"after_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\change.noop.css\",\n    \"before_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\change.before.css\",\n    \"property\": \"background\",\n    \"selector\": \".btn\"\n  }\n}",
       "stderr": ""
     },
     {
@@ -242,7 +223,7 @@ COMMAND: uv run python maw-tools\selftest_all.py
       "passed": true,
       "expected": true,
       "actual": true,
-      "stdout": "{\n  \"after\": \"#1a73e8\",\n  \"before\": \"#e0e0e0\",\n  \"check\": \"changed\",\n  \"expected\": \"#1a73e8\",\n  \"passed\": true,\n  \"reason\": \"target changed to expected value\",\n  \"target\": {\n    \"after_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\change.after.css\",\n    \"before_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\change.before.css\",\n    \"property\": \"background\",\n    \"selector\": \".btn\"\n  }\n}",
+      "stdout": "{\n  \"after\": \"#1a73e8\",\n  \"before\": \"#e0e0e0\",\n  \"check\": \"changed\",\n  \"expected\": \"#1a73e8\",\n  \"passed\": true,\n  \"reason\": \"target changed to expected value\",\n  \"target\": {\n    \"after_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\change.after.css\",\n    \"before_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\change.before.css\",\n    \"property\": \"background\",\n    \"selector\": \".btn\"\n  }\n}",
       "stderr": ""
     },
     {
@@ -250,9 +231,110 @@ COMMAND: uv run python maw-tools\selftest_all.py
       "passed": true,
       "expected": false,
       "actual": false,
-      "stdout": "{\n  \"check\": \"tokens\",\n  \"css_files\": [\n    \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\change.drift.css\"\n  ],\n  \"drift_count\": 1,\n  \"drift_items\": [\n    {\n      \"line\": 1,\n      \"property\": \"background\",\n      \"selectors\": [\n        \".btn\"\n      ],\n      \"source_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\change.drift.css\",\n      \"value\": \"#0057ff\"\n    }\n  ],\n  \"passed\": false,\n  \"token_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmp0xl6duzs\\\\design-tokens.json\"\n}",
+      "stdout": "{\n  \"check\": \"tokens\",\n  \"css_files\": [\n    \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\change.drift.css\"\n  ],\n  \"drift_count\": 1,\n  \"drift_items\": [\n    {\n      \"line\": 1,\n      \"property\": \"background\",\n      \"selectors\": [\n        \".btn\"\n      ],\n      \"source_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\change.drift.css\",\n      \"value\": \"#0057ff\"\n    }\n  ],\n  \"passed\": false,\n  \"token_file\": \"C:\\\\Users\\\\Biztech\\\\AppData\\\\Local\\\\Temp\\\\tmpgxm1drm0\\\\design-tokens.json\"\n}",
+      "stderr": ""
+    },
+    {
+      "name": "pinned_missing_validator_plan_red",
+      "passed": true,
+      "expected": false,
+      "actual": false,
+      "stdout": "{\n  \"caps\": {\n    \"max_agents\": 8,\n    \"max_parallel\": 3\n  },\n  \"passed\": false,\n  \"required_roles\": [\n    \"leakage_auditor\",\n    \"baseline_enforcer\"\n  ],\n  \"roles\": [\n    \"conductor\",\n    \"planner\",\n    \"baseline_enforcer\",\n    \"critic\",\n    \"acceptance_gate\"\n  ],\n  \"summary\": {\n    \"parallel_count\": 0,\n    \"role_aliases\": [\n      {\n        \"requested\": \"code_reviewer\",\n        \"used\": \"critic\"\n      },\n      {\n        \"requested\": \"dep_mapper\",\n        \"used\": \"dependency_mapper\"\n      }\n    ],\n    \"role_count\": 5,\n    \"violation_count\": 1,\n    \"warning_count\": 0\n  },\n  \"task_type\": \"ml\",\n  \"violations\": [\n    {\n      \"message\": \"ml requires leakage_auditor\",\n      \"role\": \"leakage_auditor\",\n      \"task_type\": \"ml\",\n      \"type\": \"missing_required_role\"\n    }\n  ],\n  \"warnings\": []\n}",
+      "stderr": ""
+    },
+    {
+      "name": "pinned_corrected_plan_green",
+      "passed": true,
+      "expected": true,
+      "actual": true,
+      "stdout": "{\n  \"caps\": {\n    \"max_agents\": 8,\n    \"max_parallel\": 3\n  },\n  \"passed\": true,\n  \"required_roles\": [\n    \"leakage_auditor\",\n    \"baseline_enforcer\"\n  ],\n  \"roles\": [\n    \"conductor\",\n    \"planner\",\n    \"leakage_auditor\",\n    \"baseline_enforcer\",\n    \"critic\",\n    \"acceptance_gate\"\n  ],\n  \"summary\": {\n    \"parallel_count\": 0,\n    \"role_aliases\": [\n      {\n        \"requested\": \"code_reviewer\",\n        \"used\": \"critic\"\n      },\n      {\n        \"requested\": \"dep_mapper\",\n        \"used\": \"dependency_mapper\"\n      }\n    ],\n    \"role_count\": 6,\n    \"violation_count\": 0,\n    \"warning_count\": 0\n  },\n  \"task_type\": \"ml\",\n  \"violations\": [],\n  \"warnings\": []\n}",
+      "stderr": ""
+    },
+    {
+      "name": "pinned_required_role_violation_type",
+      "passed": true,
+      "expected": "missing_required_role",
+      "actual": "missing_required_role",
+      "stdout": "{\n  \"caps\": {\n    \"max_agents\": 8,\n    \"max_parallel\": 3\n  },\n  \"passed\": false,\n  \"required_roles\": [\n    \"leakage_auditor\",\n    \"baseline_enforcer\"\n  ],\n  \"roles\": [\n    \"conductor\",\n    \"planner\",\n    \"baseline_enforcer\",\n    \"critic\",\n    \"acceptance_gate\"\n  ],\n  \"summary\": {\n    \"parallel_count\": 0,\n    \"role_aliases\": [\n      {\n        \"requested\": \"code_reviewer\",\n        \"used\": \"critic\"\n      },\n      {\n        \"requested\": \"dep_mapper\",\n        \"used\": \"dependency_mapper\"\n      }\n    ],\n    \"role_count\": 5,\n    \"violation_count\": 1,\n    \"warning_count\": 0\n  },\n  \"task_type\": \"ml\",\n  \"violations\": [\n    {\n      \"message\": \"ml requires leakage_auditor\",\n      \"role\": \"leakage_auditor\",\n      \"task_type\": \"ml\",\n      \"type\": \"missing_required_role\"\n    }\n  ],\n  \"warnings\": []\n}",
       "stderr": ""
     }
   ]
 }
+STDERR:
+
+EXIT_CODE: 0
+
+COMMAND: uv run python -m unittest tests.test_maw_tools
+STDOUT:
+
+STDERR:
+................................................
+----------------------------------------------------------------------
+Ran 48 tests in 15.417s
+
+OK
+EXIT_CODE: 0
+
+COMMAND: uv run python maw-tools/validate_workflow_template.py
+STDOUT:
+{
+  "templates": 7,
+  "passed": true,
+  "errors": []
+}
+STDERR:
+
+EXIT_CODE: 0
+
+COMMAND: uv run python maw-tools/validate_handoffs.py runs/2026-06-02_add-pre-execution-plan-gate_4471
+STDOUT:
+{
+  "run": "runs\\2026-06-02_add-pre-execution-plan-gate_4471",
+  "handoffs": 5,
+  "passed": true,
+  "errors": []
+}
+STDERR:
+
+EXIT_CODE: 0
+
+COMMAND: uv run python maw-tools/validate_handoffs.py runs/2026-06-02_plan-gate-demo-missing-ml_99e1
+STDOUT:
+{
+  "run": "runs\\2026-06-02_plan-gate-demo-missing-ml_99e1",
+  "handoffs": 3,
+  "passed": true,
+  "errors": []
+}
+STDERR:
+
+EXIT_CODE: 0
+
+COMMAND: uv run python maw-tools/acceptance_check.py --run runs/2026-06-02_add-pre-execution-plan-gate_4471 --test-cmd uv run python maw-tools/selftest_all.py
+STDOUT:
+{
+  "run": "runs\\2026-06-02_add-pre-execution-plan-gate_4471",
+  "handoffs": {
+    "run": "runs\\2026-06-02_add-pre-execution-plan-gate_4471",
+    "handoffs": 5,
+    "passed": true,
+    "errors": []
+  },
+  "test": {
+    "check": "test",
+    "command": "uv run python maw-tools/selftest_all.py",
+    "cwd": ".",
+    "exit_code": 0,
+    "timed_out": false,
+    "passed": true,
+    "duration_sec": 6.742,
+    "stdout_tail": "...(truncated)...\n \"passed\": true,\n      \"expected\": true,\n      \"actual\": true,\n      \"stdout\": \"{\\n  \\\"caps\\\": {\\n    \\\"max_agents\\\": 8,\\n    \\\"max_parallel\\\": 3\\n  },\\n  \\\"passed\\\": true,\\n  \\\"required_roles\\\": [\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\"\\n  ],\\n  \\\"roles\\\": [\\n    \\\"conductor\\\",\\n    \\\"planner\\\",\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\",\\n    \\\"critic\\\",\\n    \\\"acceptance_gate\\\"\\n  ],\\n  \\\"summary\\\": {\\n    \\\"parallel_count\\\": 0,\\n    \\\"role_aliases\\\": [\\n      {\\n        \\\"requested\\\": \\\"code_reviewer\\\",\\n        \\\"used\\\": \\\"critic\\\"\\n      },\\n      {\\n        \\\"requested\\\": \\\"dep_mapper\\\",\\n        \\\"used\\\": \\\"dependency_mapper\\\"\\n      }\\n    ],\\n    \\\"role_count\\\": 6,\\n    \\\"violation_count\\\": 0,\\n    \\\"warning_count\\\": 0\\n  },\\n  \\\"task_type\\\": \\\"ml\\\",\\n  \\\"violations\\\": [],\\n  \\\"warnings\\\": []\\n}\",\n      \"stderr\": \"\"\n    },\n    {\n      \"name\": \"pinned_required_role_violation_type\",\n      \"passed\": true,\n      \"expected\": \"missing_required_role\",\n      \"actual\": \"missing_required_role\",\n      \"stdout\": \"{\\n  \\\"caps\\\": {\\n    \\\"max_agents\\\": 8,\\n    \\\"max_parallel\\\": 3\\n  },\\n  \\\"passed\\\": false,\\n  \\\"required_roles\\\": [\\n    \\\"leakage_auditor\\\",\\n    \\\"baseline_enforcer\\\"\\n  ],\\n  \\\"roles\\\": [\\n    \\\"conductor\\\",\\n    \\\"planner\\\",\\n    \\\"baseline_enforcer\\\",\\n    \\\"critic\\\",\\n    \\\"acceptance_gate\\\"\\n  ],\\n  \\\"summary\\\": {\\n    \\\"parallel_count\\\": 0,\\n    \\\"role_aliases\\\": [\\n      {\\n        \\\"requested\\\": \\\"code_reviewer\\\",\\n        \\\"used\\\": \\\"critic\\\"\\n      },\\n      {\\n        \\\"requested\\\": \\\"dep_mapper\\\",\\n        \\\"used\\\": \\\"dependency_mapper\\\"\\n      }\\n    ],\\n    \\\"role_count\\\": 5,\\n    \\\"violation_count\\\": 1,\\n    \\\"warning_count\\\": 0\\n  },\\n  \\\"task_type\\\": \\\"ml\\\",\\n  \\\"violations\\\": [\\n    {\\n      \\\"message\\\": \\\"ml requires leakage_auditor\\\",\\n      \\\"role\\\": \\\"leakage_auditor\\\",\\n      \\\"task_type\\\": \\\"ml\\\",\\n      \\\"type\\\": \\\"missing_required_role\\\"\\n    }\\n  ],\\n  \\\"warnings\\\": []\\n}\",\n      \"stderr\": \"\"\n    }\n  ]\n}\n",
+    "stderr_tail": "",
+    "configured": true,
+    "tool_exit_code": 0
+  },
+  "verdict": "SHIP"
+}
+STDERR:
+
 EXIT_CODE: 0

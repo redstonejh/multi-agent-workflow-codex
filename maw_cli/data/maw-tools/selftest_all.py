@@ -13,6 +13,8 @@ TOOLS = Path(__file__).resolve().parent
 WEB_CHECKS = TOOLS / "web_checks.py"
 SELFTEST_CHECKS = TOOLS / "selftest_checks.py"
 SELFTEST_WEB = TOOLS / "selftest_web_checks.py"
+SELFTEST_PLAN = TOOLS / "selftest_plan_check.py"
+PLAN_CHECK = TOOLS / "plan_check.py"
 
 
 GOOD_HTML = """<!doctype html>
@@ -87,10 +89,20 @@ def run_json(command: list[str]) -> tuple[int, dict, str, str]:
     return proc.returncode, json.loads(proc.stdout), proc.stdout, proc.stderr
 
 
+def run_plan(plan: dict) -> tuple[int, dict, str, str]:
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as handle:
+        json.dump(plan, handle)
+        path = handle.name
+    try:
+        return run_json([sys.executable, str(PLAN_CHECK), "--file", path])
+    finally:
+        Path(path).unlink(missing_ok=True)
+
+
 def main() -> int:
     results: list[dict] = []
 
-    for name, script in (("core_checks", SELFTEST_CHECKS), ("web_checks", SELFTEST_WEB)):
+    for name, script in (("core_checks", SELFTEST_CHECKS), ("web_checks", SELFTEST_WEB), ("plan_check", SELFTEST_PLAN)):
         code, data, stdout, stderr = run_json([sys.executable, str(script)])
         results.append({"name": name, "passed": code == 0 and data.get("passed") is True, "exit_code": code, "stdout": stdout.strip(), "stderr": stderr.strip()})
 
@@ -166,6 +178,20 @@ def main() -> int:
         drift_tokens_code, drift_tokens, drift_tokens_stdout, drift_tokens_stderr = run_json(
             [sys.executable, str(WEB_CHECKS), "tokens", "--token-file", str(tokens), str(drift_css)]
         )
+        missing_plan_code, missing_plan, missing_plan_stdout, missing_plan_stderr = run_plan(
+            {
+                "task_type": "ml",
+                "roles": ["conductor", "planner", "baseline_enforcer", "critic", "acceptance_gate"],
+                "caps": {"max_agents": 8, "max_parallel": 3},
+            }
+        )
+        corrected_plan_code, corrected_plan, corrected_plan_stdout, corrected_plan_stderr = run_plan(
+            {
+                "task_type": "ml",
+                "roles": ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
+                "caps": {"max_agents": 8, "max_parallel": 3},
+            }
+        )
 
         pinned = {
             "bad_contrast_ratio": contrast["ratio"],
@@ -178,6 +204,9 @@ def main() -> int:
             "noop_changed_passed": noop_changed["passed"],
             "real_changed_passed": real_changed["passed"],
             "token_drift_passed": drift_tokens["passed"],
+            "missing_validator_plan_passed": missing_plan["passed"],
+            "corrected_plan_passed": corrected_plan["passed"],
+            "required_role_violation_type": missing_plan["violations"][0]["type"] if missing_plan["violations"] else "",
         }
         expected = {
             "bad_contrast_ratio": 2.640526,
@@ -189,6 +218,9 @@ def main() -> int:
             "noop_changed_passed": False,
             "real_changed_passed": True,
             "token_drift_passed": False,
+            "missing_validator_plan_passed": False,
+            "corrected_plan_passed": True,
+            "required_role_violation_type": "missing_required_role",
         }
         results.extend(
             [
@@ -263,6 +295,30 @@ def main() -> int:
                     "actual": pinned["token_drift_passed"],
                     "stdout": drift_tokens_stdout.strip(),
                     "stderr": drift_tokens_stderr.strip(),
+                },
+                {
+                    "name": "pinned_missing_validator_plan_red",
+                    "passed": missing_plan_code != 0 and pinned["missing_validator_plan_passed"] == expected["missing_validator_plan_passed"],
+                    "expected": expected["missing_validator_plan_passed"],
+                    "actual": pinned["missing_validator_plan_passed"],
+                    "stdout": missing_plan_stdout.strip(),
+                    "stderr": missing_plan_stderr.strip(),
+                },
+                {
+                    "name": "pinned_corrected_plan_green",
+                    "passed": corrected_plan_code == 0 and pinned["corrected_plan_passed"] == expected["corrected_plan_passed"],
+                    "expected": expected["corrected_plan_passed"],
+                    "actual": pinned["corrected_plan_passed"],
+                    "stdout": corrected_plan_stdout.strip(),
+                    "stderr": corrected_plan_stderr.strip(),
+                },
+                {
+                    "name": "pinned_required_role_violation_type",
+                    "passed": pinned["required_role_violation_type"] == expected["required_role_violation_type"],
+                    "expected": expected["required_role_violation_type"],
+                    "actual": pinned["required_role_violation_type"],
+                    "stdout": missing_plan_stdout.strip(),
+                    "stderr": missing_plan_stderr.strip(),
                 },
             ]
         )

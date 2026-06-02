@@ -6,6 +6,10 @@ runs/*
 !runs/2026-06-02_add-front-end-ui-workflow_a8d3/**
 !runs/2026-06-02_extend-frontend-pack-with-change_4e1a/
 !runs/2026-06-02_extend-frontend-pack-with-change_4e1a/**
+!runs/2026-06-02_add-pre-execution-plan-gate_*/
+!runs/2026-06-02_add-pre-execution-plan-gate_*/**
+!runs/2026-06-02_plan-gate-demo-missing-ml_99e1/
+!runs/2026-06-02_plan-gate-demo-missing-ml_99e1/**
 
 # Python
 __pycache__/

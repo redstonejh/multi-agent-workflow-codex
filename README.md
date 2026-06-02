@@ -167,6 +167,81 @@ Run the script tests:
 python -m unittest discover -s tests
 ```
 
+## Pre-Execution Plan Gate
+
+The pre-execution plan gate works now as a deterministic, browser-free,
+stdlib-only check over a structured conductor plan. It validates team selection
+before execution starts.
+
+Hard gate:
+
+```bash
+uv run python maw-tools/plan_check.py --file runs/<run_id>/artifacts/conductor-plan.json
+```
+
+The check reads JSON with `task_type`, `roles`, `caps`, and optional
+`role_justifications`, then emits JSON and exits 0/1. It validates:
+
+```text
+known roles only
+no duplicate roles
+acceptance_gate is present
+role count is within max_agents
+parallel role count is within max_parallel
+optional/specialized roles have justifications
+required-role rules are satisfied for the task type
+```
+
+Required-role rules:
+
+```text
+ml: leakage_auditor, baseline_enforcer
+frontend: a11y_auditor, change_verifier
+code: critic, dependency_mapper
+```
+
+The `code` task mapping uses this repo's existing names:
+
+```text
+code_reviewer -> critic
+dep_mapper -> dependency_mapper
+```
+
+The `plan_reviewer` agent is advisory. It independently reviews the conductor's
+objective and proposed plan and returns `APPROVE` or `REVISE`, but
+`maw-tools/plan_check.py` is the hard gate.
+
+The MAW flow is:
+
+```text
+conductor proposes structured plan
+plan_check.py validates it
+plan_reviewer reviews it
+conductor replans when the hard gate fails or the reviewer returns REVISE
+execution starts only after the plan gate passes
+acceptance_gate verifies plan-gate evidence exists in the run
+```
+
+Planted demo path:
+
+```text
+runs/2026-06-02_plan-gate-demo-missing-ml_99e1/
+```
+
+The demo shows an `ml` plan missing `leakage_auditor` failing with
+`missing_required_role`, followed by a corrected plan that passes before the run
+proceeds.
+
+Run the plan gate self-tests through the aggregate suite:
+
+```bash
+uv run python maw-tools/plan_check.py --help
+uv run python maw-tools/selftest_all.py
+```
+
+`# MAW-TODO`: make run scaffolding optionally generate a structured conductor
+plan template.
+
 ## Architecture
 
 `AGENTS.md` defines repo-wide behavior and the audit format. `.codex/skills/maw/SKILL.md` is the Codex skill entry point. `.codex/agents/` holds role-specific prompts for Codex environments that support role delegation; otherwise the same roles can run sequentially in one Codex session.

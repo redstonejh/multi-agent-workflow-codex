@@ -19,6 +19,7 @@ TASK_GRAPH = ROOT / "maw-tools" / "task_graph.py"
 WORKFLOW_TEMPLATE = ROOT / "maw-tools" / "validate_workflow_template.py"
 START_WORKFLOW = ROOT / "maw-tools" / "start_workflow.py"
 DEPENDENCY_AUDIT = ROOT / "maw-tools" / "dependency_risk_audit.py"
+PLAN_CHECK = ROOT / "maw-tools" / "plan_check.py"
 MAW = ROOT / "maw.py"
 PYPROJECT = ROOT / "pyproject.toml"
 ML_CHECKS = ROOT / "examples" / "ml_problems" / "ml_checks.py"
@@ -45,6 +46,7 @@ SPECIALIZED_AGENTS = [
     "change_verifier",
     "style_drift_auditor",
     "visual_verifier",
+    "plan_reviewer",
 ]
 RISK_FIELDS = [
     "file",
@@ -393,6 +395,120 @@ class MawToolTests(unittest.TestCase):
             cli = run_tool(str(MAW), "dependency-audit", str(package), "--no-dossiers")
             self.assertEqual(cli.returncode, 0, cli.stdout + cli.stderr)
             self.assertEqual(json.loads(cli.stdout)["check"], "dependency-risk-audit")
+
+    def _run_plan_check(self, plan: dict) -> subprocess.CompletedProcess[str]:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as handle:
+            json.dump(plan, handle)
+            path = Path(handle.name)
+        try:
+            return run_tool(str(PLAN_CHECK), "--file", str(path))
+        finally:
+            path.unlink(missing_ok=True)
+
+    def test_plan_check_rejects_missing_ml_validator_and_accepts_corrected_plan(self) -> None:
+        missing = {
+            "task_type": "ml",
+            "roles": ["conductor", "planner", "baseline_enforcer", "critic", "acceptance_gate"],
+            "caps": {"max_agents": 8, "max_parallel": 3},
+        }
+        proc = self._run_plan_check(missing)
+        self.assertNotEqual(proc.returncode, 0)
+        result = json.loads(proc.stdout)
+        self.assertFalse(result["passed"])
+        self.assertTrue(any(item["type"] == "missing_required_role" and item["role"] == "leakage_auditor" for item in result["violations"]))
+
+        corrected = {
+            "task_type": "ml",
+            "roles": ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
+            "caps": {"max_agents": 8, "max_parallel": 3},
+        }
+        proc = self._run_plan_check(corrected)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue(json.loads(proc.stdout)["passed"])
+
+    def test_plan_check_rejects_duplicates_unknown_roles_missing_gate_and_caps(self) -> None:
+        cases = [
+            (
+                {
+                    "task_type": "ml",
+                    "roles": ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "critic", "acceptance_gate"],
+                    "caps": {"max_agents": 8, "max_parallel": 3},
+                },
+                "duplicate_role",
+            ),
+            (
+                {
+                    "task_type": "ml",
+                    "roles": ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "mystery_agent", "acceptance_gate"],
+                    "caps": {"max_agents": 8, "max_parallel": 3},
+                },
+                "unknown_role",
+            ),
+            (
+                {
+                    "task_type": "ml",
+                    "roles": ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic"],
+                    "caps": {"max_agents": 8, "max_parallel": 3},
+                },
+                "missing_acceptance_gate",
+            ),
+            (
+                {
+                    "task_type": "ml",
+                    "roles": ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
+                    "caps": {"max_agents": 3, "max_parallel": 3},
+                },
+                "role_cap_exceeded",
+            ),
+            (
+                {
+                    "task_type": "ml",
+                    "roles": ["conductor", "planner", "leakage_auditor", "baseline_enforcer", "critic", "acceptance_gate"],
+                    "parallel_roles": ["planner", "leakage_auditor"],
+                    "caps": {"max_agents": 8, "max_parallel": 1},
+                },
+                "parallel_cap_exceeded",
+            ),
+        ]
+        for plan, violation_type in cases:
+            proc = self._run_plan_check(plan)
+            self.assertNotEqual(proc.returncode, 0, proc.stdout)
+            result = json.loads(proc.stdout)
+            self.assertTrue(any(item["type"] == violation_type for item in result["violations"]), result["violations"])
+
+    def test_plan_check_enforces_frontend_and_code_required_roles(self) -> None:
+        frontend_missing = {
+            "task_type": "frontend",
+            "roles": ["conductor", "planner", "a11y_auditor", "critic", "acceptance_gate"],
+            "caps": {"max_agents": 8, "max_parallel": 3},
+        }
+        proc = self._run_plan_check(frontend_missing)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertTrue(any(item["type"] == "missing_required_role" and item["role"] == "change_verifier" for item in json.loads(proc.stdout)["violations"]))
+
+        frontend_ok = {
+            "task_type": "frontend",
+            "roles": ["conductor", "planner", "a11y_auditor", "change_verifier", "critic", "acceptance_gate"],
+            "caps": {"max_agents": 8, "max_parallel": 3},
+        }
+        self.assertEqual(self._run_plan_check(frontend_ok).returncode, 0)
+
+        code_missing = {
+            "task_type": "code",
+            "roles": ["conductor", "planner", "critic", "acceptance_gate"],
+            "caps": {"max_agents": 8, "max_parallel": 3},
+        }
+        proc = self._run_plan_check(code_missing)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertTrue(any(item["type"] == "missing_required_role" and item["role"] == "dependency_mapper" for item in json.loads(proc.stdout)["violations"]))
+
+        code_ok = {
+            "task_type": "code",
+            "roles": ["conductor", "planner", "critic", "dependency_mapper", "acceptance_gate"],
+            "caps": {"max_agents": 8, "max_parallel": 3},
+            "role_justifications": {"dependency_mapper": "Map code dependencies before execution."},
+        }
+        self.assertEqual(self._run_plan_check(code_ok).returncode, 0)
 
     def test_specialized_agent_prompts_have_required_contract_sections(self) -> None:
         required_sections = [

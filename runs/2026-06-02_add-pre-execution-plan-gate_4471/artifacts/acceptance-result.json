@@ -1,0 +1,12 @@
+{
+  "verdict": "SHIP",
+  "required_selftests_green": true,
+  "plan_gate_evidence_present": true,
+  "handoffs_valid": true,
+  "notes": [
+    "plan_check.py --help passed",
+    "selftest_all.py passed",
+    "relevant unittest coverage passed",
+    "planted demo includes failing first plan and corrected passing plan"
+  ]
+}
