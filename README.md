@@ -1,510 +1,171 @@
-# Codex Multi-Agent Workflow
+# Codex Multi-Agent Workflow (MAW)
 
-Codex Multi-Agent Workflow (MAW) is a Codex CLI convention for running one task through a small team of roles: conductor, planner, worker, critic, and acceptance gate. The workflow is file-backed: every run gets a local folder with markdown handoffs, shared memory, role notes, artifacts, and deterministic Python check output.
+Run one task through a small team of roles — conductor, planner, worker, critic, acceptance gate — with every step written to disk and checked by deterministic Python. Each run produces an auditable folder of markdown handoffs, shared memory, role notes, and check output. Nothing is hidden in a model's head.
 
-This repo is intentionally Codex-only. It uses `AGENTS.md`, `.codex/skills/maw/SKILL.md`, optional `.codex/agents/` role definitions, and stdlib Python helper scripts.
+MAW is Codex-native and dependency-free: it uses `AGENTS.md`, a Codex skill, role prompts in `.codex/agents/`, and stdlib-only helper scripts in `maw-tools/` (Python 3.11+).
 
-See `docs/maw-architecture.md` for the unified MAW architecture: core agents
-are used in most runs, and specialized agents are optional template-driven
-capabilities.
+## Quickstart
 
-## Install
-
-Use the repo directly from Codex CLI:
+The primary way to use MAW is from Codex CLI. Point it at the skill and describe the task:
 
 ```text
 Use $maw to fix the failing test in this repo.
 ```
 
-To make the skill available in another workspace, copy these paths into that workspace:
+Codex selects the smallest useful team, runs the roles, and leaves a `runs/<id>/` folder behind.
+
+To drive the same workflow manually with the `maw` command:
+
+```bash
+python -m pip install -e .                          # one-time, stdlib only
+maw start standard-software-task "add a --verbose flag to the CLI"
+maw validate-handoffs runs/<run_id>
+maw acceptance runs/<run_id> --test-cmd "python -m unittest discover -s tests"
+```
+
+That's the whole loop: start a run from a template, fill in the handoffs as each role works, then run the acceptance gate. No install is required — `python maw.py ...` works from a checkout, and on Windows use `py` or `uv run python` if `python` isn't on `PATH`.
+
+To use MAW in another workspace, copy `AGENTS.md`, `.codex/skills/maw/SKILL.md`, `.codex/agents/`, and `maw-tools/` into it.
+
+## How a run works
+
+The normal loop is:
 
 ```text
-AGENTS.md
-.codex/skills/maw/SKILL.md
-.codex/agents/
-maw-tools/
+conductor -> planner -> worker -> critic -> (worker if needed) -> acceptance_gate
 ```
 
-No package installation is required. The scripts use Python 3.11+ standard library only. On Windows, use `py` or `uv run python` if `python` is not on `PATH`.
+The **conductor** picks the smallest useful team and records the plan. The **planner** breaks the task into steps and acceptance criteria. The **worker** implements them. The **critic** reviews the worker's output inside a refine loop and sends it back when it isn't ready. The **acceptance_gate** does a final independent check and returns exactly one verdict: `SHIP`, `NO-SHIP`, or `NEEDS-HUMAN`.
 
-Install the `maw` command from this checkout:
-
-```bash
-python -m pip install -e .
-maw list-templates
-maw start standard-software-task "implement a parser"
-```
-
-Without installation, the local wrapper still works:
-
-```bash
-python maw.py list-templates
-```
-
-## Usage
-
-Use the single MAW CLI:
-
-```bash
-python maw.py list-templates
-python maw.py start standard-software-task "implement a parser" --run-root runs
-python maw.py validate-template standard-software-task
-python maw.py validate-handoffs runs/<run_id>
-python maw.py acceptance runs/<run_id> --test-cmd "python -m unittest discover -s tests"
-python maw.py plan-graph artifacts/task-graph.json
-python maw.py dependency-audit path/to/package --fail-on high
-```
-
-Create a run folder:
-
-```bash
-python maw-tools/scaffold_run.py init "implement normalize_whitespace" --agents conductor,planner,worker,critic,acceptance_gate --json
-```
-
-Create a handoff:
-
-```bash
-python maw-tools/scaffold_run.py handoff --run runs/<run_id> --from planner --to worker
-```
-
-Validate handoffs:
-
-```bash
-python maw-tools/validate_handoffs.py runs/<run_id>
-```
-
-Run deterministic checks:
-
-```bash
-python maw-tools/checks.py test --cmd "python test_textutil.py" --cwd examples/sample_app
-python maw-tools/checks.py gap --train 0.91 --test 0.88 --tol 0.05
-python maw-tools/checks.py dependency-map --file examples/workflow_specific_examples/dependency-map.json
-python maw-tools/checks.py aggregation --file examples/workflow_specific_examples/research-aggregation.json
-python maw-tools/dependency_risk_audit.py path/to/package --output dependency-risk-report.json
-```
-
-Run an acceptance gate over a completed run:
-
-```bash
-python maw-tools/acceptance_check.py --run runs/<run_id> --test-cmd "python test_textutil.py" --test-cwd examples/sample_app
-```
-
-Plan a multi-worker task graph:
-
-```bash
-python maw-tools/task_graph.py plan --file artifacts/task-graph.json
-```
-
-The graph planner validates task dependencies and emits stages. Independent
-`worker` tasks in the same stage can be delegated concurrently, followed by
-`aggregate` and `merge` stages before critic and acceptance review.
-
-Validate workflow templates:
-
-```bash
-python maw-tools/validate_workflow_template.py
-python maw-tools/validate_workflow_template.py --run runs/<run_id>
-```
-
-Start a run from a workflow template:
-
-```bash
-python maw-tools/start_workflow.py standard-software-task "add a CLI flag" --json
-python maw-tools/start_workflow.py bug-investigation "investigate failing payment test"
-python maw-tools/start_workflow.py multi-agent-research-task "compare task planning approaches"
-```
-
-Declare a template in `run.md`:
-
-```markdown
-- Workflow template: standard-software-task
-```
-
-Available templates live in `templates/workflows/`:
+Every run folder has the same shape:
 
 ```text
-standard-software-task
-bug-investigation
-refactor-task
-ml-validation-task
-ml-training-task
-multi-agent-research-task
-frontend-ui-task
+runs/<date>_<slug>_<id>/
+├── run.md            # plan, roles, verdict
+├── memory.md         # one short entry per role turn
+├── agents/<role>.md  # per-role scratch notes
+├── handoffs/         # NN_<from>__to__<to>.md
+└── artifacts/        # plans, check output, reports
 ```
 
-Each template defines agents, handoff pairs, required artifacts, acceptance gates,
-and deterministic checks. A declared run conforms only when its agent notes,
-handoffs, and required artifacts match the template.
+## The two gates
 
-Most runs use the core agents:
+MAW trusts deterministic checks over model judgment wherever it can.
+
+**Plan gate (before execution).** The conductor proposes a structured plan; `maw-tools/plan_check.py` validates it and exits 0/1:
+
+```bash
+maw plan-check runs/<run_id>/artifacts/conductor-plan.json
+```
+
+It reads JSON with `task_type`, `roles`, `caps`, and optional `role_justifications`, then enforces: known roles only, no duplicates, all core roles present, `acceptance_gate` present, team size within `max_agents`, parallel count within `max_parallel`, every optional/specialized role carries a written justification, the required roles for the task type are present, and `max_agents` has enough headroom for core + required specialists.
+
+A second role, `plan_reviewer`, independently reviews the same plan and returns `APPROVE` or `REVISE` (redundant roles, coverage gaps, wrong team size). `plan_check.py` is the hard gate; the reviewer is advisory. The conductor replans when the gate fails or the reviewer returns `REVISE`; execution starts only after the gate passes, and the acceptance gate later verifies plan-gate evidence exists in the run.
+
+**Acceptance gate (after execution).** `acceptance_check.py` independently verifies task conformance, handoff completeness, deterministic check results, and that every claim maps to evidence in the run.
+
+## Roles and caps
+
+Most runs use only the core roster:
 
 ```text
 conductor, planner, worker, critic, acceptance_gate
 ```
 
-Workflow templates may add specialized agents such as
-`leakage_auditor`, `overfitting_checker`, `baseline_enforcer`,
-`calibration_checker`, `reproducibility_checker`, `data_quality_auditor`,
-`debugger`, `bug_hunter`, `dependency_mapper`, `aggregator`, `ui_builder`,
-`a11y_auditor`, `responsive_checker`, `perf_budgeter`, `markup_validator`,
-`change_verifier`, `style_drift_auditor`, `visual_verifier`, and `ux_critic`.
-These roles are activated only when the selected workflow template declares
-them.
+Workflow templates can add specialized roles when the task needs them. The required-role rules per task type are:
 
-MAW has one unified workflow system. Specialized agents are optional and
-template-driven capabilities used when a
-workflow needs ML validation, debugging, dependency analysis, aggregation, or
-other focused review.
+```text
+generic / refactor : core agents only
+code               : critic, dependency_mapper      (code_reviewer -> critic, dep_mapper -> dependency_mapper)
+ml                 : leakage_auditor, baseline_enforcer
+frontend           : a11y_auditor, change_verifier
+debugging          : debugger, bug_hunter, dependency_mapper
+```
 
-`start_workflow.py` validates the selected template before creating a run, copies
-the template into `artifacts/workflow-template.json`, creates all configured
-agent note files, initializes required handoff placeholders, and writes
-`artifacts/artifact-checklist.md` for the template's required artifacts.
+Beyond those, templates may pull in other specialists (`overfitting_checker`, `calibration_checker`, `reproducibility_checker`, `data_quality_auditor`, `aggregator`, `ui_builder`, `responsive_checker`, `perf_budgeter`, `markup_validator`, `style_drift_auditor`, `visual_verifier`, `ux_critic`, …). These are inert until a template or the conductor justifies pulling them in. Full catalog: `.codex/agents/` and `docs/maw-architecture.md`.
 
-Run the script tests:
+Team size is bounded by caps. `DEFAULT_CAPS` is `{"max_agents": 5, "max_parallel": 3}` and applies to generic core-agent runs only. **Workflow templates that require specialists declare their own caps** so a specialized run still has room for the full core team. A specialist plan left on the default cap fails with `insufficient_role_cap_for_required_roles` (reporting required count, `max_agents`, missing headroom, and a suggested cap). Never fit a specialist task by dropping `planner`, `worker`, or `critic` — missing core roles are hard plan-gate failures.
+
+Current template caps:
+
+```text
+standard-software-task: 5     bug-investigation: 8       multi-agent-research-task: 9
+refactor-task: 5              ml-validation-task: 10      frontend-ui-task: 13
+                             ml-training-task: 10
+```
+
+## Templates
+
+```text
+standard-software-task     bug-investigation        refactor-task
+ml-validation-task         ml-training-task         frontend-ui-task
+multi-agent-research-task
+```
+
+Each template declares its agents, handoff pairs, required artifacts, acceptance gates, caps, and deterministic checks. A run conforms only when its agent notes, handoffs, and artifacts all match. Declare one in `run.md` (`- Workflow template: standard-software-task`), then:
+
+```bash
+maw list-templates
+maw validate-template standard-software-task
+```
+
+`start_workflow.py` (used by `maw start`) validates the template, copies it into `artifacts/workflow-template.json`, creates the agent note files, initializes handoff placeholders, and writes `artifacts/artifact-checklist.md`.
+
+## Command reference
+
+The `maw` CLI is the user-facing surface:
+
+```bash
+maw list-templates                                  # available templates
+maw start <template> "<task>" [--run-root runs]     # scaffold a run
+maw validate-template [<template>]                  # validate template schema
+maw validate-handoffs runs/<run_id>                 # check handoff completeness
+maw acceptance runs/<run_id> --test-cmd "<cmd>"     # final acceptance gate
+maw plan-graph artifacts/task-graph.json            # plan a multi-worker graph
+maw dependency-audit <path> --fail-on high          # dependency risk audit
+```
+
+The `maw-tools/` scripts back the CLI and can be run directly (stdlib only):
+
+```bash
+python maw-tools/scaffold_run.py init "<task>" --agents conductor,planner,worker,critic,acceptance_gate --json
+python maw-tools/scaffold_run.py handoff --run runs/<run_id> --from planner --to worker
+python maw-tools/plan_check.py --file runs/<run_id>/artifacts/conductor-plan.json
+python maw-tools/validate_handoffs.py runs/<run_id>
+python maw-tools/checks.py test --cmd "python -m unittest discover -s tests"
+python maw-tools/acceptance_check.py --run runs/<run_id> --test-cmd "<cmd>"
+python maw-tools/task_graph.py plan --file artifacts/task-graph.json
+python maw-tools/validate_workflow_template.py
+```
+
+The multi-worker graph planner validates task dependencies and emits stages: independent `worker` tasks in the same stage run concurrently, followed by `aggregate` and `merge` stages before critic and acceptance review.
+
+## Specialized packs
+
+These are template-driven and browser-free (they operate on local files, not rendered pages).
+
+**ML validation/training.** Toy problems and deterministic checks live in `examples/ml_problems/`. `ml_checks.py` covers metric thresholds, target leakage, train/test overlap and ratio, reproducibility seed, fit diagnosis (overfit/underfit), baseline improvement, calibration (ECE), and data quality. Start with `maw start ml-validation-task "..."`.
+
+**Front-end / UI.** `maw-tools/web_checks.py` runs deterministic checks on local HTML/CSS: WCAG contrast, accessibility (alt text, labels, heading order, lang/title/viewport), byte/element budgets, link resolution, markup well-formedness, CSS selector/property extraction, change verification against a snapshot, and design-token drift. Demos in `examples/frontend_demo/` and `examples/change_demo/`. Start with `maw start frontend-ui-task "..."`. `ux_critic` is advisory; hard PASS/FAIL comes from the checks.
+
+**Dependency risk audit.** `maw dependency-audit <path>` (or `maw-tools/dependency_risk_audit.py`) scans Python for fragile coupling — global state, env/cwd dependencies, uninjected time/randomness, shared mutable args, import-time side effects, circular imports, fan-in/out risk, and more. `--fail-on high` gates; `--annotate` inserts `# MAW-DEPENDENCY-RISK:` comments. High-severity findings generate bug dossiers under `docs/bugs/` (format in `docs/bug-dossiers.md`).
+
+## Tests
 
 ```bash
 python -m unittest discover -s tests
+uv run python maw-tools/selftest_all.py        # aggregate self-tests (plan gate, web checks, …)
 ```
-
-## Pre-Execution Plan Gate
-
-The pre-execution plan gate works now as a deterministic, browser-free,
-stdlib-only check over a structured conductor plan. It validates team selection
-before execution starts.
-
-Hard gate:
-
-```bash
-uv run python maw-tools/plan_check.py --file runs/<run_id>/artifacts/conductor-plan.json
-```
-
-The check reads JSON with `task_type`, `roles`, `caps`, and optional
-`role_justifications`, then emits JSON and exits 0/1. It validates:
-
-```text
-known roles only
-no duplicate roles
-acceptance_gate is present
-all core roles are present
-role count is within max_agents
-parallel role count is within max_parallel
-optional/specialized roles have justifications
-required-role rules are satisfied for the task type
-max_agents has enough headroom for core + required specialist roles
-```
-
-Required-role rules:
-
-```text
-generic: core agents only
-ml: leakage_auditor, baseline_enforcer
-frontend: a11y_auditor, change_verifier
-code: critic, dependency_mapper
-debugging: debugger, bug_hunter, dependency_mapper
-refactor: core agents only
-```
-
-The `code` task mapping uses this repo's existing names:
-
-```text
-code_reviewer -> critic
-dep_mapper -> dependency_mapper
-```
-
-The `plan_reviewer` agent is advisory. It independently reviews the conductor's
-objective and proposed plan and returns `APPROVE` or `REVISE`, but
-`maw-tools/plan_check.py` is the hard gate.
-
-Default caps vs template caps:
-
-```text
-DEFAULT_CAPS = {"max_agents": 5, "max_parallel": 3}
-```
-
-`DEFAULT_CAPS` is for generic core-agent runs only. Specialist workflows must
-declare explicit template caps large enough for the core roster plus required
-specialists. `plan_check.py` fails with
-`insufficient_role_cap_for_required_roles` when required core/specialist roles
-cannot fit under `max_agents`; the violation includes required role count,
-`max_agents`, missing headroom, and a suggested cap. Do not fit a specialist
-task by dropping `planner`, `worker`, or `critic`.
-
-Example specialist caps:
-
-```json
-{"task_type": "ml", "caps": {"max_agents": 10, "max_parallel": 3}}
-{"task_type": "frontend", "caps": {"max_agents": 13, "max_parallel": 3}}
-```
-
-Current workflow-template caps:
-
-```text
-standard-software-task: max_agents 5
-refactor-task: max_agents 5
-bug-investigation: max_agents 8
-ml-validation-task: max_agents 10
-ml-training-task: max_agents 10
-frontend-ui-task: max_agents 13
-multi-agent-research-task: max_agents 9
-```
-
-The MAW flow is:
-
-```text
-conductor proposes structured plan
-plan_check.py validates it
-plan_reviewer reviews it
-conductor replans when the hard gate fails or the reviewer returns REVISE
-execution starts only after the plan gate passes
-acceptance_gate verifies plan-gate evidence exists in the run
-```
-
-Planted demo path:
-
-```text
-runs/2026-06-02_plan-gate-demo-missing-ml_99e1/
-```
-
-The demo shows an `ml` plan missing `leakage_auditor` failing with
-`missing_required_role`, followed by a corrected plan that passes before the run
-proceeds.
-
-Run the plan gate self-tests through the aggregate suite:
-
-```bash
-uv run python maw-tools/plan_check.py --help
-uv run python maw-tools/selftest_all.py
-```
-
-`# MAW-TODO`: make run scaffolding optionally generate a structured conductor
-plan template.
 
 ## Architecture
 
-`AGENTS.md` defines repo-wide behavior and the audit format. `.codex/skills/maw/SKILL.md` is the Codex skill entry point. `.codex/agents/` holds role-specific prompts for Codex environments that support role delegation; otherwise the same roles can run sequentially in one Codex session.
-
-Each run folder has this shape:
-
-```text
-runs/<date>_<slug>_<id>/
-|-- run.md
-|-- memory.md
-|-- agents/
-|   |-- conductor.md
-|   |-- planner.md
-|   |-- worker.md
-|   |-- critic.md
-|   `-- acceptance_gate.md
-|-- handoffs/
-|   `-- 01_planner__to__worker.md
-`-- artifacts/
-```
-
-The normal loop is:
-
-```text
-conductor -> planner -> worker -> critic -> worker if needed -> acceptance_gate
-```
-
-The critic checks the work inside the refine loop. The acceptance gate performs the final independent check and returns `SHIP`, `NO-SHIP`, or `NEEDS-HUMAN`.
-
-Specialized role prompts live in `.codex/agents/`. Each prompt declares
-mission, inputs, outputs, required artifacts, deterministic tools, and pass/fail
-criteria.
+`AGENTS.md` defines repo-wide behavior, roles, caps, and the audit format. `.codex/skills/maw/SKILL.md` is the Codex skill entry point. `.codex/agents/` holds the role prompts — each declares mission, inputs, outputs, required artifacts, deterministic tools, and pass/fail criteria. Where Codex supports role delegation the roles run as separate agents; otherwise they run sequentially in one session. For the full role catalog and the core-vs-specialized model, see `docs/maw-architecture.md`.
 
 ## Examples
 
-See `examples/sample_run/` for a small complete run folder and `examples/sample_app/` for a tiny deterministic test target.
-
-The sample app check is:
-
-```bash
-python maw-tools/checks.py test --cmd "python test_textutil.py" --cwd examples/sample_app
-```
-
-The sample run can be validated with:
+`examples/sample_run/` is a small complete run folder; `examples/sample_app/` is a tiny deterministic test target:
 
 ```bash
 python maw-tools/validate_handoffs.py examples/sample_run
 python maw-tools/acceptance_check.py --run examples/sample_run --test-cmd "python test_textutil.py" --test-cwd examples/sample_app
 ```
-
-Executable toy ML problems live in `examples/ml_problems/`:
-
-```bash
-python examples/ml_problems/classification/run.py --output classification.json
-python examples/ml_problems/regression/run.py --output regression.json
-python examples/ml_problems/data_validation/run.py --output data_validation.json
-python examples/ml_problems/ml_checks.py classification.json
-```
-
-Start ML workflow runs from templates:
-
-```bash
-python maw.py start ml-validation-task "validate the toy classification baseline"
-python maw.py start ml-training-task "train the toy regression baseline"
-```
-
-The toy ML runners emit JSON with generated data metadata, baseline model,
-metrics, split ids, expected seed, and acceptance criteria. `ml_checks.py`
-performs deterministic checks for metric thresholds, target leakage in features,
-train/test split overlap and ratio, and reproducibility seed.
-
-Fit diagnosis checks flag overfitting and underfitting:
-
-```bash
-python examples/ml_problems/ml_checks.py fit-diagnosis \
-  --problem-type classification \
-  --metrics-json "{\"train_score\": 0.98, \"validation_score\": 0.72, \"test_score\": 0.69}" \
-  --output fit-diagnosis.json
-
-python examples/ml_problems/ml_checks.py fit-diagnosis \
-  --problem-type regression \
-  --metrics-json "{\"train_error\": 0.2, \"validation_error\": 0.8, \"test_error\": 0.75}" \
-  --max-error-ratio 2.0
-```
-
-The fit diagnosis JSON artifact includes `status` (`healthy`, `overfit`,
-`underfit`, or `invalid`), `passed`, `metrics`, `thresholds`, and `reasons`.
-
-ML validation checks also support baseline, calibration, reproducibility, and data
-quality artifacts:
-
-```bash
-python examples/ml_problems/ml_checks.py baseline \
-  --metrics-json "{\"model_score\": 0.84, \"baseline_score\": 0.78}" \
-  --min-improvement 0.03
-
-python examples/ml_problems/ml_checks.py calibration \
-  --data-json "{\"confidences\": [0.8, 0.7, 0.2], \"correct\": [true, true, false]}" \
-  --max-ece 0.12
-
-python examples/ml_problems/ml_checks.py reproducibility \
-  --data-json "{\"seed\": 42, \"expected_seed\": 42, \"deterministic\": true}"
-
-python examples/ml_problems/ml_checks.py data-quality \
-  --data-json "{\"row_count\": 100, \"missing_values\": {\"x\": 0}, \"duplicate_rows\": 0}"
-```
-
-Workflow-specific examples live in `examples/workflow_specific_examples/`.
-
-## Front-End / UI Pack
-
-The front-end/UI workflow pack works now for deterministic, browser-free checks
-that operate on local files. It does not render pages.
-
-Workflow template:
-
-```bash
-uv run python maw.py start frontend-ui-task "audit a static landing page"
-```
-
-Front-end agents:
-
-```text
-ui_builder
-a11y_auditor
-responsive_checker
-perf_budgeter
-markup_validator
-change_verifier
-style_drift_auditor
-visual_verifier
-ux_critic
-```
-
-Deterministic checks:
-
-```bash
-uv run python maw-tools/web_checks.py contrast --foreground "#111827" --background "#ffffff"
-uv run python maw-tools/web_checks.py a11y examples/frontend_demo/index.html
-uv run python maw-tools/web_checks.py budget examples/frontend_demo/index.html --max-bytes 4096 --max-elements 80 --max-assets 5
-uv run python maw-tools/web_checks.py links examples/frontend_demo/index.html
-uv run python maw-tools/web_checks.py markup examples/frontend_demo/index.html
-uv run python maw-tools/web_checks.py style examples/change_demo/style.after.css --selector ".btn" --property background
-uv run python maw-tools/web_checks.py changed --before examples/change_demo/style.before.css --after examples/change_demo/style.after.css --selector ".btn" --property background --expected "#1a73e8"
-uv run python maw-tools/web_checks.py tokens --token-file examples/change_demo/design-tokens.json examples/change_demo/style.after.css
-```
-
-Checks implemented:
-
-```text
-contrast: WCAG contrast ratio for two hex colors, threshold 4.5 or 3.0 with --large
-a11y: missing image alt, unlabeled controls, skipped heading levels, missing html lang, missing title, missing viewport meta
-budget: local HTML/CSS/JS/assets byte budget and element/asset counts
-links: internal links, anchors, and local assets resolve
-markup: unclosed tags and duplicate ids using html.parser
-style: extract a selector/property value from CSS
-changed: prove a file or selector/property target changed from a pre-change snapshot, optionally to an expected value
-tokens: scan CSS against design-tokens.json and fail on design-token drift
-```
-
-Demo path:
-
-```text
-examples/frontend_demo/
-examples/change_demo/
-```
-
-The front-end demo keeps `index.initial.html` as the planted red fixture and
-`index.html` as the fixed green fixture. The change demo proves the request
-"make the primary button blue (`#1a73e8`) and larger" with happy-path,
-no-op-failure, and token-drift-failure fixtures.
-
-Run the front-end pack self-tests:
-
-```bash
-uv run python maw-tools/selftest_web_checks.py
-uv run python maw-tools/selftest_all.py
-```
-
-`ux_critic` records advisory usability and aesthetic critique. Hard PASS/FAIL
-comes from deterministic checks.
-
-`# MAW-TODO`: true visual regression.
-`# MAW-TODO`: browser rendering checks.
-`# MAW-TODO`: hard-gated aesthetic judgment.
-`# MAW-TODO`: real viewport screenshot testing.
-`# MAW-TODO`: automated browser screenshot diff.
-`# MAW-TODO`: hard-gated visual judgment.
-`# MAW-TODO`: real rendered viewport comparison.
-
-## Dependency Risk Audit
-
-Use `dependency-risk-audit` when a bug, refactor, or multi-worker
-plan could be affected by fragile hidden dependencies. It scans Python source for
-signals such as global state reads or mutations, environment variable access,
-current-working-directory dependencies, time or randomness without injection,
-shared mutable arguments, duplicated magic strings, broad imports, import-time
-side effects, cross-module calls, fan-in/fan-out risks, circular imports, and
-large mixed-responsibility functions.
-
-Run it directly:
-
-```bash
-python maw-tools/dependency_risk_audit.py path/to/package
-python maw-tools/dependency_risk_audit.py path/to/package --fail-on high
-python maw-tools/dependency_risk_audit.py path/to/package --annotate --dry-run
-python maw-tools/dependency_risk_audit.py path/to/package --annotate
-```
-
-Or through the single CLI:
-
-```bash
-python maw.py dependency-audit path/to/package
-python maw.py dependency-audit path/to/package --annotate
-python maw.py dependency-audit path/to/package --dry-run
-python maw.py dependency-audit path/to/package --fail-on high
-```
-
-Annotation mode inserts short comments like:
-
-```python
-# MAW-DEPENDENCY-RISK: Changing this may affect config/defaults.py. Reason: implicit coupling magic string. See docs/bugs/MAW-BUG-1234ABCD.md
-```
-
-Review annotations before committing. They are intended for non-obvious coupling,
-not for every low-risk static-analysis finding. High-severity risks generate bug
-dossiers under `docs/bugs/` using the format documented in
-`docs/bug-dossiers.md`; see `docs/bugs/MAW-BUG-0003.md` for a sample.
