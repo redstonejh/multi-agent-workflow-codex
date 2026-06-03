@@ -16,6 +16,10 @@ import validate_handoffs
 ACCEPTANCE_RESULT = "acceptance-result.json"
 ML_VALIDATOR_ARTIFACT = "artifacts/ml-validator.json"
 REGRESSION_RESISTANCE_ARTIFACT = "artifacts/regression-resistance.json"
+REFACTOR_RESISTANCE_ARTIFACT = "artifacts/refactor-resistance.json"
+REFACTOR_STRUCTURE_ARTIFACT = "artifacts/refactor-structure.json"
+REFACTOR_COMPLEXITY_ARTIFACT = "artifacts/complexity-report.json"
+REFACTOR_PERF_ARTIFACT = "artifacts/perf-budget.json"
 DEFAULT_TASK_TYPE = "standard-software-task"
 WORKFLOW_TEMPLATE_RE = re.compile(r"(?m)^-\s*Workflow template:\s*(?P<value>[a-zA-Z0-9_-]+)\s*$")
 TASK_TYPE_RE = re.compile(r"(?m)^-\s*Task type:\s*(?P<value>[a-zA-Z0-9_-]+)\s*$")
@@ -30,7 +34,17 @@ REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
         "artifacts/dependency-map.json",
         "artifacts/dependency-risk-report.json",
     ),
-    "refactor-task": ("artifacts/behavior-baseline.json", "artifacts/behavior-diff.json", "artifacts/test-result.json"),
+    "refactor-task": (
+        "artifacts/behavior-baseline.json",
+        "artifacts/behavior-diff.json",
+        "artifacts/refactor-coverage.json",
+        "artifacts/api-surface-diff.json",
+        REFACTOR_STRUCTURE_ARTIFACT,
+        REFACTOR_COMPLEXITY_ARTIFACT,
+        REFACTOR_PERF_ARTIFACT,
+        REFACTOR_RESISTANCE_ARTIFACT,
+        "artifacts/test-result.json",
+    ),
     "bug-investigation": (
         "artifacts/dependency-map.json",
         "artifacts/dependency-risk-report.json",
@@ -243,11 +257,109 @@ def regression_resistance_reports_pass(data: Any) -> tuple[bool, str]:
     return bool(data["passed"]), "regression resistance schema passed" if data["passed"] else "regression resistance reports failed"
 
 
+def refactor_resistance_reports_pass(data: Any) -> tuple[bool, str]:
+    if not isinstance(data, dict):
+        return False, "refactor-resistance JSON must be an object"
+    if data.get("check") != "refactor_resistance":
+        return False, "check must be refactor_resistance"
+    if data.get("schema_version") != 1:
+        return False, "schema_version must be 1"
+    if not isinstance(data.get("passed"), bool):
+        return False, "passed must be a boolean"
+    clean = data.get("clean")
+    if not isinstance(clean, dict) or clean.get("passed") is not True:
+        return False, "clean behavior diff must pass before mutation resistance is trusted"
+    mutations = data.get("mutations")
+    if not isinstance(mutations, list) or not mutations:
+        return False, "mutations must be a non-empty list"
+    for item in mutations:
+        if not isinstance(item, dict):
+            return False, "mutation item must be an object"
+        if item.get("planted") is not True:
+            return False, f"mutation was not planted: {item.get('name')}"
+        if item.get("caught") is not True:
+            return False, f"mutation was not caught: {item.get('name')}"
+        if item.get("mutant_passed") is not False:
+            return False, f"mutant behavior diff must fail: {item.get('name')}"
+        failed_checks = item.get("failed_checks")
+        if not isinstance(failed_checks, list) or not failed_checks:
+            return False, f"mutation must record failed checks: {item.get('name')}"
+    summary = data.get("summary")
+    if not isinstance(summary, dict) or summary.get("caught") != summary.get("total") or summary.get("total") != len(mutations):
+        return False, "summary must report every planted mutation caught"
+    return bool(data["passed"]), "refactor resistance schema passed" if data["passed"] else "refactor resistance reports failed"
+
+
+def refactor_structure_reports_pass(data: Any) -> tuple[bool, str]:
+    if not isinstance(data, dict):
+        return False, "refactor-structure JSON must be an object"
+    if data.get("check") != "refactor_structure":
+        return False, "check must be refactor_structure"
+    if data.get("schema_version") != 1:
+        return False, "schema_version must be 1"
+    if data.get("refactor_type") not in {"rename", "extract-function", "inline", "move-module", "dedupe"}:
+        return False, "refactor_type must be one of the supported structural refactor types"
+    if not isinstance(data.get("passed"), bool):
+        return False, "passed must be a boolean"
+    violations = data.get("violations")
+    if not isinstance(violations, list):
+        return False, "violations must be a list"
+    if data["passed"] and violations:
+        return False, "passed structure artifact must not include violations"
+    return bool(data["passed"]), "refactor structure schema passed" if data["passed"] else "refactor structure reports failed"
+
+
+def refactor_complexity_reports_pass(data: Any) -> tuple[bool, str]:
+    if not isinstance(data, dict):
+        return False, "complexity-report JSON must be an object"
+    if data.get("check") != "refactor_complexity":
+        return False, "check must be refactor_complexity"
+    if data.get("schema_version") != 1:
+        return False, "schema_version must be 1"
+    if not isinstance(data.get("passed"), bool):
+        return False, "passed must be a boolean"
+    if not isinstance(data.get("functions"), list):
+        return False, "functions must be a list"
+    if not isinstance(data.get("violations"), list):
+        return False, "violations must be a list"
+    if data["passed"] and data["violations"]:
+        return False, "passed complexity artifact must not include violations"
+    return bool(data["passed"]), "refactor complexity schema passed" if data["passed"] else "refactor complexity reports failed"
+
+
+def refactor_perf_reports_pass(data: Any) -> tuple[bool, str]:
+    if not isinstance(data, dict):
+        return False, "perf-budget JSON must be an object"
+    if data.get("check") != "refactor_perf_budget":
+        return False, "check must be refactor_perf_budget"
+    if data.get("schema_version") != 1:
+        return False, "schema_version must be 1"
+    if not isinstance(data.get("passed"), bool):
+        return False, "passed must be a boolean"
+    if data.get("status") not in {"passed", "failed", "advisory", "invalid"}:
+        return False, "status must be passed, failed, advisory, or invalid"
+    if not isinstance(data.get("probes"), list):
+        return False, "probes must be a list"
+    if not isinstance(data.get("violations"), list):
+        return False, "violations must be a list"
+    if data["passed"] and data["violations"]:
+        return False, "passed perf artifact must not include violations"
+    return bool(data["passed"]), "refactor perf budget schema passed" if data["passed"] else "refactor perf budget reports failed"
+
+
 def required_artifact_reports_pass(artifact: str, data: Any) -> tuple[bool, str]:
     if artifact == ML_VALIDATOR_ARTIFACT:
         return ml_validator_reports_pass(data)
     if artifact == REGRESSION_RESISTANCE_ARTIFACT:
         return regression_resistance_reports_pass(data)
+    if artifact == REFACTOR_RESISTANCE_ARTIFACT:
+        return refactor_resistance_reports_pass(data)
+    if artifact == REFACTOR_STRUCTURE_ARTIFACT:
+        return refactor_structure_reports_pass(data)
+    if artifact == REFACTOR_COMPLEXITY_ARTIFACT:
+        return refactor_complexity_reports_pass(data)
+    if artifact == REFACTOR_PERF_ARTIFACT:
+        return refactor_perf_reports_pass(data)
     return artifact_reports_pass(data)
 
 

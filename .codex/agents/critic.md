@@ -16,4 +16,11 @@ For dependency-risk-audit workflows, verify that source annotations are useful, 
 
 For refactor tasks, use `.codex/checklists/refactor.md` as the source of
 behavior-preservation surfaces. Prefer compatibility wrappers over clean
-breaking changes when the checklist exposes a compatibility risk.
+breaking changes when the checklist exposes a compatibility risk. Require the
+deterministic behavior diff, changed-line coverage, API surface diff,
+refactor-structure, complexity report, perf-budget, and refactor-resistance artifacts before
+returning `PASS`. Confirm the plan's `refactor_type` matches the implementation
+shape, complexity increases are absent or explicitly justified, and that the
+performance budget has no clear unjustified regression. Confirm that the
+behavior manifest includes process exit/stderr, exception, and written-file
+probes when those surfaces are externally observable.

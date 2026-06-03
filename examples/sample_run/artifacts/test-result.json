@@ -1,0 +1,5 @@
+{
+  "check": "test",
+  "command": "python test_textutil.py",
+  "passed": true
+}

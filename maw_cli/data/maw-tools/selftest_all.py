@@ -14,6 +14,7 @@ WEB_CHECKS = TOOLS / "web_checks.py"
 SELFTEST_CHECKS = TOOLS / "selftest_checks.py"
 SELFTEST_WEB = TOOLS / "selftest_web_checks.py"
 SELFTEST_ML = TOOLS / "selftest_ml_checks.py"
+SELFTEST_REFACTOR = TOOLS / "selftest_refactor_checks.py"
 SELFTEST_PLAN = TOOLS / "selftest_plan_check.py"
 VENDORED_DATA_CHECK = TOOLS / "check_vendored_data.py"
 PLAN_CHECK = TOOLS / "plan_check.py"
@@ -110,6 +111,7 @@ def main() -> int:
         ("core_checks", [sys.executable, str(SELFTEST_CHECKS)]),
         ("web_checks", [sys.executable, str(SELFTEST_WEB)]),
         ("ml_checks", [sys.executable, str(SELFTEST_ML)]),
+        ("refactor_checks", [sys.executable, str(SELFTEST_REFACTOR)]),
         ("plan_check", [sys.executable, str(SELFTEST_PLAN)]),
         ("checklists", [sys.executable, str(CHECKLIST_CHECK), "--root", str(REPO_ROOT)]),
         ("vendored_data", [sys.executable, str(VENDORED_DATA_CHECK)]),
