@@ -103,8 +103,11 @@ def capture_baseline(root: Path, manifest: Path, output: Path) -> dict:
     return data
 
 
-def write_surface(path: Path, entrypoints: list[str] | None = None) -> None:
-    write_json(path, {"entrypoints": entrypoints or ["legacy:keep"], "entrypoints_before": entrypoints or ["legacy:keep"]})
+def write_surface(path: Path, entrypoints: list[str] | None = None, source_paths: list[str] | None = None) -> None:
+    payload = {"entrypoints": entrypoints or ["legacy:keep"], "entrypoints_before": entrypoints or ["legacy:keep"]}
+    if source_paths is not None:
+        payload["source_paths"] = source_paths
+    write_json(path, payload)
 
 
 def write_web_fixture(root: Path) -> None:
@@ -126,6 +129,40 @@ def write_web_fixture(root: Path) -> None:
     (root / "static" / "app.css").write_text("#keep-root { color: #111111; }\n.screen { display: block; }\n", encoding="utf-8")
     (root / "static" / "app.js").write_text("document.querySelector('#keep-root').addEventListener('click', () => fetch('/api/save'));\n", encoding="utf-8")
     (root / "app.py").write_text("def save():\n    return {'token': 'abc'}\n", encoding="utf-8")
+
+
+def write_interaction_artifact(path: Path, mutate: str | None = None, omit: str | None = None) -> None:
+    scenarios = [
+        "existing-playwright-suite",
+        "drag-with-live-ghost",
+        "grid-snap",
+        "collision-reflow",
+        "resize-snap",
+        "pin-protection",
+        "collapse",
+        "recolor",
+        "rename",
+        "select-mode-multi-move",
+        "edge-auto-scroll",
+        "background-photo-switching",
+        "save-reload-identical",
+    ]
+    write_json(
+        path,
+        {
+            "scenarios": [
+                {
+                    "name": name,
+                    "passed": False if name == mutate else True,
+                    "dom_sha256": hashlib.sha256(f"{name}:dom".encode()).hexdigest(),
+                    "geometry_sha256": hashlib.sha256((f"{name}:handler-missing" if name == mutate else f"{name}:geometry").encode()).hexdigest(),
+                    "computed_css_sha256": hashlib.sha256(f"{name}:css".encode()).hexdigest(),
+                }
+                for name in scenarios
+                if name != omit
+            ]
+        },
+    )
 
 
 def hidden_dep_ids(graph: dict, root: Path) -> list[str]:
@@ -174,12 +211,24 @@ def main() -> int:
         write_surface(surface, entrypoints or ["dom:#keep-root"])
         baseline = root / "characterization-baseline.json"
         code, data = run_json([sys.executable, str(SALVAGE), "characterize", str(root), "--output", str(baseline)], root)
-        results.append({"name": "characterization_baseline_captures_files", "passed": code == 0 and data.get("passed") is True and len(data.get("items", [])) >= 2})
+        static_only_failed = code != 0 and any("interaction" in str(error) for error in data.get("errors", []))
+        interaction = root / "interaction-baseline.json"
+        write_interaction_artifact(interaction)
+        cmd = f"{sys.executable} -c \"print('interaction ok')\""
+        code, data = run_json([sys.executable, str(SALVAGE), "characterize", str(root), "--test-cmd", cmd, "--interaction-artifact", str(interaction), "--output", str(baseline)], root)
+        results.append({"name": "characterization_baseline_captures_files", "passed": static_only_failed and code == 0 and data.get("passed") is True and data.get("interaction_scenario_count") == 13})
         parity = root / "preserve-parity.json"
-        code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--preserved-surface", str(surface), "--output", str(parity)], root)
+        current_interaction = root / "interaction-current.json"
+        write_interaction_artifact(current_interaction)
+        code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--test-cmd", cmd, "--interaction-artifact", str(current_interaction), "--preserved-surface", str(surface), "--output", str(parity)], root)
         results.append({"name": "characterization_parity_clean_passes", "passed": code == 0 and data.get("passed") is True})
+        results.append({"name": "hollow_port_reproduced_interactions_pass", "passed": code == 0 and data.get("passed") is True})
+        hollow_interaction = root / "interaction-hollow.json"
+        write_interaction_artifact(hollow_interaction, mutate="drag-with-live-ghost")
+        code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--test-cmd", cmd, "--interaction-artifact", str(hollow_interaction), "--preserved-surface", str(surface), "--output", str(parity)], root)
+        results.append({"name": "hollow_port_static_identical_missing_interactions_fails", "passed": code != 0 and any(item.get("type") == "preserved_surface_behavior_drift" for item in data.get("violations", []))})
         (root / "static" / "app.css").write_text("#keep-root { color: #222222; }\n.screen { display: block; }\n", encoding="utf-8")
-        code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--preserved-surface", str(surface), "--output", str(parity)], root)
+        code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--test-cmd", cmd, "--interaction-artifact", str(current_interaction), "--preserved-surface", str(surface), "--output", str(parity)], root)
         results.append({"name": "characterization_parity_drift_fails", "passed": code != 0 and any(item.get("type") == "preserved_surface_behavior_drift" for item in data.get("violations", []))})
         cross = root / "cross-lang-couplings.json"
         code, data = run_json([sys.executable, str(SALVAGE), "cross-lang", "--graph", str(graph_path), "--root", str(root), "--output", str(cross)], root)
@@ -245,6 +294,32 @@ def main() -> int:
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         root = Path(tmp_dir)
+        run_dir = root / "run"
+        artifacts = run_dir / "artifacts"
+        artifacts.mkdir(parents=True)
+        graph = {
+            "schema_version": 1,
+            "passed": True,
+            "entrypoints": ["ui:start"],
+            "modules": [{"id": "ui", "path": "src/ui.js", "language": "javascript"}],
+            "symbols": [{"id": "ui:start", "module_id": "ui", "name": "start", "kind": "function"}],
+            "edges": [],
+        }
+        write_json(artifacts / "code-graph.json", graph)
+        write_surface(artifacts / "preserved-surface.json", ["ui:start"], [])
+        (artifacts / "preserved-surface.sha256").write_text(hashlib.sha256((artifacts / "preserved-surface.json").read_bytes()).hexdigest() + "\n", encoding="utf-8")
+        for name in ("topology.json", "characterization-baseline.json", "preserve-parity.json", "hidden-deps.json", "cross-lang-couplings.json", "duplication.json", "complexity-candidates.json", "complexity-reduced.json", "stale-code.json", "interdependency-dossier.json", "salvage-resistance.json"):
+            write_json(artifacts / name, {"check": name[:-5], "schema_version": 1, "passed": True})
+        write_json(artifacts / "dead-code.json", {"check": "dead-code", "schema_version": 1, "passed": True, "proof": {"entrypoints": ["ui:start"]}})
+        code, data = run_json([sys.executable, str(SALVAGE), "verdict", str(run_dir)], root)
+        results.append({"name": "reachable_source_path_missing_fails_surface_freeze", "passed": code != 0 and any(item.get("type") == "preserved_surface_missing_reachable_source_paths" and item.get("missing") == ["src/ui.js"] for item in data.get("violations", []))})
+        write_surface(artifacts / "preserved-surface.json", ["ui:start"], ["src/ui.js"])
+        (artifacts / "preserved-surface.sha256").write_text(hashlib.sha256((artifacts / "preserved-surface.json").read_bytes()).hexdigest() + "\n", encoding="utf-8")
+        code, data = run_json([sys.executable, str(SALVAGE), "verdict", str(run_dir)], root)
+        results.append({"name": "reachable_source_path_complete_passes_surface_freeze", "passed": code == 0 and data.get("passed") is True})
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
         write_source(root, "clean")
         graph_path = root / "code-graph.json"
         graph = code_graph(root, graph_path)
@@ -256,8 +331,12 @@ def main() -> int:
         surface = root / "preserved-surface.json"
         write_surface(surface)
         manifest = behavior_manifest(root)
-        baseline = root / "behavior-baseline.json"
-        capture_baseline(root, manifest, baseline)
+        baseline = root / "characterization-baseline.json"
+        interaction = root / "interaction-baseline.json"
+        write_interaction_artifact(interaction)
+        cmd = f"{sys.executable} -c \"print('interaction ok')\""
+        code, data = run_json([sys.executable, str(SALVAGE), "characterize", str(root), "--test-cmd", cmd, "--interaction-artifact", str(interaction), "--output", str(baseline)], root)
+        assert code == 0, data
         removed = root / "removed-symbols.json"
         write_json(removed, {"removed_symbols": ["legacy:removed"]})
         plan = root / "duplication-plan.json"
@@ -265,7 +344,7 @@ def main() -> int:
         output = root / "salvage-resistance.json"
         code, data = run_json([sys.executable, str(SALVAGE), "resistance", "--graph", str(graph_path), "--preserved-surface", str(surface), "--removed", str(removed), "--duplication-plan", str(plan), "--coverage", str(coverage), "--baseline", str(baseline), "--root", str(root), "--output", str(output)], root)
         names = {item.get("name"): item.get("caught") for item in data.get("mutations", [])}
-        expected = {"reintroduced_hidden_dependency", "resurrected_dead_reference", "reduplicated_function", "server_preserved_surface_behavior_break", "client_preserved_surface_behavior_break", "broken_cross_language_coupling", "surface_shrink_gaming"}
+        expected = {"reintroduced_hidden_dependency", "resurrected_dead_reference", "reduplicated_function", "server_preserved_surface_behavior_break", "client_preserved_surface_behavior_break", "hollow_port_static_identical_interactions_missing", "broken_cross_language_coupling", "surface_shrink_gaming"}
         results.append({"name": "resistance_catches_all_salvage_mutations", "passed": code == 0 and data.get("passed") is True and expected <= set(names) and all(names.get(name) is True for name in expected)})
 
     with tempfile.TemporaryDirectory() as tmp_dir:

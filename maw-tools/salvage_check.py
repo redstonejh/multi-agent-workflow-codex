@@ -33,6 +33,11 @@ DEAD_CODE = "artifacts/dead-code.json"
 DUPLICATION = "artifacts/duplication.json"
 RESISTANCE = "artifacts/salvage-resistance.json"
 RESULT = "artifacts/salvage-result.json"
+COMPLEXITY_CANDIDATES = "artifacts/complexity-candidates.json"
+COMPLEXITY_REDUCED = "artifacts/complexity-reduced.json"
+STALE_CODE = "artifacts/stale-code.json"
+INTERDEPENDENCY_DOSSIER = "artifacts/interdependency-dossier.json"
+INTERDEPENDENCY_DOSSIER_MD = "artifacts/interdependency-dossier.md"
 EDGE_COUPLINGS = {"read_global", "write_global", "dynamic"}
 TRAVERSAL_EDGES = {"call", "alias", "inherit", "read_global", "write_global", "dynamic", "dom_ref", "css_ref", "route_ref", "template_var", "asset_ref"}
 WEB_EDGE_COUPLINGS = {"dom_ref", "css_ref", "route_ref", "template_var", "asset_ref"}
@@ -45,6 +50,10 @@ EXPECTED_RESISTANCE = {
     "client_preserved_surface_behavior_break": "preserve-parity",
     "broken_cross_language_coupling": "cross-lang",
     "surface_shrink_gaming": "surface-freeze",
+    "unreduced_complexity_candidate": "complexity-reduced",
+    "removed_but_live_stale_symbol": "stale",
+    "undocumented_interdependency": "interdependency-dossier",
+    "hollow_port_static_identical_interactions_missing": "preserve-parity",
 }
 
 
@@ -97,6 +106,26 @@ def graph_entrypoints(graph: dict[str, Any]) -> list[str]:
     return sorted(set(as_str_list(graph.get("entrypoints"))))
 
 
+def normalize_graph_path(value: str) -> str:
+    return str(value).replace("\\", "/").lstrip("./")
+
+
+def reachable_module_paths(graph: dict[str, Any], entrypoints: list[str]) -> list[str]:
+    reachable = reachable_symbols(graph, entrypoints)
+    module_by_id = {
+        str(item.get("id")): normalize_graph_path(str(item.get("path", "")))
+        for item in graph.get("modules", [])
+        if isinstance(item, dict) and item.get("id") and item.get("path")
+    }
+    module_ids = {
+        str(item.get("module_id"))
+        for item in graph.get("symbols", [])
+        if isinstance(item, dict) and str(item.get("id")) in reachable and item.get("module_id")
+    }
+    module_ids.update(module_id for module_id in module_by_id if module_id in reachable)
+    return sorted(module_by_id[module_id] for module_id in module_ids if module_by_id.get(module_id))
+
+
 def violation(kind: str, message: str, **extra: Any) -> dict[str, Any]:
     result = {"type": kind, "message": message}
     result.update(extra)
@@ -137,6 +166,19 @@ def check_surface_freeze(run_dir: Path, graph: dict[str, Any] | None = None, dea
             violations.append(violation("invalid_preserved_surface_hash", str(exc), artifact=SURFACE_SHA))
 
     frozen = surface_entrypoints(surface)
+    source_paths = {normalize_graph_path(path) for path in as_str_list(surface.get("source_paths"))}
+    if graph is not None:
+        reachable_paths = reachable_module_paths(graph, frozen)
+        missing_sources = sorted(path for path in reachable_paths if path not in source_paths)
+        if missing_sources:
+            violations.append(
+                violation(
+                    "preserved_surface_missing_reachable_source_paths",
+                    "preserved surface source_paths must include every source module reachable from frozen entrypoints",
+                    missing=missing_sources,
+                    reachable_source_paths=reachable_paths,
+                )
+            )
     before = sorted(set(as_str_list(surface.get("entrypoints_before"))))
     if before and len(frozen) < len(before):
         violations.append(
@@ -221,7 +263,13 @@ def cmd_preserve_parity(args: argparse.Namespace) -> int:
             baseline = load_json_object(args.characterization_baseline)
             if baseline.get("check") != "salvage_characterization" or not baseline.get("items"):
                 violations.append(violation("missing_pre_gut_characterization", "preserved-surface parity requires a captured pre-gut characterization baseline", artifact=args.characterization_baseline))
-            current = characterize_target(args.target or str(baseline.get("target", ".")), Path(args.root) if args.root else None, args.test_cmd or str(baseline.get("test_command", "")) or None)
+            current = characterize_target(
+                args.target or str(baseline.get("target", ".")),
+                Path(args.root) if args.root else None,
+                args.test_cmd or str(baseline.get("test_command", "")) or None,
+                args.interaction_artifact,
+                args.scenario or as_str_list(baseline.get("required_interaction_scenarios")) or None,
+            )
             diffs = compare_characterizations(baseline, current)
         else:
             if not args.manifest or not args.baseline:
@@ -359,9 +407,9 @@ def capture_file_item(root: Path, path: Path) -> dict[str, Any]:
 
 
 def capture_css_item(root: Path, path: Path) -> dict[str, Any]:
+    data = path.read_bytes()
     rules = web_checks.parse_css_rules(path)
-    text = json.dumps(rules, sort_keys=True, separators=(",", ":"))
-    return {"type": "css_rules", "name": rel_path(root, path), "path": rel_path(root, path), "sha256": sha256_text(text), "metadata": {"rule_count": len(rules)}}
+    return {"type": "css_file", "name": rel_path(root, path), "path": rel_path(root, path), "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data), "metadata": {"rule_count": len(rules)}}
 
 
 def capture_http_item(url: str) -> dict[str, Any]:
@@ -383,17 +431,104 @@ def capture_http_item(url: str) -> dict[str, Any]:
         }
 
 
+REQUIRED_INTERACTION_SCENARIOS = [
+    "existing-playwright-suite",
+    "drag-with-live-ghost",
+    "grid-snap",
+    "collision-reflow",
+    "resize-snap",
+    "pin-protection",
+    "collapse",
+    "recolor",
+    "rename",
+    "select-mode-multi-move",
+    "edge-auto-scroll",
+    "background-photo-switching",
+    "save-reload-identical",
+]
+
+
 def run_test_digest(cmd: str, cwd: Path) -> dict[str, Any]:
-    completed = subprocess.run(cmd, cwd=str(cwd), shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
+    completed = subprocess.run(cmd, cwd=str(cwd), shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=900)
     text = completed.stdout or ""
-    return {"type": "test_digest", "name": cmd, "sha256": sha256_text(f"{completed.returncode}\n{text}"), "metadata": {"returncode": completed.returncode, "output_sha256": sha256_text(text)}}
+    return {
+        "type": "test_digest",
+        "name": cmd,
+        "sha256": sha256_text(f"{completed.returncode}\n{text}"),
+        "metadata": {
+            "returncode": completed.returncode,
+            "output_sha256": sha256_text(text),
+            "stdout_tail": text[-4000:],
+        },
+    }
 
 
-def characterize_target(target: str, root: Path | None = None, test_cmd: str | None = None) -> dict[str, Any]:
+def scenario_name(item: Any) -> str:
+    if isinstance(item, str):
+        return item
+    if isinstance(item, dict):
+        return str(item.get("name") or item.get("scenario") or item.get("id") or "")
+    return ""
+
+
+def scenario_has_post_interaction_evidence(item: dict[str, Any]) -> bool:
+    has_dom = bool(item.get("dom_sha256") or item.get("domSnapshotSha256") or item.get("post_interaction_dom_sha256"))
+    has_geometry = bool(item.get("geometry_sha256") or item.get("geometrySnapshotSha256") or item.get("computed_geometry_sha256"))
+    has_css = bool(item.get("computed_css_sha256") or item.get("computedCssSha256") or item.get("css_sha256"))
+    return has_dom and has_geometry and (has_css or bool(item.get("allow_missing_computed_css")))
+
+
+def load_interaction_items(path: str | None, required_scenarios: list[str]) -> tuple[list[dict[str, Any]], list[str]]:
+    if not path:
+        return [], ["interaction artifact is required; static file hashing is not a valid salvage characterization"]
+    artifact = Path(path)
+    if not artifact.is_file():
+        return [], [f"missing interaction artifact: {artifact}"]
+    try:
+        data = load_json_object(artifact)
+    except Exception as exc:
+        return [], [f"invalid interaction artifact: {exc}"]
+    raw = data.get("scenarios", data.get("items", []))
+    if not isinstance(raw, list):
+        return [], ["interaction artifact must contain a scenarios array"]
+    scenarios = [item for item in raw if isinstance(item, dict)]
+    by_name = {scenario_name(item): item for item in scenarios if scenario_name(item)}
+    errors: list[str] = []
+    items: list[dict[str, Any]] = []
+    for name in required_scenarios:
+        scenario = by_name.get(name)
+        if scenario is None:
+            errors.append(f"missing required interaction scenario: {name}")
+            continue
+        if scenario.get("passed") is not True:
+            errors.append(f"interaction scenario did not pass: {name}")
+        if not scenario_has_post_interaction_evidence(scenario):
+            errors.append(f"interaction scenario lacks post-interaction DOM/computed geometry evidence: {name}")
+        stable = json.dumps(scenario, sort_keys=True, separators=(",", ":"))
+        items.append(
+            {
+                "type": "interaction_scenario",
+                "name": name,
+                "sha256": sha256_text(stable),
+                "metadata": {
+                    "artifact": str(artifact),
+                    "dom_sha256": scenario.get("dom_sha256") or scenario.get("domSnapshotSha256") or scenario.get("post_interaction_dom_sha256"),
+                    "geometry_sha256": scenario.get("geometry_sha256") or scenario.get("geometrySnapshotSha256") or scenario.get("computed_geometry_sha256"),
+                    "computed_css_sha256": scenario.get("computed_css_sha256") or scenario.get("computedCssSha256") or scenario.get("css_sha256"),
+                },
+            }
+        )
+    if not items:
+        errors.append("zero interaction scenarios executed")
+    return items, errors
+
+
+def characterize_target(target: str, root: Path | None = None, test_cmd: str | None = None, interaction_artifact: str | None = None, required_scenarios: list[str] | None = None) -> dict[str, Any]:
     is_url = target.startswith(("http://", "https://"))
     base = (root or Path(target)).resolve() if not is_url else (root or Path(".")).resolve()
     items: list[dict[str, Any]] = []
     errors: list[str] = []
+    required = required_scenarios or REQUIRED_INTERACTION_SCENARIOS
     if is_url:
         try:
             items.append(capture_http_item(target))
@@ -401,20 +536,25 @@ def characterize_target(target: str, root: Path | None = None, test_cmd: str | N
             errors.append(str(exc))
     else:
         path = Path(target).resolve()
-        source_files = iter_source_files(path, {".html", ".htm", ".jinja", ".jinja2", ".j2", ".css"})
+        source_files = iter_source_files(path, {".css"})
         for source in source_files:
             try:
-                if source.suffix.lower() == ".css":
-                    items.append(capture_css_item(path if path.is_dir() else path.parent, source))
-                else:
-                    items.append(capture_file_item(path if path.is_dir() else path.parent, source))
+                items.append(capture_css_item(path if path.is_dir() else path.parent, source))
             except Exception as exc:
                 errors.append(f"{source}: {exc}")
     if test_cmd:
         try:
-            items.append(run_test_digest(test_cmd, base))
+            digest = run_test_digest(test_cmd, base)
+            items.append(digest)
+            if digest.get("metadata", {}).get("returncode") != 0:
+                errors.append(f"interaction test command failed: {test_cmd}")
         except Exception as exc:
             errors.append(f"test command failed to capture: {exc}")
+    else:
+        errors.append("interaction test command is required for salvage characterization")
+    interaction_items, interaction_errors = load_interaction_items(interaction_artifact, required)
+    items.extend(interaction_items)
+    errors.extend(interaction_errors)
     return {
         "check": "salvage_characterization",
         "schema_version": 1,
@@ -424,6 +564,9 @@ def characterize_target(target: str, root: Path | None = None, test_cmd: str | N
         "captured_at_epoch": time.time(),
         "items": sorted(items, key=lambda item: (item.get("type", ""), item.get("name", ""))),
         "test_command": test_cmd or "",
+        "interaction_artifact": interaction_artifact or "",
+        "required_interaction_scenarios": required,
+        "interaction_scenario_count": sum(1 for item in items if item.get("type") == "interaction_scenario"),
         "errors": errors,
     }
 
@@ -446,7 +589,7 @@ def compare_characterizations(baseline: dict[str, Any], current: dict[str, Any])
 
 def cmd_characterize(args: argparse.Namespace) -> int:
     try:
-        result = characterize_target(args.target, Path(args.root) if args.root else None, args.test_cmd)
+        result = characterize_target(args.target, Path(args.root) if args.root else None, args.test_cmd, args.interaction_artifact, args.scenario)
     except Exception as exc:
         result = {"check": "salvage_characterization", "schema_version": 1, "passed": False, "target": args.target, "items": [], "errors": [str(exc)]}
     return emit(result, args.output)
@@ -840,6 +983,395 @@ def cmd_duplication(args: argparse.Namespace) -> int:
     return emit(result, args.output)
 
 
+DEFAULT_COMPLEXITY_THRESHOLDS = {"cyclomatic": 10, "nesting": 4, "length": 60}
+CONTROL_RE = re.compile(r"\b(if|for|while|catch|case|switch|else\s+if)\b|&&|\|\||\?")
+FUNCTION_RE = re.compile(
+    r"(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{"
+    r"|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>\s*\{"
+    r"|([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{",
+    re.MULTILINE,
+)
+
+
+def complexity_thresholds(args: argparse.Namespace | dict[str, Any]) -> dict[str, int]:
+    if isinstance(args, argparse.Namespace):
+        return {"cyclomatic": int(args.cyclomatic), "nesting": int(args.nesting), "length": int(args.length)}
+    raw = args.get("complexity_thresholds", {}) if isinstance(args, dict) else {}
+    if not isinstance(raw, dict):
+        raw = {}
+    return {
+        "cyclomatic": int(raw.get("cyclomatic", DEFAULT_COMPLEXITY_THRESHOLDS["cyclomatic"])),
+        "nesting": int(raw.get("nesting", DEFAULT_COMPLEXITY_THRESHOLDS["nesting"])),
+        "length": int(raw.get("length", DEFAULT_COMPLEXITY_THRESHOLDS["length"])),
+    }
+
+
+def js_function_blocks(text: str) -> list[dict[str, Any]]:
+    blocks: list[dict[str, Any]] = []
+    for match in FUNCTION_RE.finditer(text):
+        name = next((group for group in match.groups() if group), "anonymous")
+        open_index = text.find("{", match.start())
+        if open_index < 0:
+            continue
+        depth = 0
+        index = open_index
+        in_string: str | None = None
+        escaped = False
+        while index < len(text):
+            char = text[index]
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == in_string:
+                    in_string = None
+            elif char in {"'", '"', "`"}:
+                in_string = char
+            elif char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    end = index + 1
+                    body = text[open_index:end]
+                    line = text[: match.start()].count("\n") + 1
+                    blocks.append({"name": name, "line": line, "end_line": text[:end].count("\n") + 1, "body": body})
+                    break
+            index += 1
+    return blocks
+
+
+def text_function_metrics(body: str, start_line: int, end_line: int) -> dict[str, int]:
+    cyclomatic = 1 + len(CONTROL_RE.findall(body))
+    nesting = 0
+    depth = 0
+    in_string: str | None = None
+    escaped = False
+    for char in body:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == in_string:
+                in_string = None
+        elif char in {"'", '"', "`"}:
+            in_string = char
+        elif char == "{":
+            depth += 1
+            nesting = max(nesting, max(0, depth - 1))
+        elif char == "}":
+            depth = max(0, depth - 1)
+    return {"cyclomatic": cyclomatic, "nesting": nesting, "length": max(0, end_line - start_line + 1)}
+
+
+def py_function_metric_items(root: Path, path: Path) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    try:
+        text = path.read_text(encoding="utf-8")
+        metrics = behavior_baseline.function_metric_map_from_text(text, str(path))
+    except Exception:
+        return items
+    for qualname, item in metrics.items():
+        raw = item.get("metrics", {})
+        mapped = {
+            "cyclomatic": int(raw.get("cyclomatic_complexity", 0)),
+            "nesting": int(raw.get("max_nesting_depth", 0)),
+            "length": int(raw.get("function_length", 0)),
+        }
+        rel = rel_path(root, path)
+        items.append(
+            {
+                "id": f"{rel}:{qualname}",
+                "path": rel,
+                "language": "python",
+                "name": qualname,
+                "line": item.get("lineno", 0),
+                "end_line": item.get("end_lineno", 0),
+                "body_sha256": item.get("body_sha256", ""),
+                "metrics": mapped,
+            }
+        )
+    return items
+
+
+def js_function_metric_items(root: Path, path: Path) -> list[dict[str, Any]]:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return []
+    rel = rel_path(root, path)
+    items = []
+    for block in js_function_blocks(text):
+        metrics = text_function_metrics(str(block["body"]), int(block["line"]), int(block["end_line"]))
+        items.append(
+            {
+                "id": f"{rel}:{block['name']}@{block['line']}",
+                "path": rel,
+                "language": "javascript",
+                "name": block["name"],
+                "line": block["line"],
+                "end_line": block["end_line"],
+                "body_sha256": sha256_text(str(block["body"])),
+                "metrics": metrics,
+            }
+        )
+    return items
+
+
+def collect_function_metrics(root: Path) -> list[dict[str, Any]]:
+    metrics: list[dict[str, Any]] = []
+    for path in iter_source_files(root, {".py", ".js", ".jsx", ".ts", ".tsx"}):
+        if path.suffix.lower() == ".py":
+            metrics.extend(py_function_metric_items(root, path))
+        else:
+            metrics.extend(js_function_metric_items(root, path))
+    return sorted(metrics, key=lambda item: item["id"])
+
+
+def is_complexity_candidate(item: dict[str, Any], thresholds: dict[str, int]) -> bool:
+    metrics = item.get("metrics", {}) if isinstance(item.get("metrics"), dict) else {}
+    return any(int(metrics.get(metric, 0)) > int(limit) for metric, limit in thresholds.items())
+
+
+def detect_complexity_candidates(root: Path, thresholds: dict[str, int]) -> dict[str, Any]:
+    functions = collect_function_metrics(root)
+    candidates = [item for item in functions if is_complexity_candidate(item, thresholds)]
+    return {
+        "check": "salvage_complexity_candidates",
+        "schema_version": 1,
+        "passed": True,
+        "thresholds": thresholds,
+        "function_count": len(functions),
+        "candidates": candidates,
+        "candidate_count": len(candidates),
+    }
+
+
+def aggregate_complexity(functions: list[dict[str, Any]]) -> dict[str, int]:
+    totals = {"cyclomatic": 0, "nesting": 0, "length": 0}
+    for item in functions:
+        metrics = item.get("metrics", {}) if isinstance(item.get("metrics"), dict) else {}
+        for key in totals:
+            totals[key] += int(metrics.get(key, 0))
+    return totals
+
+
+def load_plan(path: str | None) -> dict[str, Any]:
+    if not path:
+        return {}
+    data = load_json(path)
+    return data if isinstance(data, dict) else {}
+
+
+def check_complexity_reduced(root: Path, baseline_path: str | None, plan_path: str | None, thresholds: dict[str, int]) -> dict[str, Any]:
+    current_functions = collect_function_metrics(root)
+    current_by_id = {str(item["id"]): item for item in current_functions}
+    plan = load_plan(plan_path)
+    helper_justifications = {str(item.get("id")): str(item.get("justification", "")).strip() for item in plan.get("extracted_helpers", []) if isinstance(item, dict)}
+    touched_declared = set(as_str_list(plan.get("touched_functions")))
+    violations: list[dict[str, Any]] = []
+    checked: list[dict[str, Any]] = []
+
+    if baseline_path:
+        baseline = load_json_object(baseline_path)
+    else:
+        baseline = detect_complexity_candidates(root, thresholds)
+    before_candidates = [item for item in baseline.get("candidates", []) if isinstance(item, dict)]
+    before_by_id = {str(item["id"]): item for item in before_candidates}
+
+    for before in before_candidates:
+        cid = str(before["id"])
+        after = current_by_id.get(cid)
+        touched = cid in touched_declared or (after is not None and after.get("body_sha256") != before.get("body_sha256"))
+        if not touched:
+            continue
+        item = {"id": cid, "before": before.get("metrics", {}), "after": after.get("metrics", {}) if after else None, "passed": True, "reasons": []}
+        if after is None:
+            item["removed"] = True
+            checked.append(item)
+            continue
+        for metric, limit in thresholds.items():
+            before_value = int(before.get("metrics", {}).get(metric, 0))
+            after_value = int(after.get("metrics", {}).get(metric, 0))
+            if after_value >= before_value or after_value > limit:
+                item["passed"] = False
+                reason = f"{metric} must decrease and be <= {limit}; before={before_value}, after={after_value}"
+                item["reasons"].append(reason)
+                violations.append(violation("complexity_candidate_not_reduced", reason, function_id=cid, metric=metric, before=before_value, after=after_value, threshold=limit))
+        checked.append(item)
+
+    baseline_function_count = int(baseline.get("function_count", len(before_candidates)))
+    current_function_count = len(current_functions)
+    before_aggregate = aggregate_complexity([item for item in before_candidates])
+    after_aggregate = aggregate_complexity([current_by_id[cid] for cid in before_by_id if cid in current_by_id])
+    if current_function_count > baseline_function_count and sum(after_aggregate.values()) >= sum(before_aggregate.values()):
+        violations.append(
+            violation(
+                "over_fragmentation_without_aggregate_complexity_reduction",
+                "function count increased without lowering aggregate candidate complexity",
+                before_function_count=baseline_function_count,
+                after_function_count=current_function_count,
+                before_aggregate=before_aggregate,
+                after_aggregate=after_aggregate,
+            )
+        )
+
+    new_functions = [item for item in current_functions if item["id"] not in {str(f.get("id")) for f in baseline.get("functions", []) if isinstance(f, dict)} and item["id"] not in before_by_id]
+    for helper in new_functions:
+        if helper["id"] in touched_declared and not helper_justifications.get(helper["id"]):
+            violations.append(violation("extracted_helper_lacks_justification", "new helper must have a one-line justification", function_id=helper["id"]))
+
+    return {
+        "check": "salvage_complexity_reduced",
+        "schema_version": 1,
+        "passed": not violations,
+        "thresholds": thresholds,
+        "checked": checked,
+        "before_candidate_count": len(before_candidates),
+        "before_function_count": baseline_function_count,
+        "after_function_count": current_function_count,
+        "before_aggregate": before_aggregate,
+        "after_aggregate": after_aggregate,
+        "violations": violations,
+    }
+
+
+def cmd_complexity_candidates(args: argparse.Namespace) -> int:
+    try:
+        result = detect_complexity_candidates(Path(args.root), complexity_thresholds(args))
+    except Exception as exc:
+        result = {"check": "salvage_complexity_candidates", "schema_version": 1, "passed": False, "status": "invalid", "candidates": [], "violations": [violation("complexity_candidates_error", str(exc))]}
+    return emit(result, args.output)
+
+
+def cmd_complexity_reduced(args: argparse.Namespace) -> int:
+    try:
+        result = check_complexity_reduced(Path(args.root), args.baseline_candidates, args.plan, complexity_thresholds(args))
+    except Exception as exc:
+        result = {"check": "salvage_complexity_reduced", "schema_version": 1, "passed": False, "status": "invalid", "violations": [violation("complexity_reduced_error", str(exc))]}
+    return emit(result, args.output)
+
+
+STALE_MARKER_RE = re.compile(r"\b(TODO|FIXME|DEPRECATED|XXX|LEGACY|dead feature flag)\b", re.IGNORECASE)
+CUT_TOKEN_RE = re.compile(r"\b(engineer|underlay|context\s+(inheritance|divider|inspector)|workspace-context|resolved-context|divider|inspector|anchor|dataflow|data-source|semantic|working-surface|assistant|activity-feed|search-shell|filter-shell|search\s+bar|filter\s+control|settings|/api/dashboard)\b", re.IGNORECASE)
+COMMENTED_CODE_RE = re.compile(r"^\s*(?://|#)\s*(if|for|while|function|class|const|let|var|def|return|fetch\(|document\.|window\.)\b")
+
+
+def stale_items(root: Path, graph: dict[str, Any], removed: list[str], justification_path: str | None) -> dict[str, Any]:
+    justifications = load_plan(justification_path).get("justifications", {}) if justification_path else {}
+    if not isinstance(justifications, dict):
+        justifications = {}
+    reachable = reachable_symbols(graph, graph_entrypoints(graph))
+    removed_set = set(removed)
+    items: list[dict[str, Any]] = []
+    violations: list[dict[str, Any]] = []
+
+    for path in iter_source_files(root, {".py", ".js", ".jsx", ".ts", ".tsx", ".html", ".htm", ".jinja", ".jinja2", ".j2", ".css"}):
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except UnicodeDecodeError:
+            continue
+        for line_no, line in enumerate(lines, start=1):
+            reasons = []
+            if STALE_MARKER_RE.search(line):
+                reasons.append("legacy_marker")
+            if COMMENTED_CODE_RE.search(line):
+                reasons.append("commented_out_code")
+            if CUT_TOKEN_RE.search(line):
+                reasons.append("cut_system_token")
+            if not reasons:
+                continue
+            sid = f"{rel_path(root, path)}:{line_no}"
+            kept_justification = str(justifications.get(sid, "")).strip()
+            item = {"id": sid, "path": rel_path(root, path), "line": line_no, "reasons": reasons, "removed": False, "kept_justification": kept_justification}
+            items.append(item)
+            if not kept_justification:
+                violations.append(violation("kept_stale_code_lacks_justification", "kept stale code must be justified or removed", item_id=sid, reasons=reasons))
+
+    for symbol in removed:
+        reachable_removed = symbol in reachable
+        refs = [edge for edge in edge_list(graph) if str(edge.get("to")) == symbol and str(edge.get("from")) in reachable]
+        item = {"id": symbol, "reasons": ["removed_symbol"], "removed": True, "unreachable": not reachable_removed, "referenced_by_kept_code": bool(refs)}
+        items.append(item)
+        if reachable_removed or refs:
+            violations.append(violation("removed_stale_symbol_is_live", "removed stale symbol is reachable or referenced by kept code", symbol=symbol, referenced_edges=refs))
+
+    return {"check": "salvage_stale_code", "schema_version": 1, "passed": not violations, "items": items, "violations": violations}
+
+
+def cmd_stale(args: argparse.Namespace) -> int:
+    try:
+        graph = load_json_object(args.graph)
+        removed = declared_removed(args.removed, graph)
+        result = stale_items(Path(args.root), graph, removed, args.justifications)
+    except Exception as exc:
+        result = {"check": "salvage_stale_code", "schema_version": 1, "passed": False, "status": "invalid", "items": [], "violations": [violation("stale_code_error", str(exc))]}
+    return emit(result, args.output)
+
+
+def dossier_ids_from_markdown(path: Path) -> set[str]:
+    if not path.is_file():
+        return set()
+    text = path.read_text(encoding="utf-8")
+    ids = set(re.findall(r"\b(?:MAW-DEP\[)?([a-f0-9]{12})(?:\])?\b", text))
+    ids.update(re.findall(r"^\s*[-#]+\s*(?:id:\s*)?([A-Za-z0-9_-]{8,})\b", text, flags=re.MULTILINE))
+    return ids
+
+
+def documented_dep_ids(root: Path) -> set[str]:
+    return set(re.findall(r"MAW-DEP\[([^\]]+)\]", source_text(root)))
+
+
+def all_interdependencies(graph: dict[str, Any], root: Path, coverage_path: str | None) -> list[dict[str, Any]]:
+    hidden = [{**item, "source": "hidden-deps"} for item in hidden_couplings(graph)]
+    cross = [{**item, "source": "cross-lang"} for item in detect_cross_language_couplings(graph, root, coverage_path).get("couplings", [])]
+    by_id: dict[str, dict[str, Any]] = {}
+    for item in hidden + cross:
+        by_id[str(item["id"])] = item
+    return sorted(by_id.values(), key=lambda item: str(item["id"]))
+
+
+def check_interdependency_dossier(graph: dict[str, Any], root: Path, coverage_path: str | None, dossier_path: str | None) -> dict[str, Any]:
+    couplings = all_interdependencies(graph, root, coverage_path)
+    coupling_ids = {str(item["id"]) for item in couplings}
+    documented_ids = documented_dep_ids(root)
+    covered = coupling_covered_ids(coverage_path)
+    dossier_file = Path(dossier_path) if dossier_path else root / INTERDEPENDENCY_DOSSIER_MD
+    dossier_ids = dossier_ids_from_markdown(dossier_file)
+    violations: list[dict[str, Any]] = []
+
+    for dep_id in sorted(coupling_ids | documented_ids):
+        if dep_id not in dossier_ids:
+            violations.append(violation("maw_dep_missing_dossier_entry", "MAW-DEP id lacks interdependency dossier entry", dependency_id=dep_id))
+        if dep_id not in covered:
+            violations.append(violation("maw_dep_missing_covering_test", "MAW-DEP id lacks covering test evidence", dependency_id=dep_id))
+    for dep_id in sorted(dossier_ids):
+        if dep_id not in coupling_ids and dep_id in documented_ids:
+            violations.append(violation("dossier_coupling_absent_from_graph", "dossier references a coupling that is no longer graph-derived", dependency_id=dep_id))
+    return {
+        "check": "salvage_interdependency_dossier",
+        "schema_version": 1,
+        "passed": not violations,
+        "dossier": str(dossier_file),
+        "couplings": couplings,
+        "documented_ids": sorted(documented_ids),
+        "dossier_ids": sorted(dossier_ids),
+        "covered_ids": sorted(covered),
+        "violations": violations,
+    }
+
+
+def cmd_dossier(args: argparse.Namespace) -> int:
+    try:
+        graph = load_json_object(args.graph)
+        result = check_interdependency_dossier(graph, Path(args.root), args.coverage, args.dossier)
+    except Exception as exc:
+        result = {"check": "salvage_interdependency_dossier", "schema_version": 1, "passed": False, "status": "invalid", "couplings": [], "violations": [violation("interdependency_dossier_error", str(exc))]}
+    return emit(result, args.output)
+
+
 def mutate_graph_for_hidden_dep(graph: dict[str, Any]) -> dict[str, Any]:
     mutant = json.loads(json.dumps(graph))
     symbols = [item for item in mutant.get("symbols", []) if isinstance(item, dict)]
@@ -903,6 +1435,29 @@ def behavior_mutation_caught(baseline_path: str | None) -> bool:
     return bool(behavior_baseline.compare_snapshots(baseline, current))
 
 
+def hollow_port_mutation_caught(baseline_path: str | None) -> bool:
+    if not baseline_path:
+        return False
+    baseline = load_json_object(baseline_path)
+    if baseline.get("check") != "salvage_characterization":
+        return False
+    current = json.loads(json.dumps(baseline))
+    items = current.get("items")
+    if not isinstance(items, list):
+        return False
+    interaction_indexes = [index for index, item in enumerate(items) if isinstance(item, dict) and item.get("type") == "interaction_scenario"]
+    if not interaction_indexes:
+        return False
+    del items[interaction_indexes[0]]
+    diffs = compare_characterizations(baseline, current)
+    return any(
+        isinstance(diff, dict)
+        and diff.get("type") in {"missing_item", "item_drift"}
+        and diff.get("item", {}).get("type") == "interaction_scenario"
+        for diff in diffs
+    )
+
+
 def surface_shrink_caught(surface: dict[str, Any]) -> bool:
     entries = surface_entrypoints(surface)
     if not entries:
@@ -931,13 +1486,75 @@ def mutate_graph_for_cross_lang(graph: dict[str, Any]) -> dict[str, Any]:
     return mutant
 
 
-def check_resistance(graph: dict[str, Any], surface: dict[str, Any], removed: list[str], duplication_plan: dict[str, Any], root: Path, coverage: str | None, baseline: str | None) -> dict[str, Any]:
+def complexity_mutation_caught(root: Path, thresholds: dict[str, int]) -> bool:
+    functions = collect_function_metrics(root)
+    if not functions:
+        return True
+    target = functions[0]
+    mutant_thresholds = {"cyclomatic": 0, "nesting": 0, "length": 0}
+    mutant_baseline = {
+        "check": "salvage_complexity_candidates",
+        "schema_version": 1,
+        "passed": True,
+        "thresholds": mutant_thresholds,
+        "function_count": len(functions),
+        "functions": functions,
+        "candidates": [{**target, "body_sha256": "mutated-before"}],
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        baseline = Path(tmp) / "complexity-candidates.json"
+        plan = Path(tmp) / "complexity-plan.json"
+        baseline.write_text(json.dumps(mutant_baseline, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        plan.write_text(json.dumps({"touched_functions": [target["id"]]}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        result = check_complexity_reduced(root, str(baseline), str(plan), mutant_thresholds)
+    return result["passed"] is False
+
+
+def stale_mutation_caught(graph: dict[str, Any], root: Path) -> bool:
+    mutant = json.loads(json.dumps(graph))
+    entrypoints = graph_entrypoints(mutant) or ["module:entry"]
+    live = "module:removed_but_live"
+    mutant.setdefault("symbols", []).append({"id": live, "module_id": "module", "name": "removed_but_live", "qualname": "removed_but_live", "kind": "function"})
+    mutant.setdefault("edges", []).append({"type": "call", "from": entrypoints[0], "to": live, "location": {"path": "mutant.js", "line": 1}})
+    result = stale_items(root, mutant, [live], None)
+    return result["passed"] is False
+
+
+def dossier_mutation_caught(graph: dict[str, Any], root: Path, coverage: str | None) -> bool:
+    mutant = mutate_graph_for_cross_lang(graph)
+    with tempfile.TemporaryDirectory() as tmp:
+        dossier = Path(tmp) / "empty-dossier.md"
+        dossier.write_text("# Interdependency Dossier\n", encoding="utf-8")
+        result = check_interdependency_dossier(mutant, root, coverage, str(dossier))
+    return result["passed"] is False
+
+
+def check_resistance(
+    graph: dict[str, Any],
+    surface: dict[str, Any],
+    removed: list[str],
+    duplication_plan: dict[str, Any],
+    root: Path,
+    coverage: str | None,
+    baseline: str | None,
+    complexity_baseline: str | None = None,
+    complexity_plan: str | None = None,
+    stale_justifications: str | None = None,
+    dossier: str | None = None,
+) -> dict[str, Any]:
+    thresholds = dict(DEFAULT_COMPLEXITY_THRESHOLDS)
     clean = {
         "hidden-deps": check_hidden_deps(graph, root, coverage),
         "dead-code": check_dead_code(graph, removed, surface_entrypoints(surface)),
         "duplication": check_duplication(graph, duplication_plan, 0.8),
         "cross-lang": detect_cross_language_couplings(graph, root, coverage),
     }
+    if complexity_baseline or complexity_plan:
+        clean["complexity-reduced"] = check_complexity_reduced(root, complexity_baseline, complexity_plan, thresholds)
+    if stale_justifications:
+        clean["stale"] = stale_items(root, graph, removed, stale_justifications)
+    if dossier:
+        clean["interdependency-dossier"] = check_interdependency_dossier(graph, root, coverage, dossier)
     mutations: list[dict[str, Any]] = []
     hidden = check_hidden_deps(mutate_graph_for_hidden_dep(graph), root, coverage)
     mutations.append({"name": "reintroduced_hidden_dependency", "planted": True, "caught": hidden["passed"] is False, "mutant_passed": hidden["passed"], "failed_checks": [item["type"] for item in hidden["violations"]]})
@@ -949,10 +1566,18 @@ def check_resistance(graph: dict[str, Any], surface: dict[str, Any], removed: li
     behavior_caught = behavior_mutation_caught(baseline)
     mutations.append({"name": "server_preserved_surface_behavior_break", "planted": bool(baseline), "caught": behavior_caught, "mutant_passed": not behavior_caught, "failed_checks": ["preserved_surface_behavior_drift"] if behavior_caught else []})
     mutations.append({"name": "client_preserved_surface_behavior_break", "planted": bool(baseline), "caught": behavior_caught, "mutant_passed": not behavior_caught, "failed_checks": ["preserved_surface_behavior_drift"] if behavior_caught else []})
+    hollow_caught = hollow_port_mutation_caught(baseline)
+    mutations.append({"name": "hollow_port_static_identical_interactions_missing", "planted": bool(baseline), "caught": hollow_caught, "mutant_passed": not hollow_caught, "failed_checks": ["missing_interaction_scenario"] if hollow_caught else []})
     cross = detect_cross_language_couplings(mutate_graph_for_cross_lang(graph), root, coverage)
     mutations.append({"name": "broken_cross_language_coupling", "planted": True, "caught": cross["passed"] is False, "mutant_passed": cross["passed"], "failed_checks": [item["type"] for item in cross["violations"]]})
     shrink_caught = surface_shrink_caught(surface)
     mutations.append({"name": "surface_shrink_gaming", "planted": True, "caught": shrink_caught, "mutant_passed": not shrink_caught, "failed_checks": ["preserved_surface_shrank"] if shrink_caught else []})
+    complexity_caught = complexity_mutation_caught(root, thresholds)
+    mutations.append({"name": "unreduced_complexity_candidate", "planted": True, "caught": complexity_caught, "mutant_passed": not complexity_caught, "failed_checks": ["complexity_candidate_not_reduced"] if complexity_caught else []})
+    stale_caught = stale_mutation_caught(graph, root)
+    mutations.append({"name": "removed_but_live_stale_symbol", "planted": True, "caught": stale_caught, "mutant_passed": not stale_caught, "failed_checks": ["removed_stale_symbol_is_live"] if stale_caught else []})
+    dossier_caught = dossier_mutation_caught(graph, root, coverage)
+    mutations.append({"name": "undocumented_interdependency", "planted": True, "caught": dossier_caught, "mutant_passed": not dossier_caught, "failed_checks": ["maw_dep_missing_dossier_entry"] if dossier_caught else []})
     caught = sum(1 for item in mutations if item["caught"] is True)
     clean_passed = all(item.get("passed") is True for item in clean.values())
     violations = []
@@ -978,7 +1603,7 @@ def cmd_resistance(args: argparse.Namespace) -> int:
         surface = load_json_object(args.preserved_surface)
         removed = declared_removed(args.removed, graph)
         plan = load_duplication_plan(args.duplication_plan)
-        result = check_resistance(graph, surface, removed, plan, Path(args.root), args.coverage, args.baseline)
+        result = check_resistance(graph, surface, removed, plan, Path(args.root), args.coverage, args.baseline, args.complexity_baseline, args.complexity_plan, args.stale_justifications, args.dossier)
     except Exception as exc:
         result = {"check": "salvage_resistance", "schema_version": 1, "passed": False, "status": "invalid", "mutations": [], "summary": {"total": 0, "caught": 0}, "violations": [violation("resistance_error", str(exc))]}
     return emit(result, args.output)
@@ -1000,7 +1625,7 @@ def check_verdict(run_dir: Path) -> dict[str, Any]:
     graph = maybe_load_graph(run_dir)
     dead = load_json_object(run_dir / DEAD_CODE) if (run_dir / DEAD_CODE).is_file() else None
     freeze = check_surface_freeze(run_dir, graph, dead)
-    gates = [TOPOLOGY, CHARACTERIZATION_BASELINE, PRESERVE_PARITY, HIDDEN_DEPS, CROSS_LANG, DEAD_CODE, DUPLICATION, RESISTANCE]
+    gates = [TOPOLOGY, CHARACTERIZATION_BASELINE, PRESERVE_PARITY, HIDDEN_DEPS, CROSS_LANG, DEAD_CODE, DUPLICATION, COMPLEXITY_CANDIDATES, COMPLEXITY_REDUCED, STALE_CODE, INTERDEPENDENCY_DOSSIER, RESISTANCE]
     items = []
     violations = list(freeze["violations"])
     for artifact in gates:
@@ -1050,6 +1675,12 @@ def check_run(run_dir: Path) -> dict[str, Any]:
         result = load_json_object(result_path)
         if result.get("passed") is not True:
             violations.append(violation("salvage_result_failed", "salvage-result.json reports failed", artifact=RESULT))
+    for artifact in (COMPLEXITY_CANDIDATES, COMPLEXITY_REDUCED, STALE_CODE, INTERDEPENDENCY_DOSSIER):
+        path = run_dir / artifact
+        if path.is_file():
+            passed, reason = artifact_pass(path)
+            if not passed:
+                violations.append(violation("failing_smart_refactor_gate", "smart-refactor gate artifact did not pass", artifact=artifact, reason=reason))
     return {"check": "salvage_hard_gates", "applicable": True, "passed": not violations, "freeze": freeze, "violations": violations}
 
 
@@ -1066,6 +1697,8 @@ def build_parser() -> argparse.ArgumentParser:
     characterize.add_argument("target")
     characterize.add_argument("--root")
     characterize.add_argument("--test-cmd")
+    characterize.add_argument("--interaction-artifact", help="JSON artifact written by Playwright scenarios with post-interaction DOM/geometry/CSS hashes")
+    characterize.add_argument("--scenario", action="append", help="required interaction scenario name; defaults to the salvage GUI scenario set")
     characterize.add_argument("--output", required=True)
     characterize.set_defaults(func=cmd_characterize)
 
@@ -1075,6 +1708,8 @@ def build_parser() -> argparse.ArgumentParser:
     parity.add_argument("--characterization-baseline")
     parity.add_argument("--target")
     parity.add_argument("--test-cmd")
+    parity.add_argument("--interaction-artifact", help="current post-gut interaction artifact to compare against the frozen baseline")
+    parity.add_argument("--scenario", action="append", help="required interaction scenario name; defaults to baseline requirements")
     parity.add_argument("--preserved-surface", required=True)
     parity.add_argument("--root", default=".")
     parity.add_argument("--run")
@@ -1109,6 +1744,40 @@ def build_parser() -> argparse.ArgumentParser:
     duplication.add_argument("--output", required=True)
     duplication.set_defaults(func=cmd_duplication)
 
+    complexity_candidates = sub.add_parser("complexity-candidates")
+    complexity_candidates.add_argument("--root", default=".")
+    complexity_candidates.add_argument("--cyclomatic", type=int, default=DEFAULT_COMPLEXITY_THRESHOLDS["cyclomatic"])
+    complexity_candidates.add_argument("--nesting", type=int, default=DEFAULT_COMPLEXITY_THRESHOLDS["nesting"])
+    complexity_candidates.add_argument("--length", type=int, default=DEFAULT_COMPLEXITY_THRESHOLDS["length"])
+    complexity_candidates.add_argument("--output", required=True)
+    complexity_candidates.set_defaults(func=cmd_complexity_candidates)
+
+    complexity_reduced = sub.add_parser("complexity-reduced")
+    complexity_reduced.add_argument("--root", default=".")
+    complexity_reduced.add_argument("--baseline-candidates")
+    complexity_reduced.add_argument("--plan")
+    complexity_reduced.add_argument("--cyclomatic", type=int, default=DEFAULT_COMPLEXITY_THRESHOLDS["cyclomatic"])
+    complexity_reduced.add_argument("--nesting", type=int, default=DEFAULT_COMPLEXITY_THRESHOLDS["nesting"])
+    complexity_reduced.add_argument("--length", type=int, default=DEFAULT_COMPLEXITY_THRESHOLDS["length"])
+    complexity_reduced.add_argument("--output", required=True)
+    complexity_reduced.set_defaults(func=cmd_complexity_reduced)
+
+    stale = sub.add_parser("stale")
+    stale.add_argument("--graph", required=True)
+    stale.add_argument("--root", default=".")
+    stale.add_argument("--removed")
+    stale.add_argument("--justifications")
+    stale.add_argument("--output", required=True)
+    stale.set_defaults(func=cmd_stale)
+
+    dossier = sub.add_parser("dossier")
+    dossier.add_argument("--graph", required=True)
+    dossier.add_argument("--root", default=".")
+    dossier.add_argument("--coverage")
+    dossier.add_argument("--dossier")
+    dossier.add_argument("--output", required=True)
+    dossier.set_defaults(func=cmd_dossier)
+
     resistance = sub.add_parser("resistance")
     resistance.add_argument("--graph", required=True)
     resistance.add_argument("--preserved-surface", required=True)
@@ -1116,6 +1785,10 @@ def build_parser() -> argparse.ArgumentParser:
     resistance.add_argument("--duplication-plan")
     resistance.add_argument("--coverage")
     resistance.add_argument("--baseline")
+    resistance.add_argument("--complexity-baseline")
+    resistance.add_argument("--complexity-plan")
+    resistance.add_argument("--stale-justifications")
+    resistance.add_argument("--dossier")
     resistance.add_argument("--root", default=".")
     resistance.add_argument("--output", required=True)
     resistance.set_defaults(func=cmd_resistance)
