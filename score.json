@@ -1,0 +1,62 @@
+{
+  "check": "wilds_benchmark",
+  "dataset": {
+    "name": "civilcomments",
+    "version": "1.0"
+  },
+  "examples": {
+    "joined_count": 500,
+    "prediction_count": 500,
+    "subset_count": 500
+  },
+  "fixed_splits": true,
+  "limit": 500,
+  "metrics": {
+    "acc_avg": 0.7820000052452087,
+    "acc_wg": 0.20000000298023224,
+    "acc_y:0_LGBTQ:1": 0.7142857313156128,
+    "acc_y:0_black:1": 0.3333333432674408,
+    "acc_y:0_christian:1": 1.0,
+    "acc_y:0_female:1": 0.5909090638160706,
+    "acc_y:0_male:1": 0.5333333611488342,
+    "acc_y:0_muslim:1": 0.20000000298023224,
+    "acc_y:0_other_religions:1": 1.0,
+    "acc_y:0_white:1": 0.20000000298023224,
+    "acc_y:1_LGBTQ:1": 0.8333333134651184,
+    "acc_y:1_black:1": 0.9523809552192688,
+    "acc_y:1_christian:1": 0.7777777910232544,
+    "acc_y:1_female:1": 0.75,
+    "acc_y:1_male:1": 0.8157894611358643,
+    "acc_y:1_muslim:1": 0.800000011920929,
+    "acc_y:1_other_religions:1": 0.8888888955116272,
+    "acc_y:1_white:1": 0.8666666746139526,
+    "count_y:0_LGBTQ:1": 7.0,
+    "count_y:0_black:1": 6.0,
+    "count_y:0_christian:1": 7.0,
+    "count_y:0_female:1": 22.0,
+    "count_y:0_male:1": 15.0,
+    "count_y:0_muslim:1": 5.0,
+    "count_y:0_other_religions:1": 2.0,
+    "count_y:0_white:1": 10.0,
+    "count_y:1_LGBTQ:1": 12.0,
+    "count_y:1_black:1": 21.0,
+    "count_y:1_christian:1": 18.0,
+    "count_y:1_female:1": 48.0,
+    "count_y:1_male:1": 38.0,
+    "count_y:1_muslim:1": 25.0,
+    "count_y:1_other_religions:1": 9.0,
+    "count_y:1_white:1": 45.0
+  },
+  "metrics_source": "wilds.dataset.eval",
+  "metrics_summary": "Average acc: 0.782\n  male                   acc on non_toxic: 0.533 (n =     15)    acc on toxic: 0.816 (n =     38) \n  female                 acc on non_toxic: 0.591 (n =     22)    acc on toxic: 0.750 (n =     48) \n  LGBTQ                  acc on non_toxic: 0.714 (n =      7)    acc on toxic: 0.833 (n =     12) \n  christian              acc on non_toxic: 1.000 (n =      7)    acc on toxic: 0.778 (n =     18) \n  muslim                 acc on non_toxic: 0.200 (n =      5)    acc on toxic: 0.800 (n =     25) \n  other_religions        acc on non_toxic: 1.000 (n =      2)    acc on toxic: 0.889 (n =      9) \n  black                  acc on non_toxic: 0.333 (n =      6)    acc on toxic: 0.952 (n =     21) \n  white                  acc on non_toxic: 0.200 (n =     10)    acc on toxic: 0.867 (n =     45) \nWorst-group acc: 0.200\n",
+  "passed": true,
+  "prediction_alignment": "example_id",
+  "predictions": "civilcomments-val-500-predictions.jsonl",
+  "problems": [],
+  "reproducibility": {
+    "deterministic": true,
+    "evaluated_at_utc": "2026-06-03T06:08:55+00:00"
+  },
+  "schema_version": 1,
+  "split": "val"
+}
