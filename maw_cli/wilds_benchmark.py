@@ -13,6 +13,7 @@ import importlib
 import json
 import subprocess
 import sys
+import types
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -256,6 +257,70 @@ def apply_limit(values: list[Any], limit: int | None, label: str) -> list[Any]:
     return values[:limit]
 
 
+def limited_eval_array(value: Any, limit: int | None, label: str) -> Any:
+    if value is None:
+        raise ValueError(f"WILDS subset is missing {label}")
+    if limit is None:
+        return value
+    if limit <= 0:
+        raise ValueError("--limit must be a positive integer")
+    if len(value) < limit:
+        raise ValueError(f"--limit {limit} exceeds {label} length {len(value)}")
+    try:
+        return value[:limit]
+    except TypeError:
+        return as_sequence(value, label)[:limit]
+
+
+def predictions_for_eval(predictions: list[Any], y_true: Any) -> Any:
+    try:
+        import torch  # type: ignore
+    except ImportError:
+        return predictions
+    if isinstance(y_true, torch.Tensor):
+        return torch.as_tensor(predictions, dtype=y_true.dtype, device=y_true.device)
+    return predictions
+
+
+def ensure_torch_scatter_available() -> None:
+    try:
+        importlib.import_module("torch_scatter")
+        return
+    except ImportError:
+        pass
+    try:
+        import torch  # type: ignore
+    except ImportError:
+        return
+
+    module = types.ModuleType("torch_scatter")
+
+    def scatter(src: Any, index: Any, dim_size: int | None = None, reduce: str = "sum", dim: int = 0, out: Any = None) -> Any:
+        if dim != 0:
+            raise NotImplementedError("fallback torch_scatter.scatter only supports dim=0")
+        if reduce not in {"sum", "mean"}:
+            raise NotImplementedError("fallback torch_scatter.scatter only supports sum/mean")
+        if dim_size is None:
+            dim_size = int(index.max().item()) + 1 if index.numel() else 0
+        result_shape = (dim_size, *tuple(src.shape[1:]))
+        result = torch.zeros(result_shape, dtype=src.dtype, device=src.device) if out is None else out.zero_()
+        counts = torch.zeros(dim_size, dtype=src.dtype, device=src.device)
+        for value, group in zip(src, index):
+            group_index = int(group.item())
+            result[group_index] += value
+            counts[group_index] += 1
+        if reduce == "mean":
+            nonzero = counts > 0
+            if result.dim() == 1:
+                result[nonzero] = result[nonzero] / counts[nonzero]
+            else:
+                result[nonzero] = result[nonzero] / counts[nonzero].reshape(-1, *([1] * (result.dim() - 1)))
+        return result
+
+    module.scatter = scatter  # type: ignore[attr-defined]
+    sys.modules["torch_scatter"] = module
+
+
 def evaluate_with_wilds(prediction_data: Any, predictions_path: Path, dataset_name: str, split: str, root_dir: str | None, limit: int | None = None) -> dict[str, Any]:
     wilds = importlib.import_module("wilds")
     dataset_kwargs: dict[str, Any] = {"dataset": dataset_name, "download": False}
@@ -263,12 +328,10 @@ def evaluate_with_wilds(prediction_data: Any, predictions_path: Path, dataset_na
         dataset_kwargs["root_dir"] = root_dir
     dataset = wilds.get_dataset(**dataset_kwargs)
     subset = dataset.get_subset(split, transform=None)
-    y_true = as_sequence(getattr(subset, "y_array", None), "y_array")
-    metadata = as_sequence(getattr(subset, "metadata_array", None), "metadata_array")
+    y_true = limited_eval_array(getattr(subset, "y_array", None), limit, "y_array")
+    metadata = limited_eval_array(getattr(subset, "metadata_array", None), limit, "metadata_array")
     if len(y_true) != len(metadata):
         raise ValueError("WILDS subset y_array and metadata_array lengths differ")
-    y_true = apply_limit(y_true, limit, "WILDS subset")
-    metadata = apply_limit(metadata, limit, "WILDS metadata")
     ids = subset_ids(subset, len(y_true))
     predictions, duplicate_predictions = predictions_by_id(prediction_data)
 
@@ -282,10 +345,12 @@ def evaluate_with_wilds(prediction_data: Any, predictions_path: Path, dataset_na
     if unexpected_predictions:
         problems.append({"type": "unexpected_predictions", "ids": unexpected_predictions})
 
-    ordered_predictions = [predictions[example_id] for example_id in ids if example_id in predictions]
+    ordered_prediction_values = [predictions[example_id] for example_id in ids if example_id in predictions]
+    ordered_predictions = predictions_for_eval(ordered_prediction_values, y_true)
     metrics: dict[str, Any] = {}
     summary = None
     if not problems:
+        ensure_torch_scatter_available()
         metrics, summary = normalize_eval_result(dataset.eval(ordered_predictions, y_true, metadata))
 
     return {
@@ -308,7 +373,7 @@ def evaluate_with_wilds(prediction_data: Any, predictions_path: Path, dataset_na
         "examples": {
             "subset_count": len(ids),
             "prediction_count": len(predictions),
-            "joined_count": len(ordered_predictions),
+            "joined_count": len(ordered_prediction_values),
         },
         "problems": problems,
     }
