@@ -17,7 +17,7 @@ Verify that ML runs record reproducible seed, deterministic setting, and optiona
 - `artifacts/reproducibility-check.json`
 
 ## Deterministic Tools / Checks Used
-- `py examples/ml_problems/ml_checks.py reproducibility --data-file <run-metadata.json> --output artifacts/reproducibility-check.json`
+- `python examples/ml_problems/ml_checks.py reproducibility --data-file <run-metadata.json> --output artifacts/reproducibility-check.json`
 
 ## Pass / Fail Criteria
 - PASS when seed, deterministic flag, and optional config hash match expectations.

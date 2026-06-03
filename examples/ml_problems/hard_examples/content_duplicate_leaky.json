@@ -1,0 +1,156 @@
+{
+  "seed": 1,
+  "expected_seed": 1,
+  "features": [
+    "x1",
+    "x2"
+  ],
+  "target": "target",
+  "group_column": "group_id",
+  "time_column": "timestamp",
+  "split": {
+    "train_ids": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "test_ids": [
+      7,
+      8,
+      9,
+      10
+    ],
+    "expected_train_ratio": 0.6
+  },
+  "metrics": {
+    "accuracy": 0.9
+  },
+  "metric_checks": [
+    {
+      "name": "accuracy",
+      "direction": "at_least",
+      "threshold": 0.5
+    }
+  ],
+  "labels": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1
+  ],
+  "predictions": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "scores": [
+    0.05,
+    0.04,
+    0.03,
+    0.06,
+    0.05,
+    0.04,
+    0.03,
+    0.02,
+    0.01,
+    0.05
+  ],
+  "rows": [
+    {
+      "id": 1,
+      "x1": 1.0,
+      "x2": 3.0,
+      "target": 0,
+      "group_id": "g1",
+      "timestamp": "2024-01-01"
+    },
+    {
+      "id": 2,
+      "x1": 2.0,
+      "x2": 5.0,
+      "target": 0,
+      "group_id": "g2",
+      "timestamp": "2024-01-02"
+    },
+    {
+      "id": 3,
+      "x1": 3.0,
+      "x2": 7.0,
+      "target": 0,
+      "group_id": "g3",
+      "timestamp": "2024-01-03"
+    },
+    {
+      "id": 4,
+      "x1": 4.0,
+      "x2": 9.0,
+      "target": 0,
+      "group_id": "g4",
+      "timestamp": "2024-01-04"
+    },
+    {
+      "id": 5,
+      "x1": 5.0,
+      "x2": 11.0,
+      "target": 0,
+      "group_id": "g5",
+      "timestamp": "2024-01-05"
+    },
+    {
+      "id": 6,
+      "x1": 6.0,
+      "x2": 13.0,
+      "target": 0,
+      "group_id": "g6",
+      "timestamp": "2024-01-06"
+    },
+    {
+      "id": 7,
+      "x1": 1.0,
+      "x2": 3.0,
+      "target": 0,
+      "group_id": "g7",
+      "timestamp": "2024-01-07"
+    },
+    {
+      "id": 8,
+      "x1": 8.0,
+      "x2": 17.0,
+      "target": 0,
+      "group_id": "g8",
+      "timestamp": "2024-01-08"
+    },
+    {
+      "id": 9,
+      "x1": 9.0,
+      "x2": 19.0,
+      "target": 0,
+      "group_id": "g9",
+      "timestamp": "2024-01-09"
+    },
+    {
+      "id": 10,
+      "x1": 10.0,
+      "x2": 21.0,
+      "target": 1,
+      "group_id": "g10",
+      "timestamp": "2024-01-10"
+    }
+  ]
+}

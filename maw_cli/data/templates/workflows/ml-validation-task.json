@@ -18,8 +18,9 @@
   "required_artifacts": [
     "artifacts/ml-validator.json",
     "artifacts/leakage-audit.json",
+    "artifacts/drift-report.json",
     "artifacts/data-quality-report.json",
-    "artifacts/data-audit.md",
+    "artifacts/classification-metrics.json",
     "artifacts/baseline-comparison.json",
     "artifacts/fit-diagnosis.json",
     "artifacts/calibration-report.json",
@@ -27,21 +28,22 @@
     "artifacts/shuffled-label-check.json",
     "artifacts/multi-seed-stability.json",
     "artifacts/regression-resistance.json",
-    "artifacts/validation-report.md",
     "artifacts/acceptance-result.json"
   ],
-  "acceptance_gates": ["ml-validator-passing", "no-known-leakage", "data-quality-within-thresholds", "baseline-checked", "fit-diagnosis-healthy", "calibration-within-threshold", "reproducible-metadata", "shuffled-label-collapses", "multi-seed-stable", "regression-resistance-passing", "claims-supported"],
+  "acceptance_gates": ["ml-validator-passing", "no-known-leakage", "distribution-drift-within-threshold", "data-quality-within-thresholds", "classification-metrics-gated", "baseline-checked", "fit-diagnosis-healthy", "calibration-within-threshold", "reproducible-metadata", "shuffled-label-collapses", "multi-seed-stable", "regression-resistance-passing", "claims-supported"],
   "deterministic_checks": [
-    {"name": "leakage", "command": "py examples/ml_problems/ml_checks.py validate <result.json>"},
-    {"name": "data-quality", "command": "py examples/ml_problems/ml_checks.py data-quality --data-file <data-quality.json> --output artifacts/data-quality-report.json"},
-    {"name": "baseline", "command": "py examples/ml_problems/ml_checks.py baseline --metrics-file <metrics.json> --output artifacts/baseline-comparison.json"},
-    {"name": "fit-diagnosis", "command": "py examples/ml_problems/ml_checks.py fit-diagnosis --problem-type <classification|regression> --metrics-file <metrics.json> --output artifacts/fit-diagnosis.json"},
-    {"name": "calibration", "command": "py examples/ml_problems/ml_checks.py calibration --data-file <calibration.json> --output artifacts/calibration-report.json"},
-    {"name": "reproducibility", "command": "py examples/ml_problems/ml_checks.py reproducibility --data-file <run-metadata.json> --output artifacts/reproducibility-check.json"},
-    {"name": "shuffled-label", "command": "py examples/ml_problems/ml_checks.py shuffled-label --data-file <shuffled-label.json> --output artifacts/shuffled-label-check.json"},
-    {"name": "multi-seed", "command": "py examples/ml_problems/ml_checks.py multi-seed --data-file <multi-seed.json> --output artifacts/multi-seed-stability.json"},
-    {"name": "validator", "command": "py examples/ml_problems/ml_checks.py validator --output artifacts/ml-validator.json"},
-    {"name": "regression-resistance", "command": "py examples/ml_problems/ml_checks.py regression-resistance --result-file <result.json> --output artifacts/regression-resistance.json"},
-    {"name": "handoffs", "command": "py maw-tools/validate_handoffs.py <run_dir>"}
+    {"name": "leakage", "command": "python examples/ml_problems/ml_checks.py validate <result.json> --output artifacts/leakage-audit.json"},
+    {"name": "drift", "command": "python examples/ml_problems/ml_checks.py drift --data-file <drift.json> --max-psi 0.2 --max-ks 0.2 --output artifacts/drift-report.json"},
+    {"name": "data-quality", "command": "python examples/ml_problems/ml_checks.py data-quality --data-file <data-quality.json> --output artifacts/data-quality-report.json"},
+    {"name": "classification-metrics", "command": "python examples/ml_problems/ml_checks.py classification-metrics --data-file <classification-results.json> --metric-name macro_f1 --min-metric 0.60 --output artifacts/classification-metrics.json"},
+    {"name": "baseline", "command": "python examples/ml_problems/ml_checks.py baseline --metrics-file <metrics.json> --min-improvement 0.01 --bootstrap-samples 1000 --bootstrap-confidence 0.95 --seed 0 --output artifacts/baseline-comparison.json"},
+    {"name": "fit-diagnosis", "command": "python examples/ml_problems/ml_checks.py fit-diagnosis --problem-type <classification|regression> --metrics-file <metrics.json> --output artifacts/fit-diagnosis.json"},
+    {"name": "calibration", "command": "python examples/ml_problems/ml_checks.py calibration --data-file <calibration.json> --output artifacts/calibration-report.json"},
+    {"name": "reproducibility", "command": "python examples/ml_problems/ml_checks.py reproducibility --data-file <run-metadata.json> --output artifacts/reproducibility-check.json"},
+    {"name": "shuffled-label", "command": "python examples/ml_problems/ml_checks.py shuffled-label --data-file <shuffled-label.json> --alpha 0.05 --output artifacts/shuffled-label-check.json"},
+    {"name": "multi-seed", "command": "python examples/ml_problems/ml_checks.py multi-seed --data-file <multi-seed.json> --min-score 0.75 --max-cv 0.05 --bootstrap-samples 1000 --bootstrap-confidence 0.95 --seed 0 --output artifacts/multi-seed-stability.json"},
+    {"name": "validator", "command": "python examples/ml_problems/ml_checks.py validator --output artifacts/ml-validator.json"},
+    {"name": "regression-resistance", "command": "python examples/ml_problems/ml_checks.py regression-resistance --result-file <result.json> --output artifacts/regression-resistance.json"},
+    {"name": "handoffs", "command": "python maw-tools/validate_handoffs.py <run_dir>"}
   ]
 }

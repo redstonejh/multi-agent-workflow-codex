@@ -18,16 +18,14 @@ dependencies = []
 maw = "maw_cli:main"
 
 [tool.setuptools]
-py-modules = [
-  "fibonacci",
-  "todo_api"
-]
 packages = ["maw_cli"]
 
 [tool.setuptools.package-data]
 maw_cli = [
   "py.typed",
   "data/maw-tools/*.py",
+  "data/packs/*/manifest.json",
   "data/templates/workflows/*.json",
-  "data/examples/ml_problems/*.py"
+  "data/examples/ml_problems/*.py",
+  "data/examples/ml_problems/hard_examples/*.json"
 ]

@@ -13,7 +13,9 @@ TOOLS = Path(__file__).resolve().parent
 WEB_CHECKS = TOOLS / "web_checks.py"
 SELFTEST_CHECKS = TOOLS / "selftest_checks.py"
 SELFTEST_WEB = TOOLS / "selftest_web_checks.py"
+SELFTEST_ML = TOOLS / "selftest_ml_checks.py"
 SELFTEST_PLAN = TOOLS / "selftest_plan_check.py"
+VENDORED_DATA_CHECK = TOOLS / "check_vendored_data.py"
 PLAN_CHECK = TOOLS / "plan_check.py"
 CHECKLIST_CHECK = TOOLS / "checklist_check.py"
 REPO_ROOT = TOOLS.parent
@@ -107,8 +109,10 @@ def main() -> int:
     for name, command in (
         ("core_checks", [sys.executable, str(SELFTEST_CHECKS)]),
         ("web_checks", [sys.executable, str(SELFTEST_WEB)]),
+        ("ml_checks", [sys.executable, str(SELFTEST_ML)]),
         ("plan_check", [sys.executable, str(SELFTEST_PLAN)]),
         ("checklists", [sys.executable, str(CHECKLIST_CHECK), "--root", str(REPO_ROOT)]),
+        ("vendored_data", [sys.executable, str(VENDORED_DATA_CHECK)]),
     ):
         code, data, stdout, stderr = run_json(command)
         results.append({"name": name, "passed": code == 0 and data.get("passed") is True, "exit_code": code, "stdout": stdout.strip(), "stderr": stderr.strip()})

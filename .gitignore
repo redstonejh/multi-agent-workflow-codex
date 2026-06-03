@@ -18,6 +18,9 @@ __pycache__/
 *.pyc
 *.pyo
 .venv/
+build/
+dist/
+*.egg-info/
 
 # OS / editor cruft
 .DS_Store

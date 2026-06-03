@@ -49,8 +49,10 @@ REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
     "ml": (
         ML_VALIDATOR_ARTIFACT,
         "artifacts/leakage-audit.json",
+        "artifacts/drift-report.json",
         "artifacts/data-quality-report.json",
         "artifacts/reproducibility-check.json",
+        "artifacts/classification-metrics.json",
         "artifacts/baseline-comparison.json",
         "artifacts/fit-diagnosis.json",
         "artifacts/calibration-report.json",
@@ -61,8 +63,10 @@ REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
     "ml-training-task": (
         ML_VALIDATOR_ARTIFACT,
         "artifacts/leakage-audit.json",
+        "artifacts/drift-report.json",
         "artifacts/data-quality-report.json",
         "artifacts/reproducibility-check.json",
+        "artifacts/classification-metrics.json",
         "artifacts/baseline-comparison.json",
         "artifacts/fit-diagnosis.json",
         "artifacts/calibration-report.json",
@@ -73,7 +77,9 @@ REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
     "ml-validation-task": (
         ML_VALIDATOR_ARTIFACT,
         "artifacts/leakage-audit.json",
+        "artifacts/drift-report.json",
         "artifacts/data-quality-report.json",
+        "artifacts/classification-metrics.json",
         "artifacts/baseline-comparison.json",
         "artifacts/fit-diagnosis.json",
         "artifacts/calibration-report.json",
@@ -166,8 +172,8 @@ def ml_validator_reports_pass(data: Any) -> tuple[bool, str]:
     if not isinstance(data.get("passed"), bool):
         return False, "passed must be a boolean"
     required = data.get("required_evidence")
-    if required != ["leakage", "baseline", "multi_seed", "shuffled_label"]:
-        return False, "required_evidence must list leakage, baseline, multi_seed, shuffled_label"
+    if required != ["leakage", "drift", "baseline", "multi_seed", "shuffled_label"]:
+        return False, "required_evidence must list leakage, drift, baseline, multi_seed, shuffled_label"
     evidence = data.get("evidence")
     if not isinstance(evidence, dict):
         return False, "evidence must be an object"
@@ -199,13 +205,31 @@ def regression_resistance_reports_pass(data: Any) -> tuple[bool, str]:
     clean = data.get("clean")
     if not isinstance(clean, dict) or clean.get("passed") is not True:
         return False, "clean validation must pass before mutation testing"
-    expected = {"leaky_feature", "shuffled_labels", "train_test_overlap", "preprocessing_fit_full_data"}
+    expected = {
+        "leaky_feature",
+        "shuffled_labels",
+        "train_test_overlap",
+        "preprocessing_fit_full_data",
+        "missing_metric",
+        "weak_baseline_ci",
+        "unstable_multi_seed",
+        "bad_calibration_stats",
+        "insignificant_shuffled_label",
+        "content_duplicate_leakage",
+        "group_entity_leakage",
+        "temporal_leakage",
+        "high_feature_target_correlation",
+        "distribution_drift",
+        "hard_imbalanced_majority",
+        "hard_content_duplicate",
+        "hard_temporal_leak",
+    }
     mutations = data.get("mutations")
     if not isinstance(mutations, list):
         return False, "mutations must be a list"
     names = {item.get("name") for item in mutations if isinstance(item, dict)}
     if names != expected:
-        return False, "mutations must cover leaky_feature, shuffled_labels, train_test_overlap, preprocessing_fit_full_data"
+        return False, "mutations must cover all required ML leakage, drift, and statistical planted failures"
     for item in mutations:
         if not isinstance(item, dict):
             return False, "mutation item must be an object"

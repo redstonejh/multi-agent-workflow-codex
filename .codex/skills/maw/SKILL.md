@@ -55,6 +55,7 @@ python maw-tools/scaffold_run.py handoff --run <run_dir> --from <from_agent> --t
 python maw-tools/validate_handoffs.py <run_dir>
 python maw-tools/checks.py test --cmd "<test command>" --cwd <path>
 python maw-tools/acceptance_check.py --run <run_dir> --test-cmd "<test command>" --test-cwd <path>
+maw plan-check <conductor-plan.json>
 uv run python maw-tools/plan_check.py --file <conductor-plan.json>
 python maw-tools/verdict_check.py <run_dir>
 ```

@@ -34,5 +34,5 @@ For every completed run, verify pre-execution plan gate evidence exists: propose
 
 For refactor tasks, any unverified behavior-preservation surface identified by
 `.codex/checklists/refactor.md` is `NO-SHIP`. For ML tasks, any unverified
-leakage, overlap, baseline, shuffled-label, multi-seed, or reproducibility
+leakage, overlap, drift, baseline, shuffled-label, multi-seed, or reproducibility
 requirement referenced by `.codex/checklists/ml.md` is `NO-SHIP`.

@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -260,6 +261,8 @@ class MawToolTests(unittest.TestCase):
             "calibration-report.json",
             "shuffled-label-check.json",
             "multi-seed-stability.json",
+            "drift-report.json",
+            "classification-metrics.json",
         ):
             (artifacts / name).write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
         (artifacts / "ml-validator.json").write_text(
@@ -268,15 +271,17 @@ class MawToolTests(unittest.TestCase):
                     "check": "ml_validator",
                     "schema_version": 1,
                     "passed": True,
-                    "required_evidence": ["leakage", "baseline", "multi_seed", "shuffled_label"],
+                    "required_evidence": ["leakage", "drift", "baseline", "multi_seed", "shuffled_label"],
                     "evidence": {
                         "leakage": {"artifact": "artifacts/leakage-audit.json", "passed": True},
+                        "drift": {"artifact": "artifacts/drift-report.json", "passed": True},
                         "baseline": {"artifact": "artifacts/baseline-comparison.json", "passed": True},
                         "multi_seed": {"artifact": "artifacts/multi-seed-stability.json", "passed": True},
                         "shuffled_label": {"artifact": "artifacts/shuffled-label-check.json", "passed": True},
                     },
                     "checks": [
                         {"check": "leakage", "passed": True},
+                        {"check": "drift", "passed": True},
                         {"check": "baseline", "passed": True},
                         {"check": "multi_seed", "passed": True},
                         {"check": "shuffled_label", "passed": True},
@@ -298,8 +303,21 @@ class MawToolTests(unittest.TestCase):
                         {"name": "shuffled_labels", "caught": True, "mutant_passed": False, "failed_checks": ["labels_not_shuffled"]},
                         {"name": "train_test_overlap", "caught": True, "mutant_passed": False, "failed_checks": ["no_split_overlap"]},
                         {"name": "preprocessing_fit_full_data", "caught": True, "mutant_passed": False, "failed_checks": ["preprocessing_fit_on_train_only"]},
+                        {"name": "missing_metric", "caught": True, "mutant_passed": False, "failed_checks": ["accuracy_at_least"]},
+                        {"name": "weak_baseline_ci", "caught": True, "mutant_passed": False, "failed_checks": ["baseline_comparison"]},
+                        {"name": "unstable_multi_seed", "caught": True, "mutant_passed": False, "failed_checks": ["multi_seed"]},
+                        {"name": "bad_calibration_stats", "caught": True, "mutant_passed": False, "failed_checks": ["calibration"]},
+                        {"name": "insignificant_shuffled_label", "caught": True, "mutant_passed": False, "failed_checks": ["shuffled_label"]},
+                        {"name": "content_duplicate_leakage", "caught": True, "mutant_passed": False, "failed_checks": ["content_duplicate_leakage"]},
+                        {"name": "group_entity_leakage", "caught": True, "mutant_passed": False, "failed_checks": ["group_entity_leakage"]},
+                        {"name": "temporal_leakage", "caught": True, "mutant_passed": False, "failed_checks": ["temporal_leakage"]},
+                        {"name": "high_feature_target_correlation", "caught": True, "mutant_passed": False, "failed_checks": ["high_feature_target_correlation"]},
+                        {"name": "distribution_drift", "caught": True, "mutant_passed": False, "failed_checks": ["distribution_drift"]},
+                        {"name": "hard_imbalanced_majority", "caught": True, "mutant_passed": False, "failed_checks": ["classification_metrics"]},
+                        {"name": "hard_content_duplicate", "caught": True, "mutant_passed": False, "failed_checks": ["content_duplicate_leakage"]},
+                        {"name": "hard_temporal_leak", "caught": True, "mutant_passed": False, "failed_checks": ["temporal_leakage"]},
                     ],
-                    "summary": {"total": 4, "caught": 4},
+                    "summary": {"total": 17, "caught": 17},
                 }
             )
             + "\n",
@@ -1237,6 +1255,43 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         self.assertTrue(json.loads(proc.stdout)["passed"])
 
+    def test_maw_plan_check(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            plan = Path(tmp_dir) / "plan.json"
+            plan.write_text(
+                json.dumps(
+                    {
+                        "task_type": "generic",
+                        "roles": ["conductor", "planner", "worker", "critic", "acceptance_gate"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            proc = run_tool(str(MAW), "plan-check", str(plan))
+
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            result = json.loads(proc.stdout)
+            self.assertTrue(result["passed"])
+            self.assertEqual(result["task_type"], "generic")
+
+    def test_documented_maw_subcommands_exist(self) -> None:
+        import maw_cli.cli as maw_cli_module
+
+        documented: set[str] = set()
+        for path in (ROOT / "README.md", ROOT / ".codex" / "skills" / "maw" / "SKILL.md"):
+            documented.update(re.findall(r"(?m)^\s*maw\s+([a-z][a-z0-9-]+)\b", path.read_text(encoding="utf-8")))
+
+        parser = maw_cli_module.build_parser()
+        subcommands = set()
+        for action in parser._actions:
+            choices = getattr(action, "choices", None)
+            if choices:
+                subcommands.update(choices)
+
+        self.assertTrue(documented)
+        self.assertEqual(set(), documented - subcommands)
+
     def test_maw_acceptance(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             run_dir = Path(tmp_dir) / "sample_run"
@@ -1341,7 +1396,7 @@ class MawToolTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             root = Path(tmp_dir)
             files = {}
-            for name in ("leakage", "baseline", "multi_seed", "shuffled_label"):
+            for name in ("leakage", "drift", "baseline", "multi_seed", "shuffled_label"):
                 path = root / f"{name}.json"
                 path.write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
                 files[name] = path
@@ -1352,6 +1407,8 @@ class MawToolTests(unittest.TestCase):
                 "validator",
                 "--leakage-file",
                 str(files["leakage"]),
+                "--drift-file",
+                str(files["drift"]),
                 "--baseline-file",
                 str(files["baseline"]),
                 "--multi-seed-file",
@@ -1367,7 +1424,7 @@ class MawToolTests(unittest.TestCase):
             self.assertEqual(result["check"], "ml_validator")
             self.assertEqual(result["schema_version"], 1)
             self.assertTrue(result["passed"])
-            self.assertEqual(result["required_evidence"], ["leakage", "baseline", "multi_seed", "shuffled_label"])
+            self.assertEqual(result["required_evidence"], ["leakage", "drift", "baseline", "multi_seed", "shuffled_label"])
             self.assertEqual(result["evidence"]["leakage"]["expected_artifact"], "artifacts/leakage-audit.json")
             self.assertTrue(all(item["passed"] for item in result["checks"]))
 
@@ -1406,10 +1463,28 @@ class MawToolTests(unittest.TestCase):
             self.assertEqual(resistance_proc.returncode, 0, resistance_proc.stdout + resistance_proc.stderr)
             resistance = json.loads(output.read_text(encoding="utf-8"))
             self.assertTrue(resistance["passed"])
-            self.assertEqual(resistance["summary"], {"total": 4, "caught": 4})
+            self.assertEqual(resistance["summary"], {"total": 17, "caught": 17})
             self.assertEqual(
                 {item["name"] for item in resistance["mutations"]},
-                {"leaky_feature", "shuffled_labels", "train_test_overlap", "preprocessing_fit_full_data"},
+                {
+                    "leaky_feature",
+                    "shuffled_labels",
+                    "train_test_overlap",
+                    "preprocessing_fit_full_data",
+                    "missing_metric",
+                    "insignificant_shuffled_label",
+                    "unstable_multi_seed",
+                    "weak_baseline_ci",
+                    "bad_calibration_stats",
+                    "content_duplicate_leakage",
+                    "group_entity_leakage",
+                    "temporal_leakage",
+                    "high_feature_target_correlation",
+                    "distribution_drift",
+                    "hard_imbalanced_majority",
+                    "hard_content_duplicate",
+                    "hard_temporal_leak",
+                },
             )
             self.assertTrue(all(item["caught"] and item["mutant_passed"] is False for item in resistance["mutations"]))
 
@@ -1559,6 +1634,38 @@ class MawToolTests(unittest.TestCase):
                 self.assertEqual(result["template"], template)
                 self.assertTrue((Path(result["run_dir"]) / "artifacts" / "artifact-checklist.md").is_file())
 
+
+    def test_ml_classification_metrics_imbalance_auc_and_slices(self) -> None:
+        proc = run_tool(
+            str(ML_CHECKS),
+            "classification-metrics",
+            "--data-json",
+            json.dumps({"labels": [0, 0, 0, 0, 1], "predictions": [0, 0, 0, 0, 0], "scores": [0.1, 0.2, 0.1, 0.3, 0.2]}),
+            "--metric-name",
+            "macro_f1",
+            "--min-metric",
+            "0.7",
+        )
+        self.assertNotEqual(proc.returncode, 0)
+        result = json.loads(proc.stdout)
+        self.assertEqual(result["metrics"]["accuracy"], 0.8)
+        self.assertLess(result["metrics"]["macro_f1"], 0.7)
+        self.assertIn("confusion_matrix", result)
+        self.assertIn("roc_auc", result["metrics"])
+        self.assertIn("pr_auc", result["metrics"])
+
+    def test_ml_hard_examples_are_required_failures(self) -> None:
+        for filename, expected in [
+            ("imbalanced_majority_model.json", "classification_metrics"),
+            ("content_duplicate_leaky.json", "content_duplicate_leakage"),
+            ("temporal_leak.json", "temporal_leakage"),
+        ]:
+            with self.subTest(filename=filename):
+                proc = run_tool(str(ML_CHECKS), str(ROOT / "examples" / "ml_problems" / "hard_examples" / filename))
+                self.assertNotEqual(proc.returncode, 0)
+                failed = {item["check"] for item in json.loads(proc.stdout)["checks"] if not item["passed"]}
+                self.assertIn(expected, failed)
+
     def test_ml_fit_diagnosis_healthy_classification_passes(self) -> None:
         proc = run_tool(
             str(ML_CHECKS),
@@ -1699,7 +1806,7 @@ class MawToolTests(unittest.TestCase):
             "--real-score",
             "0.86",
             "--shuffled-scores-json",
-            json.dumps([0.49, 0.51, 0.52]),
+            json.dumps([0.49, 0.50, 0.51, 0.52] * 10),
             "--class-count",
             "2",
             "--tolerance",
@@ -1777,6 +1884,51 @@ class MawToolTests(unittest.TestCase):
         self.assertFalse(result["passed"])
         self.assertEqual(result["status"], "fail")
         self.assertTrue(any("variance" in reason for reason in result["reasons"]))
+
+
+    def test_ml_leakage_and_drift_checks_catch_real_failures(self) -> None:
+        clean = {
+            "seed": 1,
+            "expected_seed": 1,
+            "features": ["x1", "x2"],
+            "target": "target",
+            "group_column": "group_id",
+            "time_column": "timestamp",
+            "split": {"train_ids": [1, 2, 3], "test_ids": [4, 5, 6], "expected_train_ratio": 0.5},
+            "rows": [
+                {"id": 1, "x1": 1.0, "x2": 2.0, "target": 0, "group_id": "a", "timestamp": "2024-01-01"},
+                {"id": 2, "x1": 2.0, "x2": 3.0, "target": 1, "group_id": "b", "timestamp": "2024-01-02"},
+                {"id": 3, "x1": 3.0, "x2": 5.0, "target": 0, "group_id": "c", "timestamp": "2024-01-03"},
+                {"id": 4, "x1": 4.0, "x2": 7.0, "target": 1, "group_id": "d", "timestamp": "2024-01-04"},
+                {"id": 5, "x1": 5.0, "x2": 11.0, "target": 0, "group_id": "e", "timestamp": "2024-01-05"},
+                {"id": 6, "x1": 6.0, "x2": 13.0, "target": 1, "group_id": "f", "timestamp": "2024-01-06"},
+            ],
+            "metrics": {"accuracy": 0.9},
+            "metric_checks": [{"name": "accuracy", "direction": "at_least", "threshold": 0.8}],
+        }
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            clean_path = root / "clean.json"
+            clean_path.write_text(json.dumps(clean), encoding="utf-8")
+            clean_proc = run_tool(str(ML_CHECKS), str(clean_path))
+            self.assertEqual(clean_proc.returncode, 0, clean_proc.stdout + clean_proc.stderr)
+            for name, mutate, failed_check in [
+                ("content", lambda data: data["rows"][3].update({"x1": 1.0, "x2": 2.0}), "content_duplicate_leakage"),
+                ("group", lambda data: data["rows"][3].update({"group_id": "a"}), "group_entity_leakage"),
+                ("temporal", lambda data: data["rows"][3].update({"timestamp": "2024-01-02"}), "temporal_leakage"),
+                ("correlation", lambda data: (data.update({"features": ["leaky_score"], "max_abs_feature_target_correlation": 0.95}), [row.update({"leaky_score": float(row["target"])}) for row in data["rows"]]), "high_feature_target_correlation"),
+            ]:
+                bad = json.loads(json.dumps(clean))
+                mutate(bad)
+                path = root / f"{name}.json"
+                path.write_text(json.dumps(bad), encoding="utf-8")
+                proc = run_tool(str(ML_CHECKS), str(path))
+                self.assertNotEqual(proc.returncode, 0, name)
+                failed = {item["check"] for item in json.loads(proc.stdout)["checks"] if not item["passed"]}
+                self.assertIn(failed_check, failed)
+            drift = run_tool(str(ML_CHECKS), "drift", "--data-json", json.dumps({"train": {"x": [1, 1, 1, 2, 2]}, "test": {"x": [10, 11, 12, 13, 14]}}))
+            self.assertNotEqual(drift.returncode, 0)
+            self.assertFalse(json.loads(drift.stdout)["passed"])
 
     def test_ml_calibration_reproducibility_and_data_quality_checks(self) -> None:
         calibration = run_tool(

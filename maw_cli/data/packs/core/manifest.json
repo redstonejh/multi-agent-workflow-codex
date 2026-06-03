@@ -1,0 +1,55 @@
+{
+  "id": "core",
+  "task_types": ["debugging", "generic", "ml", "frontend", "code", "refactor"],
+  "task_type_aliases": {
+    "bug-investigation": "debugging",
+    "frontend-ui-task": "frontend",
+    "ml-training-task": "ml",
+    "ml-validation-task": "ml",
+    "refactor-task": "refactor",
+    "standard-software-task": "generic"
+  },
+  "core_roles": ["acceptance_gate", "conductor", "critic", "planner", "worker"],
+  "roles": [
+    "a11y_auditor",
+    "acceptance_gate",
+    "aggregator",
+    "baseline_enforcer",
+    "bug_hunter",
+    "calibration_checker",
+    "change_verifier",
+    "conductor",
+    "critic",
+    "data_quality_auditor",
+    "debugger",
+    "dependency_mapper",
+    "leakage_auditor",
+    "markup_validator",
+    "overfitting_checker",
+    "perf_budgeter",
+    "plan_reviewer",
+    "planner",
+    "reproducibility_checker",
+    "responsive_checker",
+    "style_drift_auditor",
+    "ui_builder",
+    "ux_critic",
+    "visual_verifier",
+    "worker"
+  ],
+  "role_aliases": {
+    "code_reviewer": "critic",
+    "dep_mapper": "dependency_mapper"
+  },
+  "caps": {"max_agents": 5, "max_parallel": 3},
+  "required_roles": {
+    "debugging": ["debugger", "bug_hunter", "dependency_mapper"],
+    "generic": [],
+    "ml": ["leakage_auditor", "baseline_enforcer"],
+    "frontend": ["a11y_auditor", "change_verifier"],
+    "code": ["critic", "dependency_mapper"],
+    "refactor": []
+  },
+  "required_evidence": [],
+  "depends_on": []
+}

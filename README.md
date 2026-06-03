@@ -121,6 +121,7 @@ maw start <template> "<task>" [--run-root runs]     # scaffold a run
 maw validate-template [<template>]                  # validate template schema
 maw validate-handoffs runs/<run_id>                 # check handoff completeness
 maw acceptance runs/<run_id> --test-cmd "<cmd>"     # final acceptance gate
+maw plan-check artifacts/conductor-plan.json        # pre-execution plan gate
 maw plan-graph artifacts/task-graph.json            # plan a multi-worker graph
 maw dependency-audit <path> --fail-on high          # dependency risk audit
 ```

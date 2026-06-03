@@ -16,6 +16,7 @@ if str(TOOLS) not in sys.path:
 
 import acceptance_check  # noqa: E402
 import dependency_risk_audit  # noqa: E402
+import plan_check  # noqa: E402
 import start_workflow  # noqa: E402
 import task_graph  # noqa: E402
 import validate_handoffs  # noqa: E402
@@ -99,6 +100,10 @@ def cmd_verdict_check(args: argparse.Namespace) -> int:
     return verdict_check.main([args.run_folder])
 
 
+def cmd_plan_check(args: argparse.Namespace) -> int:
+    return plan_check.main(["--file", args.plan_json])
+
+
 def cmd_plan_graph(args: argparse.Namespace) -> int:
     return task_graph.main(["plan", "--file", args.graph_json])
 
@@ -153,6 +158,10 @@ def build_parser() -> argparse.ArgumentParser:
     verdict = sub.add_parser("verdict-check", help="verify run.md final verdict matches acceptance artifact")
     verdict.add_argument("run_folder")
     verdict.set_defaults(func=cmd_verdict_check)
+
+    plan_check_cmd = sub.add_parser("plan-check", help="validate a MAW conductor plan")
+    plan_check_cmd.add_argument("plan_json")
+    plan_check_cmd.set_defaults(func=cmd_plan_check)
 
     plan_graph = sub.add_parser("plan-graph", help="plan a MAW dependency graph")
     plan_graph.add_argument("graph_json")
