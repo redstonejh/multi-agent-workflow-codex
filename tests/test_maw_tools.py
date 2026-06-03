@@ -33,6 +33,7 @@ MAW = ROOT / "maw.py"
 PYPROJECT = ROOT / "pyproject.toml"
 ML_CHECKS = ROOT / "examples" / "ml_problems" / "ml_checks.py"
 WILDS_BENCHMARK = ROOT / "maw_cli" / "wilds_benchmark.py"
+BASELINE_MODEL = ROOT / "model.py"
 ML_CLASSIFICATION = ROOT / "examples" / "ml_problems" / "classification" / "run.py"
 ML_REGRESSION = ROOT / "examples" / "ml_problems" / "regression" / "run.py"
 ML_DATA_VALIDATION = ROOT / "examples" / "ml_problems" / "data_validation" / "run.py"
@@ -439,8 +440,14 @@ class MawToolTests(unittest.TestCase):
                         "deterministic_checks": [
                             {"name": "plan-check", "command": "python maw-tools/plan_check.py --file artifacts/conductor-plan.json"},
                             {"name": "unit-tests", "command": "python -m unittest discover -s tests"},
+                            {"name": "readme-check", "command": "python maw-tools/readme_check.py"},
+                            {"name": "dependency-boundary", "command": "python -m unittest tests.test_maw_tools.MawToolTests.test_maw_tools_never_import_wilds_or_torch"},
+                            {"name": "offline-fake-wilds-e2e", "command": "python -m unittest tests.test_maw_tools.MawToolTests.test_wilds_export_runs_model_and_scores_with_fake_wilds"},
                             {"name": "dependency-map", "command": "python maw-tools/checks.py dependency-map --file artifacts/dependency-map.json"},
                             {"name": "artifact-parse", "command": "python maw-tools/checks.py artifacts-parse --run <run> --artifacts artifacts/test-result.json"},
+                            {"name": "acceptance", "command": "python maw-tools/acceptance_check.py --run <run>"},
+                            {"name": "verdict-check", "command": "python maw-tools/verdict_check.py <run>"},
+                            {"name": "custom-manual-review", "command": "manual review"},
                         ],
                     }
                 )
@@ -448,6 +455,8 @@ class MawToolTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (artifacts / "plan-check-result.json").write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
+            (artifacts / "readme-check-result.json").write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
+            (artifacts / "wilds-export-result.json").write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
 
             proc = run_tool(str(ACCEPTANCE), "--run", str(run_dir))
             self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
@@ -458,10 +467,20 @@ class MawToolTests(unittest.TestCase):
             self.assertIn("max_agents=6", text)
             self.assertIn("planner -> dependency_mapper", text)
             self.assertIn("| plan-check | PASS |", text)
+            self.assertIn("| readme-check | PASS | artifacts/readme-check-result.json |", text)
+            self.assertIn("| dependency-boundary | PASS | artifacts/dependency-risk-report.json |", text)
+            self.assertIn("| offline-fake-wilds-e2e | PASS | artifacts/wilds-export-result.json |", text)
+            self.assertIn("| acceptance | PASS | artifacts/acceptance-result.json |", text)
+            self.assertIn("| verdict-check | PASS | artifacts/verdict-check-result.json |", text)
+            self.assertIn("| custom-manual-review | not recorded | planned check produced no artifact |", text)
+            self.assertNotIn("UNKNOWN", text)
             self.assertIn("| required-evidence | PASS |", text)
             self.assertIn("artifacts/dependency-map.json", text)
             self.assertIn("Final verdict: `SHIP`", text)
             self.assertEqual(json.loads((artifacts / "acceptance-result.json").read_text(encoding="utf-8"))["run_summary"], str(summary))
+            self.assertTrue((artifacts / "handoff-validation.json").is_file())
+            self.assertTrue((artifacts / "verdict-check-result.json").is_file())
+            self.assertTrue((artifacts / "run-report-result.json").is_file())
 
             summary.unlink()
             cli = run_tool(str(MAW), "run-report", str(run_dir))
@@ -2210,6 +2229,301 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual(result["metrics"]["official_metric"], 0.123)
         self.assertEqual(result["metrics_summary"], "official eval used")
         self.assertNotIn("splits", result)
+
+    def test_wilds_export_runs_model_and_scores_with_fake_wilds(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            fake_wilds = root / "wilds"
+            fake_wilds.mkdir()
+            (fake_wilds / "__init__.py").write_text(
+                "\n".join(
+                    [
+                        "class FakeSubset:",
+                        "    ids = ['b', 'a']",
+                        "    y_array = ['label-b', 'label-a']",
+                        "    metadata_array = [{'group': 'g2'}, {'group': 'g1'}]",
+                        "    examples = ['text for b', {'tokens': ['text', 'for', 'a']}]",
+                        "    def __len__(self):",
+                        "        return 2",
+                        "    def __getitem__(self, index):",
+                        "        return self.examples[index], self.y_array[index], self.metadata_array[index]",
+                        "",
+                        "class FakeDataset:",
+                        "    version = 'offline-export-test'",
+                        "    def get_subset(self, split, transform=None):",
+                        "        assert split == 'test'",
+                        "        assert transform is None",
+                        "        return FakeSubset()",
+                        "    def eval(self, all_y_pred, all_y_true, all_metadata):",
+                        "        assert all_y_pred == ['pred-b', 'pred-a']",
+                        "        assert all_y_true == ['label-b', 'label-a']",
+                        "        assert all_metadata == [{'group': 'g2'}, {'group': 'g1'}]",
+                        "        return {'official_metric': 0.456, 'local_accuracy_would_differ': 999}, 'official export eval used'",
+                        "",
+                        "def get_dataset(dataset, download=False, root_dir=None):",
+                        "    assert dataset == 'fake-wilds'",
+                        "    assert download is False",
+                        "    assert root_dir is None",
+                        "    return FakeDataset()",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            model = root / "fake_model.py"
+            model.write_text(
+                "\n".join(
+                    [
+                        "import json",
+                        "import sys",
+                        "",
+                        "rows = [json.loads(line) for line in open(sys.argv[1], encoding='utf-8') if line.strip()]",
+                        "assert rows[0]['id'] == 'b'",
+                        "assert rows[0]['text'] == 'text for b'",
+                        "assert rows[1]['id'] == 'a'",
+                        "assert rows[1]['x'] == {'tokens': ['text', 'for', 'a']}",
+                        "predictions = [{'id': 'a', 'prediction': 'pred-a'}, {'id': 'b', 'prediction': 'pred-b'}]",
+                        "with open(sys.argv[2], 'w', encoding='utf-8') as handle:",
+                        "    json.dump({'predictions': predictions}, handle)",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            export = root / "examples.jsonl"
+            predictions = root / "predictions.json"
+            score = root / "score.json"
+            env = dict(os.environ)
+            env["PYTHONPATH"] = str(root) + os.pathsep + env.get("PYTHONPATH", "")
+
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(MAW),
+                    "wilds-export",
+                    "--wilds-dataset",
+                    "fake-wilds",
+                    "--split",
+                    "test",
+                    "--output",
+                    str(export),
+                    "--model-cmd",
+                    f"{sys.executable} {model} {{input}} {{output}}",
+                    "--predictions-output",
+                    str(predictions),
+                    "--score-output",
+                    str(score),
+                ],
+                cwd=ROOT,
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+            exported_rows = [json.loads(line) for line in export.read_text(encoding="utf-8").splitlines()]
+            prediction_data = json.loads(predictions.read_text(encoding="utf-8"))
+            score_data = json.loads(score.read_text(encoding="utf-8"))
+            result = json.loads(proc.stdout)
+
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue(result["passed"])
+        self.assertEqual(result["export"]["example_count"], 2)
+        self.assertEqual([row["id"] for row in exported_rows], ["b", "a"])
+        self.assertEqual(exported_rows[0]["text"], "text for b")
+        self.assertIn("x", exported_rows[1])
+        self.assertEqual([row["id"] for row in prediction_data["predictions"]], ["a", "b"])
+        self.assertTrue(score_data["passed"])
+        self.assertEqual(score_data["metrics_source"], "wilds.dataset.eval")
+        self.assertEqual(score_data["metrics"]["official_metric"], 0.456)
+        self.assertNotIn("splits", score_data)
+
+    def test_wilds_export_limit_accepts_jsonl_predictions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            fake_wilds = root / "wilds"
+            fake_wilds.mkdir()
+            (fake_wilds / "__init__.py").write_text(
+                "\n".join(
+                    [
+                        "class FakeSubset:",
+                        "    ids = ['c', 'b', 'a']",
+                        "    y_array = ['label-c', 'label-b', 'label-a']",
+                        "    metadata_array = [{'group': 'g3'}, {'group': 'g2'}, {'group': 'g1'}]",
+                        "    examples = ['text c', 'text b', 'text a']",
+                        "    def __len__(self):",
+                        "        return 3",
+                        "    def __getitem__(self, index):",
+                        "        return self.examples[index], self.y_array[index], self.metadata_array[index]",
+                        "",
+                        "class FakeDataset:",
+                        "    version = 'offline-limit-test'",
+                        "    def get_subset(self, split, transform=None):",
+                        "        assert split == 'val'",
+                        "        assert transform is None",
+                        "        return FakeSubset()",
+                        "    def eval(self, all_y_pred, all_y_true, all_metadata):",
+                        "        assert all_y_pred == ['pred-c', 'pred-b']",
+                        "        assert all_y_true == ['label-c', 'label-b']",
+                        "        assert all_metadata == [{'group': 'g3'}, {'group': 'g2'}]",
+                        "        return {'official_metric': 0.789}, 'limited official eval used'",
+                        "",
+                        "def get_dataset(dataset, download=False, root_dir=None):",
+                        "    assert dataset == 'fake-wilds'",
+                        "    assert download is False",
+                        "    return FakeDataset()",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            model = root / "fake_model_jsonl.py"
+            model.write_text(
+                "\n".join(
+                    [
+                        "import json",
+                        "import sys",
+                        "rows = [json.loads(line) for line in open(sys.argv[1], encoding='utf-8') if line.strip()]",
+                        "assert [row['id'] for row in rows] == ['c', 'b']",
+                        "with open(sys.argv[2], 'w', encoding='utf-8') as handle:",
+                        "    handle.write(json.dumps({'id': 'b', 'prediction': 'pred-b'}) + '\\n')",
+                        "    handle.write(json.dumps({'id': 'c', 'prediction': 'pred-c'}) + '\\n')",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            export = root / "examples.jsonl"
+            predictions = root / "examples-predictions.jsonl"
+            score = root / "score.json"
+            env = dict(os.environ)
+            env["PYTHONPATH"] = str(root) + os.pathsep + env.get("PYTHONPATH", "")
+
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(MAW),
+                    "wilds-export",
+                    "--wilds-dataset",
+                    "fake-wilds",
+                    "--split",
+                    "val",
+                    "--limit",
+                    "2",
+                    "--output",
+                    str(export),
+                    "--model-cmd",
+                    f"{sys.executable} {model} {{input}} {{output}}",
+                    "--score-output",
+                    str(score),
+                ],
+                cwd=ROOT,
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+            result = json.loads(proc.stdout)
+            exported_rows = [json.loads(line) for line in export.read_text(encoding="utf-8").splitlines()]
+            prediction_rows = [json.loads(line) for line in predictions.read_text(encoding="utf-8").splitlines()]
+            score_data = json.loads(score.read_text(encoding="utf-8"))
+
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue(result["passed"])
+        self.assertEqual(result["limit"], 2)
+        self.assertEqual([row["id"] for row in exported_rows], ["c", "b"])
+        self.assertEqual([row["id"] for row in prediction_rows], ["b", "c"])
+        self.assertEqual(score_data["limit"], 2)
+        self.assertEqual(score_data["metrics_source"], "wilds.dataset.eval")
+        self.assertEqual(score_data["metrics"]["official_metric"], 0.789)
+
+    def test_civilcomments_model_preserves_ids_with_fake_wilds_and_sklearn(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            fake_wilds = root / "wilds"
+            fake_wilds.mkdir()
+            (fake_wilds / "__init__.py").write_text(
+                "\n".join(
+                    [
+                        "class FakeSubset:",
+                        "    y_array = [0, 1, 0]",
+                        "    examples = ['clean comment', 'toxic comment', 'another clean comment']",
+                        "    def __len__(self):",
+                        "        return 3",
+                        "    def __getitem__(self, index):",
+                        "        return self.examples[index], self.y_array[index], {}",
+                        "",
+                        "class FakeDataset:",
+                        "    def get_subset(self, split, transform=None):",
+                        "        assert split == 'train'",
+                        "        return FakeSubset()",
+                        "",
+                        "def get_dataset(dataset, download=False, root_dir=None):",
+                        "    assert dataset == 'civilcomments'",
+                        "    assert download is False",
+                        "    return FakeDataset()",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            sklearn_root = root / "sklearn"
+            (sklearn_root / "feature_extraction").mkdir(parents=True)
+            (sklearn_root / "linear_model").mkdir()
+            (sklearn_root / "pipeline").mkdir()
+            (sklearn_root / "__init__.py").write_text("", encoding="utf-8")
+            (sklearn_root / "feature_extraction" / "__init__.py").write_text("", encoding="utf-8")
+            (sklearn_root / "feature_extraction" / "text.py").write_text(
+                "class TfidfVectorizer:\n    def __init__(self, **kwargs):\n        self.kwargs = kwargs\n",
+                encoding="utf-8",
+            )
+            (sklearn_root / "linear_model" / "__init__.py").write_text(
+                "class LogisticRegression:\n    def __init__(self, **kwargs):\n        self.kwargs = kwargs\n",
+                encoding="utf-8",
+            )
+            (sklearn_root / "pipeline" / "__init__.py").write_text(
+                "\n".join(
+                    [
+                        "class Pipeline:",
+                        "    def __init__(self, steps):",
+                        "        self.steps = steps",
+                        "    def fit(self, texts, labels):",
+                        "        assert texts == ['clean comment', 'toxic comment', 'another clean comment']",
+                        "        assert labels == [0, 1, 0]",
+                        "        return self",
+                        "    def predict(self, texts):",
+                        "        return [1 if 'toxic' in text else 0 for text in texts]",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            export = root / "examples.jsonl"
+            export.write_text(
+                "\n".join(
+                    [
+                        json.dumps({"id": "x1", "text": "not toxic"}),
+                        json.dumps({"id": "x2", "x": "very toxic"}),
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            output = root / "predictions.jsonl"
+            env = dict(os.environ)
+            env["PYTHONPATH"] = str(root) + os.pathsep + env.get("PYTHONPATH", "")
+
+            proc = subprocess.run(
+                [sys.executable, str(BASELINE_MODEL), str(export), str(output)],
+                cwd=ROOT,
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+            result = json.loads(proc.stdout)
+            rows = [json.loads(line) for line in output.read_text(encoding="utf-8").splitlines()]
+
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue(result["passed"])
+        self.assertEqual([row["id"] for row in rows], ["x1", "x2"])
+        self.assertEqual([row["prediction"] for row in rows], [1, 1])
 
     def test_maw_tools_never_import_wilds_or_torch(self) -> None:
         forbidden = {"wilds", "torch"}

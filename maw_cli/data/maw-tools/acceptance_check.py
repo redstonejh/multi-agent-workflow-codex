@@ -12,6 +12,7 @@ from typing import Any
 
 import validate_handoffs
 import run_report
+import verdict_check
 
 
 ACCEPTANCE_RESULT = "acceptance-result.json"
@@ -563,6 +564,28 @@ def write_acceptance_artifact(run_dir: Path, result: dict) -> Path:
     return path
 
 
+def write_json_artifact(path: Path, data: dict[str, Any], overwrite: bool = True) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if overwrite or not path.is_file():
+        path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+def ensure_run_declares_verdict(run_dir: Path, final_verdict: str) -> None:
+    run_md = run_dir / "run.md"
+    try:
+        text = run_md.read_text(encoding="utf-8")
+    except OSError:
+        return
+    marker = "## Final result summary"
+    summary = f"{marker}\nFinal verdict: {final_verdict}\n"
+    if marker in text:
+        text = re.sub(r"(?s)## Final result summary\n.*$", summary.rstrip(), text).rstrip() + "\n"
+    else:
+        text = text.rstrip() + "\n\n" + summary
+    run_md.write_text(text, encoding="utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run final deterministic MAW acceptance checks.")
     parser.add_argument("--run", required=True)
@@ -574,9 +597,12 @@ def main(argv: list[str] | None = None) -> int:
     run_dir = Path(args.run)
     handoffs = validate_handoffs.validate_run(run_dir)
     test = run_test(args.test_cmd, args.test_cwd, args.timeout)
+    artifacts = run_dir / "artifacts"
+    write_json_artifact(artifacts / "handoff-validation.json", handoffs, overwrite=False)
     task_type = infer_task_type(run_dir)
     evidence = check_required_evidence(run_dir, task_type)
     violations = acceptance_violations(handoffs, test, evidence)
+    final_verdict = verdict(handoffs, test, evidence)
     result = {
         "run": str(run_dir),
         "task_type": task_type,
@@ -584,12 +610,20 @@ def main(argv: list[str] | None = None) -> int:
         "test": test,
         "evidence": evidence,
         "violations": violations,
-        "verdict": verdict(handoffs, test, evidence),
+        "verdict": final_verdict,
     }
+    if args.test_cmd:
+        write_json_artifact(artifacts / "test-result.json", test, overwrite=False)
     write_acceptance_artifact(run_dir, result)
+    ensure_run_declares_verdict(run_dir, final_verdict)
+    verdict_result = verdict_check.check_run(run_dir)
+    write_json_artifact(artifacts / "verdict-check-result.json", verdict_result)
     summary_path = run_report.write_run_summary(run_dir)
+    report_result = {"check": "run_report", "run": str(run_dir), "summary": str(summary_path), "passed": summary_path.is_file()}
+    write_json_artifact(artifacts / "run-report-result.json", report_result)
     result["run_summary"] = str(summary_path)
     write_acceptance_artifact(run_dir, result)
+    run_report.write_run_summary(run_dir)
     print(json.dumps(result, indent=2))
     return 0 if result["verdict"] == "SHIP" else 1
 

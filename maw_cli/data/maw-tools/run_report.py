@@ -187,6 +187,61 @@ def planned_check_names(conductor_plan: Any) -> list[str]:
     return result
 
 
+def planned_checks(conductor_plan: Any) -> list[dict[str, str]]:
+    if not isinstance(conductor_plan, dict):
+        return []
+    checks = conductor_plan.get("deterministic_checks")
+    if not isinstance(checks, list):
+        return []
+    result: list[dict[str, str]] = []
+    for item in checks:
+        if not isinstance(item, dict) or not isinstance(item.get("name"), str):
+            continue
+        check = {"name": item["name"]}
+        if isinstance(item.get("evidence"), str):
+            check["evidence"] = item["evidence"]
+        if isinstance(item.get("command"), str):
+            check["command"] = item["command"]
+        result.append(check)
+    return result
+
+
+def artifact_from_command(command: str) -> str | None:
+    match = re.search(r"--output\s+(?P<artifact>artifacts/[^\s\"']+)", command)
+    if match:
+        return match.group("artifact")
+    return None
+
+
+def planned_check_artifact(check: dict[str, str]) -> str | None:
+    evidence = check.get("evidence")
+    if evidence:
+        return evidence
+    command_artifact = artifact_from_command(check.get("command", ""))
+    if command_artifact:
+        return command_artifact
+    artifact_by_name = {
+        "acceptance": ACCEPTANCE_RESULT,
+        "acceptance-result": ACCEPTANCE_RESULT,
+        "artifact-parse": "artifacts/artifact-parse-report.json",
+        "checklist-validation": "artifacts/checklist-validation.json",
+        "dependency-boundary": "artifacts/dependency-risk-report.json",
+        "dependency-map": "artifacts/dependency-map.json",
+        "dependency-risk-audit": "artifacts/dependency-risk-report.json",
+        "handoff-validation": "artifacts/handoff-validation.json",
+        "offline-fake-wilds-e2e": "artifacts/wilds-export-result.json",
+        "plan-check": "artifacts/plan-check-result.json",
+        "readme-check": "artifacts/readme-check-result.json",
+        "run-report": "artifacts/run-report-result.json",
+        "unit-tests": "artifacts/test-result.json",
+        "verdict-check": "artifacts/verdict-check-result.json",
+        "wilds-export-fixture": "artifacts/wilds-export-result.json",
+        "wilds-harness-fixture": "artifacts/wilds-harness-result.json",
+        "workflow-template-validation": "artifacts/workflow-template-validation.json",
+    }
+    return artifact_by_name.get(check.get("name", ""))
+
+
 def gate_rows(run_dir: Path, conductor_plan: Any, plan_check: Any, plan_check_error: str | None, acceptance: Any, acceptance_error: str | None) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     plan_status, plan_reason = artifact_pass_reason(plan_check, plan_check_error)
@@ -206,27 +261,16 @@ def gate_rows(run_dir: Path, conductor_plan: Any, plan_check: Any, plan_check_er
     rows.append({"gate": "acceptance-result", "status": acceptance_status, "detail": acceptance_reason})
 
     seen = {row["gate"] for row in rows}
-    artifact_by_name = {
-        "checklist-validation": "artifacts/checklist-validation.json",
-        "dependency-map": "artifacts/dependency-map.json",
-        "dependency-risk-audit": "artifacts/dependency-risk-report.json",
-        "unit-tests": "artifacts/test-result.json",
-        "handoff-validation": "handoffs",
-        "artifact-parse": "artifacts/artifact-parse-report.json",
-        "wilds-harness-fixture": "artifacts/wilds-harness-result.json",
-        "workflow-template-validation": "artifacts/workflow-template-validation.json",
-    }
-    for name in planned_check_names(conductor_plan):
+    for check in planned_checks(conductor_plan):
+        name = check["name"]
         if name in seen:
             continue
-        artifact = artifact_by_name.get(name)
-        if artifact == "handoffs":
-            continue
+        artifact = planned_check_artifact(check)
         if artifact:
             status = artifact_status(run_dir, artifact)
             rows.append({"gate": name, "status": status["status"], "detail": artifact})
         else:
-            rows.append({"gate": name, "status": "UNKNOWN", "detail": "planned check has no mapped artifact"})
+            rows.append({"gate": name, "status": "not recorded", "detail": "planned check produced no artifact"})
     return rows
 
 

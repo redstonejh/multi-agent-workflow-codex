@@ -11,6 +11,7 @@ import csv
 import datetime as dt
 import importlib
 import json
+import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
@@ -22,10 +23,29 @@ def write_json(path: Path, data: Any) -> None:
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        for row in rows:
+            handle.write(json.dumps(row, sort_keys=True) + "\n")
+
+
 def load_json_or_csv(path: Path) -> Any:
     if path.suffix.lower() == ".csv":
         with path.open(newline="", encoding="utf-8-sig") as handle:
             return [dict(row) for row in csv.DictReader(handle)]
+    if path.suffix.lower() == ".jsonl":
+        rows = []
+        with path.open(encoding="utf-8") as handle:
+            for index, line in enumerate(handle, start=1):
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                item = json.loads(stripped)
+                if not isinstance(item, dict):
+                    raise ValueError(f"{path}:{index} JSONL row must be an object")
+                rows.append(item)
+        return rows
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -49,6 +69,28 @@ def normalize_id(value: Any) -> str:
     if not text:
         raise ValueError("example id must be non-empty")
     return text
+
+
+def jsonable(value: Any) -> Any:
+    if hasattr(value, "item"):
+        try:
+            return jsonable(value.item())
+        except (TypeError, ValueError):
+            pass
+    if hasattr(value, "tolist"):
+        try:
+            return jsonable(value.tolist())
+        except (TypeError, ValueError):
+            pass
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    if isinstance(value, dict):
+        return {str(key): jsonable(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [jsonable(item) for item in value]
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    return str(value)
 
 
 def field(row: dict[str, Any], names: tuple[str, ...], label: str) -> Any:
@@ -187,8 +229,8 @@ def subset_ids(subset: Any, count: int) -> list[str]:
     for attr in ("ids", "id_array", "indices", "_indices"):
         if hasattr(subset, attr):
             values = as_sequence(getattr(subset, attr), attr)
-            if len(values) == count:
-                return [normalize_id(value) for value in values]
+            if len(values) >= count:
+                return [normalize_id(value) for value in values[:count]]
     return [str(index) for index in range(count)]
 
 
@@ -204,7 +246,17 @@ def normalize_eval_result(raw: Any) -> tuple[dict[str, Any], str | None]:
     return metrics, str(summary) if summary is not None else None
 
 
-def evaluate_with_wilds(prediction_data: Any, predictions_path: Path, dataset_name: str, split: str, root_dir: str | None) -> dict[str, Any]:
+def apply_limit(values: list[Any], limit: int | None, label: str) -> list[Any]:
+    if limit is None:
+        return values
+    if limit <= 0:
+        raise ValueError("--limit must be a positive integer")
+    if limit > len(values):
+        raise ValueError(f"--limit {limit} exceeds {label} length {len(values)}")
+    return values[:limit]
+
+
+def evaluate_with_wilds(prediction_data: Any, predictions_path: Path, dataset_name: str, split: str, root_dir: str | None, limit: int | None = None) -> dict[str, Any]:
     wilds = importlib.import_module("wilds")
     dataset_kwargs: dict[str, Any] = {"dataset": dataset_name, "download": False}
     if root_dir:
@@ -215,6 +267,8 @@ def evaluate_with_wilds(prediction_data: Any, predictions_path: Path, dataset_na
     metadata = as_sequence(getattr(subset, "metadata_array", None), "metadata_array")
     if len(y_true) != len(metadata):
         raise ValueError("WILDS subset y_array and metadata_array lengths differ")
+    y_true = apply_limit(y_true, limit, "WILDS subset")
+    metadata = apply_limit(metadata, limit, "WILDS metadata")
     ids = subset_ids(subset, len(y_true))
     predictions, duplicate_predictions = predictions_by_id(prediction_data)
 
@@ -241,6 +295,7 @@ def evaluate_with_wilds(prediction_data: Any, predictions_path: Path, dataset_na
         "dataset": {"name": dataset_name, "version": str(getattr(dataset, "version", "unknown"))},
         "fixed_splits": True,
         "split": split,
+        "limit": limit,
         "predictions": str(predictions_path),
         "prediction_alignment": "example_id",
         "metrics_source": "wilds.dataset.eval",
@@ -257,6 +312,136 @@ def evaluate_with_wilds(prediction_data: Any, predictions_path: Path, dataset_na
         },
         "problems": problems,
     }
+
+
+def load_wilds_subset(dataset_name: str, split: str, root_dir: str | None) -> tuple[Any, Any]:
+    wilds = importlib.import_module("wilds")
+    dataset_kwargs: dict[str, Any] = {"dataset": dataset_name, "download": False}
+    if root_dir:
+        dataset_kwargs["root_dir"] = root_dir
+    dataset = wilds.get_dataset(**dataset_kwargs)
+    return dataset, dataset.get_subset(split, transform=None)
+
+
+def subset_count(subset: Any) -> int:
+    try:
+        return len(subset)
+    except TypeError:
+        y_array = getattr(subset, "y_array", None)
+        if y_array is None:
+            raise ValueError("WILDS subset must provide __len__ or y_array")
+        return len(as_sequence(y_array, "y_array"))
+
+
+def subset_input_at(subset: Any, index: int) -> Any:
+    try:
+        item = subset[index]
+    except TypeError as exc:
+        raise ValueError("WILDS subset must support indexed reads for export") from exc
+    if isinstance(item, (list, tuple)) and item:
+        return item[0]
+    return item
+
+
+def default_predictions_path(export_path: Path) -> Path:
+    return export_path.with_name(export_path.stem + "-predictions.jsonl")
+
+
+def default_score_path(export_path: Path) -> Path:
+    return export_path.with_name(export_path.stem + "-score.json")
+
+
+def render_model_command(command: str, input_path: Path, output_path: Path) -> str:
+    input_arg = subprocess.list2cmdline([str(input_path)])
+    output_arg = subprocess.list2cmdline([str(output_path)])
+    if "{input}" in command or "{output}" in command:
+        return command.replace("{input}", input_arg).replace("{output}", output_arg)
+    return f"{command} {input_arg} {output_arg}"
+
+
+def run_model_command(command: str, input_path: Path, output_path: Path) -> dict[str, Any]:
+    rendered = render_model_command(command, input_path, output_path)
+    completed = subprocess.run(rendered, shell=True, cwd=Path.cwd(), capture_output=True, text=True)
+    return {
+        "command": rendered,
+        "returncode": completed.returncode,
+        "passed": completed.returncode == 0,
+        "stdout": completed.stdout,
+        "stderr": completed.stderr,
+    }
+
+
+def export_with_wilds(
+    dataset_name: str,
+    split: str,
+    root_dir: str | None,
+    output_path: Path,
+    model_cmd: str | None,
+    predictions_output: Path | None,
+    score_output: Path | None,
+    limit: int | None,
+) -> dict[str, Any]:
+    dataset, subset = load_wilds_subset(dataset_name, split, root_dir)
+    count = subset_count(subset)
+    if limit is not None:
+        if limit <= 0:
+            raise ValueError("--limit must be a positive integer")
+        if limit > count:
+            raise ValueError(f"--limit {limit} exceeds WILDS subset length {count}")
+        count = limit
+    ids = subset_ids(subset, count)
+    rows: list[dict[str, Any]] = []
+    for index, example_id in enumerate(ids):
+        x_value = jsonable(subset_input_at(subset, index))
+        row = {"id": example_id, "x": x_value}
+        if isinstance(x_value, str):
+            row["text"] = x_value
+        rows.append(row)
+    write_jsonl(output_path, rows)
+
+    result: dict[str, Any] = {
+        "check": "wilds_export",
+        "schema_version": 1,
+        "passed": True,
+        "dataset": {"name": dataset_name, "version": str(getattr(dataset, "version", "unknown"))},
+        "fixed_splits": True,
+        "split": split,
+        "limit": limit,
+        "export": {"path": str(output_path), "example_count": len(rows), "format": "jsonl"},
+        "prediction_alignment": "example_id",
+        "reproducibility": {
+            "deterministic": True,
+            "exported_at_utc": dt.datetime.now(dt.UTC).replace(microsecond=0).isoformat(),
+        },
+        "model": None,
+        "score": None,
+        "problems": [],
+    }
+
+    if model_cmd:
+        predictions_path = predictions_output or default_predictions_path(output_path)
+        score_path = score_output or default_score_path(output_path)
+        model_result = run_model_command(model_cmd, output_path, predictions_path)
+        result["model"] = {"predictions": str(predictions_path), **model_result}
+        if not model_result["passed"]:
+            result["passed"] = False
+            result["problems"].append({"type": "model_command_failed", "returncode": model_result["returncode"]})
+            return result
+        if not predictions_path.is_file():
+            result["passed"] = False
+            result["problems"].append({"type": "missing_predictions_output", "path": str(predictions_path)})
+            return result
+        score = evaluate_with_wilds(load_json_or_csv(predictions_path), predictions_path, dataset_name, split, root_dir, limit=limit)
+        write_json(score_path, score)
+        result["score"] = {"path": str(score_path), "passed": bool(score.get("passed")), "metrics_source": score.get("metrics_source")}
+        result["passed"] = bool(score.get("passed"))
+        if not result["passed"]:
+            result["problems"].append({"type": "score_failed", "details": score.get("problems", [])})
+    elif score_output:
+        result["passed"] = False
+        result["problems"].append({"type": "score_requires_model_cmd", "message": "--score-output requires --model-cmd"})
+
+    return result
 
 
 def cmd_wilds_benchmark(args: argparse.Namespace) -> int:
@@ -276,6 +461,24 @@ def cmd_wilds_benchmark(args: argparse.Namespace) -> int:
     return 0 if result.get("passed") is True else 1
 
 
+def cmd_wilds_export(args: argparse.Namespace) -> int:
+    try:
+        result = export_with_wilds(
+            args.wilds_dataset,
+            args.split,
+            args.wilds_root,
+            Path(args.output),
+            args.model_cmd,
+            Path(args.predictions_output) if args.predictions_output else None,
+            Path(args.score_output) if args.score_output else None,
+            args.limit,
+        )
+    except (ImportError, OSError, json.JSONDecodeError, ValueError) as exc:
+        result = {"check": "wilds_export", "schema_version": 1, "passed": False, "problems": [{"type": "input_error", "message": str(exc)}]}
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0 if result.get("passed") is True else 1
+
+
 def add_parser(subparsers: argparse._SubParsersAction) -> None:
     parser = subparsers.add_parser("wilds-benchmark", help="evaluate fixed-split WILDS-style prediction exports")
     parser.add_argument("manifest", nargs="?", help="JSON/CSV manifest with id, split, and label columns; with --wilds-dataset this may be the predictions file")
@@ -285,6 +488,17 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument("--split", default="test", help="WILDS split name for --wilds-dataset")
     parser.add_argument("--output", help="write benchmark result JSON")
     parser.set_defaults(func=cmd_wilds_benchmark)
+
+    export = subparsers.add_parser("wilds-export", help="export WILDS split examples and optionally run model -> score")
+    export.add_argument("--wilds-dataset", required=True, help="WILDS dataset name; loaded lazily with download=False")
+    export.add_argument("--wilds-root", help="optional root_dir passed to wilds.get_dataset")
+    export.add_argument("--split", default="test", help="WILDS split name to export")
+    export.add_argument("--output", required=True, help="write exported examples JSONL with id and x/text fields")
+    export.add_argument("--limit", type=int, help="optional maximum number of examples from the start of the fixed split")
+    export.add_argument("--model-cmd", help="optional command that reads {input} JSONL and writes {output} predictions JSON/JSONL")
+    export.add_argument("--predictions-output", help="prediction JSON path passed to --model-cmd as {output}; defaults beside export")
+    export.add_argument("--score-output", help="benchmark score JSON path; defaults beside export when --model-cmd is set")
+    export.set_defaults(func=cmd_wilds_export)
 
 
 if __name__ == "__main__":

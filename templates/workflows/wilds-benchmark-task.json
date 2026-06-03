@@ -15,6 +15,7 @@
     "artifacts/plan.md",
     "artifacts/dependency-map.json",
     "artifacts/dependency-risk-report.json",
+    "artifacts/wilds-export-result.json",
     "artifacts/wilds-harness-result.json",
     "artifacts/artifact-parse-report.json",
     "artifacts/test-result.json",
@@ -23,6 +24,7 @@
   ],
   "acceptance_gates": ["fixed-splits-preserved", "prediction-id-alignment", "reproducibility-metadata-recorded", "dependency-boundary-clean", "artifacts-parse", "tests-pass", "requirements-covered", "handoffs-valid"],
   "deterministic_checks": [
+    {"name": "wilds-export-fixture", "command": "maw wilds-export --wilds-dataset <dataset> --split <split> --limit <n> --output artifacts/wilds-examples.jsonl --model-cmd \"<model-cmd> {input} {output}\" --score-output artifacts/wilds-export-result.json"},
     {"name": "wilds-harness-fixture", "command": "maw wilds-benchmark <manifest.json> <predictions.json> --output artifacts/wilds-harness-result.json"},
     {"name": "dependency-map", "command": "python maw-tools/checks.py dependency-map --file artifacts/dependency-map.json"},
     {"name": "dependency-risk-audit", "command": "python maw-tools/dependency_risk_audit.py maw_cli --output artifacts/dependency-risk-report.json"},

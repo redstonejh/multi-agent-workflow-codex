@@ -45,6 +45,22 @@ maw wilds-benchmark manifest.json predictions.json --output artifacts/wilds-harn
 
 When the WILDS package is available, `maw wilds-benchmark predictions.json --wilds-dataset <name> --split <split>` lazily loads `wilds.get_dataset(...)`, reads the fixed subset, and delegates metrics to `dataset.eval(all_y_pred, all_y_true, all_metadata)`.
 
+For end-to-end inference harness checks, export a fixed WILDS split to JSONL, run an optional model command over that JSONL, and score the resulting predictions:
+
+```bash
+maw wilds-export --wilds-dataset <name> --split <split> --output artifacts/wilds-examples.jsonl --model-cmd "python model.py {input} {output}" --score-output artifacts/wilds-score.json
+```
+
+`wilds-export` writes one JSON object per example with `id` and `x`; string inputs also include `text`. When `--model-cmd` is set, `{input}` is replaced with the export path and `{output}` with the prediction JSON path, then the predictions feed the existing WILDS scorer.
+
+The included CivilComments baseline model command lives at `model.py`. It trains a TF-IDF + logistic regression baseline on the CivilComments train split using optional WILDS and scikit-learn dependencies, then writes prediction JSONL with ids passed through:
+
+```bash
+maw wilds-export --wilds-dataset civilcomments --split val --limit 500 --output artifacts/civilcomments-val-500.jsonl --model-cmd "python model.py {input} {output}" --score-output artifacts/civilcomments-val-500-score.json
+```
+
+The score artifact should report `metrics_source: "wilds.dataset.eval"` and parseable real metrics from `dataset.eval(...)`. Set `--wilds-root <path>` when the local CivilComments data is outside the default WILDS root. This loop is a manual benchmark check; `model.py` is outside the standard-library MAW tools spine.
+
 ## Run Loop
 
 The executing core roster is:
@@ -148,6 +164,7 @@ maw run-report runs/<run_id>
 maw dependency-audit <path> [--annotate] [--dry-run] [--fail-on low|medium|high]
 maw ml-auto <csv-or-parquet> --goal "<goal>"
 maw wilds-benchmark <manifest.json> <predictions.json> [--output artifacts/wilds-harness-result.json]
+maw wilds-export --wilds-dataset <name> --split <split> [--limit N] --output examples.jsonl [--model-cmd "... {input} {output}" --score-output score.json]
 ```
 
 Common direct tool commands:
@@ -232,6 +249,14 @@ MAW_WILDS_SMOKE=1 python tests/manual_wilds_smoke.py
 ```
 
 This offline check requires the WILDS package and a locally available `civilcomments` dataset. It runs `maw wilds-benchmark` on the real `civilcomments` validation split with `download=False` and asserts that `dataset.eval(...)` returns parseable metrics. Set `MAW_WILDS_ROOT` to the local WILDS data root when needed, or `MAW_WILDS_SPLIT` to override the default `val` split.
+
+Manual CivilComments baseline loop, also not part of `unittest discover`:
+
+```bash
+maw wilds-export --wilds-dataset civilcomments --split val --limit 500 --output artifacts/civilcomments-val-500.jsonl --model-cmd "python model.py {input} {output}" --score-output artifacts/civilcomments-val-500-score.json
+```
+
+This requires WILDS, scikit-learn, and a local CivilComments dataset. The resulting score JSON confirms real WILDS metrics when `passed` is true and `metrics_source` is `wilds.dataset.eval`.
 
 ## Examples
 
