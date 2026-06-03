@@ -61,6 +61,16 @@ maw wilds-export --wilds-dataset civilcomments --split val --limit 500 --output 
 
 The score artifact should report `metrics_source: "wilds.dataset.eval"` and parseable real metrics from `dataset.eval(...)`. Set `--wilds-root <path>` when the local CivilComments data is outside the default WILDS root. This loop is a manual benchmark check; `model.py` is outside the standard-library MAW tools spine.
 
+To wrap an existing WILDS score in a closed MAW validation loop, use:
+
+```bash
+maw wilds-loop --score score.json --predictions predictions.jsonl --majority-accuracy 0.5
+```
+
+`wilds-loop` starts an `ml-validation-task` run folder, copies the score and optional prediction artifacts, runs the stdlib-only `maw-tools/wilds_validator.py`, and writes `artifacts/wilds-validator.json`, `artifacts/critic-diagnosis.md`, `artifacts/wilds-loop-result.json`, and `artifacts/acceptance-result.json`. The validator flags worst-group-vs-average gaps above `0.20`, expected calibration error above `0.10`, Brier score above `0.25`, majority-baseline margin below `0.02`, and missing deterministic reproducibility metadata. Tripped checks produce worker instructions such as trying group-balanced/reweighted training, calibrated probabilities, or a stronger model before re-scoring. Retries are bounded by `--max-iters`.
+
+Closed-loop WILDS runs can opt into anti-gaming hard gates by writing `artifacts/evaluation-protocol.json` with `anti_gaming: true` plus `artifacts/evaluation-protocol.sha256` before iteration 0. Once present, `maw-tools/acceptance_check.py` and `maw-tools/verdict_check.py` independently run `maw-tools/anti_gaming_check.py` and force `NO-SHIP` when the protocol hash changes, iterating roles can reach the sealed test split, the sealed test is not scored exactly once by `acceptance_gate`, any banked candidate fails an orthogonal gate or banks a sub-CI worst-group gain, validation query budget is exceeded, prediction distribution degenerates, or the final val-to-test gap exceeds the pre-registered bound. These are blocking verdict conditions, not advisory reports.
+
 ## Run Loop
 
 The executing core roster is:
@@ -165,6 +175,7 @@ maw dependency-audit <path> [--annotate] [--dry-run] [--fail-on low|medium|high]
 maw ml-auto <csv-or-parquet> --goal "<goal>"
 maw wilds-benchmark <manifest.json> <predictions.json> [--output artifacts/wilds-harness-result.json]
 maw wilds-export --wilds-dataset <name> --split <split> [--limit N] --output examples.jsonl [--model-cmd "... {input} {output}" --score-output score.json]
+maw wilds-loop --score score.json [--predictions predictions.jsonl] [--max-iters 3]
 ```
 
 Common direct tool commands:
@@ -254,6 +265,7 @@ Manual CivilComments baseline loop, also not part of `unittest discover`:
 
 ```bash
 maw wilds-export --wilds-dataset civilcomments --split val --limit 500 --output artifacts/civilcomments-val-500.jsonl --model-cmd "python model.py {input} {output}" --score-output artifacts/civilcomments-val-500-score.json
+maw wilds-loop --score artifacts/civilcomments-val-500-score.json --predictions artifacts/civilcomments-val-500-predictions.jsonl --majority-accuracy 0.5
 ```
 
 This requires WILDS, scikit-learn, and a local CivilComments dataset. The resulting score JSON confirms real WILDS metrics when `passed` is true and `metrics_source` is `wilds.dataset.eval`.

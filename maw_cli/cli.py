@@ -188,7 +188,7 @@ def build_parser() -> argparse.ArgumentParser:
     dependency_audit.add_argument("--output")
     dependency_audit.set_defaults(func=cmd_dependency_audit)
     ml_autopilot.add_parser(sub, ROOT)
-    wilds_benchmark.add_parser(sub)
+    wilds_benchmark.add_parser(sub, ROOT)
     return parser
 
 

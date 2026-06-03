@@ -11,6 +11,7 @@ import csv
 import datetime as dt
 import importlib
 import json
+import shutil
 import subprocess
 import sys
 import types
@@ -22,6 +23,13 @@ from typing import Any
 def write_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def load_json(path: Path) -> dict[str, Any]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"{path} must contain a JSON object")
+    return data
 
 
 def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -544,7 +552,207 @@ def cmd_wilds_export(args: argparse.Namespace) -> int:
     return 0 if result.get("passed") is True else 1
 
 
-def add_parser(subparsers: argparse._SubParsersAction) -> None:
+def render_markdown_list(items: list[str]) -> str:
+    if not items:
+        return "- None recorded."
+    return "\n".join(f"- {item}" for item in items)
+
+
+def fill_loop_handoffs(run_dir: Path, result: dict[str, Any]) -> None:
+    context = "Closed WILDS evaluation loop over fixed score and prediction artifacts."
+    iterations = result.get("iterations", [])
+    latest = iterations[-1] if iterations else {}
+    instructions = latest.get("worker_instructions", []) if isinstance(latest, dict) else []
+    for handoff in sorted((run_dir / "handoffs").glob("*.md")):
+        name = handoff.name
+        if "conductor__to__planner" in name:
+            did = "Started an ml-validation workflow run and scoped it to WILDS benchmark validator signals."
+            artifacts = "- artifacts/workflow-template.json  (ml-validation workflow template)\n- artifacts/artifact-checklist.md  (template artifacts)"
+            risks = "The loop validates an existing benchmark artifact; it does not train a new model unless a retry command is provided."
+            next_step = "Planner should map score, prediction, validator, critic, and acceptance artifacts."
+        elif "planner__to__worker" in name:
+            did = "Mapped the loop: copy score artifacts, run wilds_validator, record tripped signals, and hand remediation back to worker."
+            artifacts = "- artifacts/score.json  (benchmark score input)\n- artifacts/predictions.jsonl  (optional probability/label rows)"
+            risks = "Calibration requires probabilities and labels; missing fields should be diagnosed explicitly."
+            next_step = "Worker should run the validator and capture bounded retry instructions."
+        elif "worker__to__critic" in name:
+            did = "Ran the WILDS validator loop and wrote iteration artifacts."
+            artifacts = "- artifacts/wilds-validator.json  (latest validator signals)\n- artifacts/wilds-loop-result.json  (full loop record)"
+            risks = "Any failed signal must produce a concrete try-next instruction."
+            next_step = "Critic should review tripped signals and send remediation instructions if needed."
+        elif "critic__to__worker" in name:
+            did = "Reviewed validator output and prepared remediation instructions."
+            artifacts = "- artifacts/critic-diagnosis.md  (diagnosis and worker retry instructions)"
+            risks = "Retries are bounded by max_iters; unchanged artifacts will keep tripping the same checks."
+            next_step = "Worker should try the listed remediation and re-score, or stop at the max iteration verdict."
+        else:
+            did = "Checked loop artifacts, handoffs, and final verdict."
+            artifacts = "- artifacts/acceptance-result.json  (closed-loop acceptance verdict)"
+            risks = "A NO-SHIP verdict means one or more validator signals still need remediation."
+            next_step = "Use the acceptance verdict as the canonical run result."
+        handoff.write_text(
+            "\n".join(
+                [
+                    handoff.read_text(encoding="utf-8").split("## Task context", 1)[0].rstrip(),
+                    "",
+                    "## Task context",
+                    context,
+                    "",
+                    "## What I did",
+                    did,
+                    "",
+                    "## Output / artifacts",
+                    artifacts,
+                    "",
+                    "## Open questions / risks",
+                    risks,
+                    "",
+                    "## Recommended next step",
+                    next_step + ("\n\nCurrent worker instructions:\n" + render_markdown_list(instructions) if instructions else ""),
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+
+def write_critic_diagnosis(path: Path, validator_result: dict[str, Any], iteration: int) -> None:
+    lines = [
+        "# WILDS Critic Diagnosis",
+        "",
+        f"Iteration: {iteration}",
+        f"Validator passed: {validator_result.get('passed')}",
+        "",
+        "## Tripped signals",
+        render_markdown_list([str(item) for item in validator_result.get("tripped", [])]),
+        "",
+        "## Worker instructions",
+        render_markdown_list([str(item) for item in validator_result.get("worker_instructions", [])]),
+        "",
+        "## Recommendations",
+        render_markdown_list([str(item) for item in validator_result.get("recommendations", [])]),
+        "",
+    ]
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def update_loop_run_markdown(run_dir: Path, verdict: str, loop_result: dict[str, Any]) -> None:
+    run_md = run_dir / "run.md"
+    text = run_md.read_text(encoding="utf-8")
+    if "- Task type:" not in text:
+        text = text.replace("- Status: in-progress", "- Status: in-progress\n- Task type: ml-validation-task")
+    summary = [
+        "## Final result summary",
+        f"Final verdict: {verdict}",
+        "",
+        f"Iterations: {len(loop_result.get('iterations', []))}",
+        f"Latest validator passed: {loop_result.get('passed')}",
+        "",
+    ]
+    if "## Final result summary" in text:
+        text = text.split("## Final result summary", 1)[0].rstrip() + "\n\n" + "\n".join(summary)
+    else:
+        text = text.rstrip() + "\n\n" + "\n".join(summary)
+    run_md.write_text(text, encoding="utf-8")
+
+
+def cmd_wilds_loop(args: argparse.Namespace, repo_root: Path) -> int:
+    try:
+        import start_workflow  # type: ignore
+        import wilds_validator  # type: ignore
+
+        template, template_path, errors = start_workflow.load_valid_template(repo_root, "ml-validation-task")
+        if errors or template is None or template_path is None:
+            raise ValueError("; ".join(errors))
+        run_info = start_workflow.create_run(
+            repo_root,
+            template,
+            template_path,
+            "Closed WILDS benchmark evaluation loop",
+            Path(args.run_root),
+            args.slug,
+        )
+        run_dir = Path(run_info["run_dir"])
+        artifacts = run_dir / "artifacts"
+        score_path = Path(args.score)
+        copied_score = artifacts / "score.json"
+        shutil.copyfile(score_path, copied_score)
+        copied_predictions: Path | None = None
+        if args.predictions:
+            copied_predictions = artifacts / ("predictions.jsonl" if Path(args.predictions).suffix.lower() == ".jsonl" else "predictions.json")
+            shutil.copyfile(Path(args.predictions), copied_predictions)
+
+        thresholds = {
+            "max_worst_group_gap": args.max_worst_group_gap,
+            "max_expected_calibration_error": args.max_expected_calibration_error,
+            "max_brier_score": args.max_brier_score,
+            "min_majority_margin": args.min_majority_margin,
+        }
+        iterations: list[dict[str, Any]] = []
+        latest_validator: dict[str, Any] = {}
+        for iteration in range(1, args.max_iters + 1):
+            predictions = wilds_validator.load_jsonl_or_rows(copied_predictions) if copied_predictions else None
+            latest_validator = wilds_validator.validate(load_json(copied_score), predictions, thresholds, args.majority_accuracy, args.calibration_bins)
+            iteration_path = artifacts / f"wilds-validator-iteration-{iteration}.json"
+            write_json(iteration_path, latest_validator)
+            write_json(artifacts / "wilds-validator.json", latest_validator)
+            write_critic_diagnosis(artifacts / "critic-diagnosis.md", latest_validator, iteration)
+            item = {
+                "iteration": iteration,
+                "validator_artifact": str(iteration_path),
+                "passed": bool(latest_validator.get("passed")),
+                "tripped": latest_validator.get("tripped", []),
+                "worker_instructions": latest_validator.get("worker_instructions", []),
+            }
+            iterations.append(item)
+            if latest_validator.get("passed") is True:
+                break
+            if not args.retry_cmd:
+                break
+            rendered_retry = render_model_command(args.retry_cmd, copied_score, copied_score)
+            completed = subprocess.run(rendered_retry, shell=True, cwd=Path.cwd(), capture_output=True, text=True)
+            item["retry"] = {
+                "command": rendered_retry,
+                "returncode": completed.returncode,
+                "passed": completed.returncode == 0,
+                "stdout": completed.stdout,
+                "stderr": completed.stderr,
+            }
+            if completed.returncode != 0:
+                break
+
+        verdict = "SHIP" if latest_validator.get("passed") is True else "NO-SHIP"
+        loop_result = {
+            "check": "wilds_closed_loop",
+            "schema_version": 1,
+            "passed": verdict == "SHIP",
+            "run_dir": str(run_dir),
+            "score": str(copied_score),
+            "predictions": str(copied_predictions) if copied_predictions else None,
+            "max_iters": args.max_iters,
+            "iterations": iterations,
+            "verdict": verdict,
+        }
+        write_json(artifacts / "wilds-loop-result.json", loop_result)
+        acceptance_result = {
+            "run": str(run_dir),
+            "task_type": "ml-validation-task",
+            "validator": latest_validator,
+            "loop": loop_result,
+            "verdict": verdict,
+            "passed": verdict == "SHIP",
+        }
+        write_json(artifacts / "acceptance-result.json", acceptance_result)
+        fill_loop_handoffs(run_dir, loop_result)
+        update_loop_run_markdown(run_dir, verdict, loop_result)
+        result = {"check": "wilds_loop", "schema_version": 1, "passed": True, "run_dir": str(run_dir), "verdict": verdict, "loop": loop_result}
+    except (ImportError, OSError, json.JSONDecodeError, ValueError) as exc:
+        result = {"check": "wilds_loop", "schema_version": 1, "passed": False, "problems": [{"type": "input_error", "message": str(exc)}]}
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0 if result.get("passed") is True else 1
+
+
+def add_parser(subparsers: argparse._SubParsersAction, repo_root: Path | None = None) -> None:
     parser = subparsers.add_parser("wilds-benchmark", help="evaluate fixed-split WILDS-style prediction exports")
     parser.add_argument("manifest", nargs="?", help="JSON/CSV manifest with id, split, and label columns; with --wilds-dataset this may be the predictions file")
     parser.add_argument("predictions", nargs="?", help="JSON/CSV predictions with id and prediction columns")
@@ -564,6 +772,21 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
     export.add_argument("--predictions-output", help="prediction JSON path passed to --model-cmd as {output}; defaults beside export")
     export.add_argument("--score-output", help="benchmark score JSON path; defaults beside export when --model-cmd is set")
     export.set_defaults(func=cmd_wilds_export)
+
+    loop = subparsers.add_parser("wilds-loop", help="wrap a WILDS score artifact in a MAW closed validation loop")
+    loop.add_argument("--score", required=True, help="score JSON from wilds-benchmark or wilds-export")
+    loop.add_argument("--predictions", help="optional prediction JSON/JSONL with probabilities and labels")
+    loop.add_argument("--run-root", default="runs", help="directory where the MAW run folder is created")
+    loop.add_argument("--slug", help="optional run folder slug")
+    loop.add_argument("--max-iters", type=int, default=3, help="maximum critic/worker loop iterations")
+    loop.add_argument("--retry-cmd", help="optional command to refresh score.json after a failed validator iteration")
+    loop.add_argument("--majority-accuracy", type=float, default=0.5)
+    loop.add_argument("--max-worst-group-gap", type=float, default=0.20)
+    loop.add_argument("--max-expected-calibration-error", type=float, default=0.10)
+    loop.add_argument("--max-brier-score", type=float, default=0.25)
+    loop.add_argument("--min-majority-margin", type=float, default=0.02)
+    loop.add_argument("--calibration-bins", type=int, default=10)
+    loop.set_defaults(func=lambda args: cmd_wilds_loop(args, repo_root or Path(__file__).resolve().parents[1]))
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib.util
 import json
 import os
@@ -29,6 +30,7 @@ PLAN_CHECK = ROOT / "maw-tools" / "plan_check.py"
 REGISTRY = ROOT / "maw-tools" / "registry.py"
 BEHAVIOR_BASELINE = ROOT / "maw-tools" / "behavior_baseline.py"
 CHECKLIST_CHECK = ROOT / "maw-tools" / "checklist_check.py"
+WILDS_VALIDATOR = ROOT / "maw-tools" / "wilds_validator.py"
 MAW = ROOT / "maw.py"
 PYPROJECT = ROOT / "pyproject.toml"
 ML_CHECKS = ROOT / "examples" / "ml_problems" / "ml_checks.py"
@@ -329,6 +331,79 @@ class MawToolTests(unittest.TestCase):
         )
         return run_dir
 
+    def _write_valid_anti_gaming_artifacts(self, run_dir: Path) -> None:
+        artifacts = run_dir / "artifacts"
+        protocol = {
+            "check": "wilds_anti_gaming_protocol",
+            "anti_gaming": True,
+            "metric": "worst_group_accuracy_lcb",
+            "model_family": "tfidf_logistic_regression",
+            "allowed_changes": ["regularization", "class_weight", "max_train"],
+            "iteration_budget": {"max_val_queries": 2},
+            "thresholds": {"min_worst_group_lcb_gain": 0.01, "max_generalization_gap": 0.05},
+        }
+        protocol_path = artifacts / "evaluation-protocol.json"
+        protocol_path.write_text(json.dumps(protocol, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        (artifacts / "evaluation-protocol.sha256").write_text(hashlib.sha256(protocol_path.read_bytes()).hexdigest() + "\n", encoding="utf-8")
+        (artifacts / "role-access-ledger.json").write_text(
+            json.dumps(
+                {
+                    "sealed_test_unreachable_from_iteration": True,
+                    "events": [
+                        {"role": "worker", "phase": "iteration", "iteration": 1, "split": "val", "action": "score"},
+                        {"role": "acceptance_gate", "phase": "acceptance", "split": "test", "action": "score"},
+                    ],
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (artifacts / "candidate-ledger.json").write_text(
+            json.dumps(
+                {
+                    "candidates": [
+                        {
+                            "id": "candidate-1",
+                            "banked": True,
+                            "worst_group_lcb_gain": 0.02,
+                            "gain_inside_bootstrap_ci": False,
+                            "orthogonal_gates": {
+                                "bootstrap_ci_significance": {"passed": True},
+                                "shuffled_label": {"passed": True},
+                                "multi_seed_stability": {"passed": True},
+                                "baseline_margin": {"passed": True},
+                                "train_val_gap": {"passed": True},
+                                "prediction_distribution": {"passed": True},
+                            },
+                        }
+                    ]
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (artifacts / "val-query-ledger.json").write_text(
+            json.dumps({"query_count": 1, "queries": [{"iteration": 1, "split": "val", "metric": "worst_group_accuracy_lcb"}]}) + "\n",
+            encoding="utf-8",
+        )
+        (artifacts / "prediction-distribution-check.json").write_text(json.dumps({"passed": True, "check": "prediction_distribution"}) + "\n", encoding="utf-8")
+        (artifacts / "final-evaluation-report.json").write_text(
+            json.dumps({"sealed_test_score": {"worst_group_accuracy": 0.52, "ci_lower": 0.47}, "val_to_test_generalization_gap": 0.02})
+            + "\n",
+            encoding="utf-8",
+        )
+
+    def _run_anti_gaming_acceptance_and_verdict(self, run_dir: Path) -> tuple[dict, subprocess.CompletedProcess[str]]:
+        acceptance = run_tool(str(ACCEPTANCE), "--run", str(run_dir))
+        result = json.loads(acceptance.stdout)
+        verdict = run_tool(str(VERDICT_CHECK), str(run_dir))
+        self.assertNotEqual(acceptance.returncode, 0, acceptance.stdout + acceptance.stderr)
+        self.assertNotEqual(verdict.returncode, 0, verdict.stdout + verdict.stderr)
+        return result, verdict
+
+    def _anti_gaming_violation_types(self, result: dict) -> set[str]:
+        return {str(item.get("anti_gaming_type")) for item in result.get("violations", []) if item.get("type") == "anti_gaming_gate_failed"}
+
     def test_acceptance_check_missing_required_evidence_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             run_dir = Path(tmp_dir) / "sample_run"
@@ -376,6 +451,124 @@ class MawToolTests(unittest.TestCase):
             self.assertTrue(result["test"]["passed"])
             self.assertFalse(result["evidence"]["passed"])
             self.assertTrue(any(item["type"] == "missing_required_evidence" for item in result["violations"]))
+
+    def test_anti_gaming_acceptance_ships_valid_hard_gate_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = self._create_ml_acceptance_run(Path(tmp_dir) / "runs")
+            self._write_valid_anti_gaming_artifacts(run_dir)
+
+            proc = run_tool(str(ACCEPTANCE), "--run", str(run_dir))
+            verdict = run_tool(str(VERDICT_CHECK), str(run_dir))
+            result = json.loads(proc.stdout)
+
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertEqual(verdict.returncode, 0, verdict.stdout + verdict.stderr)
+        self.assertEqual(result["verdict"], "SHIP")
+        self.assertTrue(result["anti_gaming"]["passed"])
+
+    def test_anti_gaming_acceptance_fails_protocol_hash_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = self._create_ml_acceptance_run(Path(tmp_dir) / "runs")
+            self._write_valid_anti_gaming_artifacts(run_dir)
+            protocol_path = run_dir / "artifacts" / "evaluation-protocol.json"
+            protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
+            protocol["thresholds"]["max_generalization_gap"] = 0.99
+            protocol_path.write_text(json.dumps(protocol, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+            result, verdict = self._run_anti_gaming_acceptance_and_verdict(run_dir)
+
+        self.assertEqual(result["verdict"], "NO-SHIP")
+        self.assertIn("protocol_hash_mismatch", self._anti_gaming_violation_types(result))
+        self.assertIn("anti_gaming_hard_gates_failed", verdict.stdout)
+
+    def test_anti_gaming_acceptance_fails_worker_test_peek(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = self._create_ml_acceptance_run(Path(tmp_dir) / "runs")
+            self._write_valid_anti_gaming_artifacts(run_dir)
+            ledger_path = run_dir / "artifacts" / "role-access-ledger.json"
+            ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+            ledger["events"].insert(0, {"role": "worker", "phase": "iteration", "iteration": 1, "split": "test", "action": "read"})
+            ledger_path.write_text(json.dumps(ledger) + "\n", encoding="utf-8")
+
+            result, verdict = self._run_anti_gaming_acceptance_and_verdict(run_dir)
+
+        self.assertEqual(result["verdict"], "NO-SHIP")
+        self.assertIn("sealed_test_access_before_acceptance", self._anti_gaming_violation_types(result))
+        self.assertIn("sealed_test_access_before_acceptance", verdict.stdout)
+
+    def test_anti_gaming_acceptance_fails_banked_sub_ci_gain(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = self._create_ml_acceptance_run(Path(tmp_dir) / "runs")
+            self._write_valid_anti_gaming_artifacts(run_dir)
+            ledger_path = run_dir / "artifacts" / "candidate-ledger.json"
+            ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+            ledger["candidates"][0]["worst_group_lcb_gain"] = 0.005
+            ledger["candidates"][0]["gain_inside_bootstrap_ci"] = True
+            ledger_path.write_text(json.dumps(ledger) + "\n", encoding="utf-8")
+
+            result, verdict = self._run_anti_gaming_acceptance_and_verdict(run_dir)
+
+        types = self._anti_gaming_violation_types(result)
+        self.assertEqual(result["verdict"], "NO-SHIP")
+        self.assertIn("banked_gain_below_lcb_threshold", types)
+        self.assertIn("banked_sub_ci_gain", types)
+        self.assertIn("banked_sub_ci_gain", verdict.stdout)
+
+    def test_anti_gaming_acceptance_fails_degenerate_prediction(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = self._create_ml_acceptance_run(Path(tmp_dir) / "runs")
+            self._write_valid_anti_gaming_artifacts(run_dir)
+            (run_dir / "artifacts" / "prediction-distribution-check.json").write_text(
+                json.dumps({"passed": False, "check": "prediction_distribution", "reason": "single class covers 100% of predictions"}) + "\n",
+                encoding="utf-8",
+            )
+
+            result, verdict = self._run_anti_gaming_acceptance_and_verdict(run_dir)
+
+        self.assertEqual(result["verdict"], "NO-SHIP")
+        self.assertIn("prediction_distribution_degenerate", self._anti_gaming_violation_types(result))
+        self.assertIn("prediction_distribution_degenerate", verdict.stdout)
+
+    def test_anti_gaming_acceptance_fails_val_budget_overrun(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = self._create_ml_acceptance_run(Path(tmp_dir) / "runs")
+            self._write_valid_anti_gaming_artifacts(run_dir)
+            (run_dir / "artifacts" / "val-query-ledger.json").write_text(
+                json.dumps(
+                    {
+                        "query_count": 3,
+                        "queries": [
+                            {"iteration": 1, "split": "val"},
+                            {"iteration": 2, "split": "val"},
+                            {"iteration": 3, "split": "val"},
+                        ],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            result, verdict = self._run_anti_gaming_acceptance_and_verdict(run_dir)
+
+        self.assertEqual(result["verdict"], "NO-SHIP")
+        self.assertIn("val_query_budget_overrun", self._anti_gaming_violation_types(result))
+        self.assertIn("val_query_budget_overrun", verdict.stdout)
+
+    def test_anti_gaming_acceptance_fails_generalization_gap_over_bound(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = self._create_ml_acceptance_run(Path(tmp_dir) / "runs")
+            self._write_valid_anti_gaming_artifacts(run_dir)
+            (run_dir / "artifacts" / "final-evaluation-report.json").write_text(
+                json.dumps({"sealed_test_score": {"worst_group_accuracy": 0.40, "ci_lower": 0.35}, "val_to_test_generalization_gap": 0.20})
+                + "\n",
+                encoding="utf-8",
+            )
+
+            result, verdict = self._run_anti_gaming_acceptance_and_verdict(run_dir)
+
+        self.assertEqual(result["verdict"], "NO-SHIP")
+        self.assertIn("generalization_gap_over_bound", self._anti_gaming_violation_types(result))
+        self.assertIn("generalization_gap_over_bound", verdict.stdout)
 
     def _create_code_acceptance_run(self, root: Path) -> Path:
         proc = run_tool(
@@ -439,6 +632,7 @@ class MawToolTests(unittest.TestCase):
                         "caps": {"max_agents": 6, "max_parallel": 3, "max_iters": 3},
                         "deterministic_checks": [
                             {"name": "plan-check", "command": "python maw-tools/plan_check.py --file artifacts/conductor-plan.json"},
+                            {"name": "plan-reviewer", "evidence": "artifacts/plan-review.md", "command": "manual advisory review"},
                             {"name": "unit-tests", "command": "python -m unittest discover -s tests"},
                             {"name": "readme-check", "command": "python maw-tools/readme_check.py"},
                             {"name": "dependency-boundary", "command": "python -m unittest tests.test_maw_tools.MawToolTests.test_maw_tools_never_import_wilds_or_torch"},
@@ -455,6 +649,7 @@ class MawToolTests(unittest.TestCase):
                 encoding="utf-8",
             )
             (artifacts / "plan-check-result.json").write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
+            (artifacts / "plan-review.md").write_text("Verdict: APPROVE\n", encoding="utf-8")
             (artifacts / "readme-check-result.json").write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
             (artifacts / "wilds-export-result.json").write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
 
@@ -467,6 +662,7 @@ class MawToolTests(unittest.TestCase):
             self.assertIn("max_agents=6", text)
             self.assertIn("planner -> dependency_mapper", text)
             self.assertIn("| plan-check | PASS |", text)
+            self.assertIn("| plan-reviewer | PASS | artifacts/plan-review.md |", text)
             self.assertIn("| readme-check | PASS | artifacts/readme-check-result.json |", text)
             self.assertIn("| dependency-boundary | PASS | artifacts/dependency-risk-report.json |", text)
             self.assertIn("| offline-fake-wilds-e2e | PASS | artifacts/wilds-export-result.json |", text)
@@ -2525,8 +2721,145 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual([row["id"] for row in rows], ["x1", "x2"])
         self.assertEqual([row["prediction"] for row in rows], [1, 1])
 
+    def test_wilds_validator_flags_gap_calibration_baseline_and_reproducibility(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            score = root / "score.json"
+            predictions = root / "predictions.jsonl"
+            output = root / "validator.json"
+            score.write_text(
+                json.dumps(
+                    {
+                        "check": "wilds_benchmark",
+                        "passed": True,
+                        "metrics": {"acc_avg": 0.70, "acc_wg": 0.40},
+                        "reproducibility": {"deterministic": True, "evaluated_at_utc": "2026-06-03T00:00:00+00:00"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            predictions.write_text(
+                "\n".join(
+                    [
+                        json.dumps({"id": "a", "prediction": 1, "label": 0, "probability": 0.99}),
+                        json.dumps({"id": "b", "prediction": 1, "label": 0, "probability": 0.99}),
+                        json.dumps({"id": "c", "prediction": 0, "label": 1, "probability": 0.95}),
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            proc = run_tool(
+                str(WILDS_VALIDATOR),
+                "--score",
+                str(score),
+                "--predictions",
+                str(predictions),
+                "--majority-accuracy",
+                "0.72",
+                "--output",
+                str(output),
+            )
+            result = json.loads(output.read_text(encoding="utf-8"))
+
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertFalse(result["passed"])
+        self.assertIn("worst_group_gap", result["tripped"])
+        self.assertIn("calibration", result["tripped"])
+        self.assertIn("baseline_vs_majority", result["tripped"])
+        self.assertNotIn("reproducibility", result["tripped"])
+        self.assertTrue(any("group-balanced" in item for item in result["recommendations"]))
+        calibration_signal = next(item for item in result["signals"] if item["name"] == "calibration")
+        self.assertGreater(calibration_signal["value"]["expected_calibration_error"], 0.10)
+
+    def test_wilds_validator_missing_probabilities_flags_calibration(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            score = root / "score.json"
+            predictions = root / "predictions.jsonl"
+            score.write_text(
+                json.dumps(
+                    {
+                        "metrics": {"acc_avg": 0.90, "acc_wg": 0.85},
+                        "reproducibility": {"deterministic": True, "evaluated_at_utc": "2026-06-03T00:00:00+00:00"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            predictions.write_text(json.dumps({"id": "a", "prediction": 1, "label": 1}) + "\n", encoding="utf-8")
+
+            proc = run_tool(str(WILDS_VALIDATOR), "--score", str(score), "--predictions", str(predictions))
+            result = json.loads(proc.stdout)
+
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("calibration", result["tripped"])
+        instruction = " ".join(result["worker_instructions"])
+        self.assertIn("probability", instruction)
+
+    def test_wilds_loop_creates_ml_validation_run_with_diagnosis(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            score = root / "score.json"
+            predictions = root / "predictions.jsonl"
+            run_root = root / "runs"
+            score.write_text(
+                json.dumps(
+                    {
+                        "check": "wilds_benchmark",
+                        "passed": True,
+                        "metrics": {"acc_avg": 0.70, "acc_wg": 0.40},
+                        "reproducibility": {"deterministic": True, "evaluated_at_utc": "2026-06-03T00:00:00+00:00"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            predictions.write_text(
+                "\n".join(
+                    [
+                        json.dumps({"id": "a", "prediction": 1, "label": 0, "probability": 0.99}),
+                        json.dumps({"id": "b", "prediction": 0, "label": 1, "probability": 0.95}),
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            proc = run_tool(
+                str(MAW),
+                "wilds-loop",
+                "--score",
+                str(score),
+                "--predictions",
+                str(predictions),
+                "--run-root",
+                str(run_root),
+                "--slug",
+                "offline-wilds-loop",
+                "--max-iters",
+                "2",
+                "--majority-accuracy",
+                "0.72",
+            )
+            result = json.loads(proc.stdout)
+            run_dir = Path(result["run_dir"])
+            loop_result = json.loads((run_dir / "artifacts" / "wilds-loop-result.json").read_text(encoding="utf-8"))
+            validator = json.loads((run_dir / "artifacts" / "wilds-validator.json").read_text(encoding="utf-8"))
+            acceptance = json.loads((run_dir / "artifacts" / "acceptance-result.json").read_text(encoding="utf-8"))
+            diagnosis = (run_dir / "artifacts" / "critic-diagnosis.md").read_text(encoding="utf-8")
+            run_md = (run_dir / "run.md").read_text(encoding="utf-8")
+
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertEqual(result["verdict"], "NO-SHIP")
+        self.assertIn("ml-validation-task", run_md)
+        self.assertEqual(len(loop_result["iterations"]), 1)
+        self.assertIn("worst_group_gap", validator["tripped"])
+        self.assertEqual(acceptance["verdict"], "NO-SHIP")
+        self.assertIn("Worker instructions", diagnosis)
+        self.assertIn("Train or select a candidate", diagnosis)
+
     def test_maw_tools_never_import_wilds_or_torch(self) -> None:
-        forbidden = {"wilds", "torch"}
+        forbidden = {"sklearn", "torch", "wilds"}
         violations: list[tuple[Path, str]] = []
         for path in (ROOT / "maw-tools").glob("*.py"):
             tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))

@@ -8,6 +8,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+import anti_gaming_check
+
 
 ACCEPTANCE_RESULT = "acceptance-result.json"
 VALID_VERDICTS = {"SHIP", "NO-SHIP", "NEEDS-HUMAN"}
@@ -121,12 +123,31 @@ def check_run(run_dir: Path) -> dict[str, Any]:
             )
         )
 
+    anti_gaming = anti_gaming_check.check_run(run_dir)
+    if not anti_gaming.get("passed"):
+        violations.append(
+            violation(
+                "anti_gaming_hard_gates_failed",
+                "anti-gaming hard gates failed; final verdict cannot be SHIP",
+                anti_gaming=anti_gaming,
+            )
+        )
+    if artifact_verdict == "SHIP" and not anti_gaming.get("passed"):
+        violations.append(
+            violation(
+                "ship_with_failed_anti_gaming_gates",
+                "acceptance artifact declares SHIP despite failed anti-gaming hard gates",
+                artifact_verdict=artifact_verdict,
+            )
+        )
+
     return {
         "check": "final_verdict_matches_acceptance_artifact",
         "run": str(run_dir),
         "artifact": str(artifact_path),
         "artifact_verdict": artifact_verdict,
         "run_verdict": run_verdict,
+        "anti_gaming": anti_gaming,
         "passed": not violations,
         "violations": violations,
     }

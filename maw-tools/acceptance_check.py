@@ -13,6 +13,7 @@ from typing import Any
 import validate_handoffs
 import run_report
 import verdict_check
+import anti_gaming_check
 
 
 ACCEPTANCE_RESULT = "acceptance-result.json"
@@ -533,22 +534,36 @@ def check_required_evidence(run_dir: Path, task_type: str) -> dict[str, Any]:
     }
 
 
-def acceptance_violations(handoffs: dict, test: dict, evidence: dict) -> list[dict[str, Any]]:
+def acceptance_violations(handoffs: dict, test: dict, evidence: dict, anti_gaming: dict | None = None) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
     if not handoffs.get("passed"):
         result.append(violation("handoffs_invalid", "handoff validation failed"))
     if not test.get("passed"):
         result.append(violation("tests_failed", "test command failed"))
     result.extend(evidence.get("violations", []))
+    if anti_gaming is not None and not anti_gaming.get("passed"):
+        for item in anti_gaming.get("violations", []):
+            if isinstance(item, dict):
+                extra = {key: value for key, value in item.items() if key not in {"type", "message"}}
+                result.append(
+                    violation(
+                        "anti_gaming_gate_failed",
+                        item.get("message", "anti-gaming hard gate failed"),
+                        anti_gaming_type=item.get("type"),
+                        **extra,
+                    )
+                )
     return result
 
 
-def verdict(handoffs: dict, test: dict, evidence: dict) -> str:
+def verdict(handoffs: dict, test: dict, evidence: dict, anti_gaming: dict | None = None) -> str:
     if not handoffs.get("passed"):
         return "NO-SHIP"
     if not test.get("passed"):
         return "NO-SHIP"
     if not evidence.get("passed"):
+        return "NO-SHIP"
+    if anti_gaming is not None and not anti_gaming.get("passed"):
         return "NO-SHIP"
     return "SHIP"
 
@@ -601,14 +616,17 @@ def main(argv: list[str] | None = None) -> int:
     write_json_artifact(artifacts / "handoff-validation.json", handoffs, overwrite=False)
     task_type = infer_task_type(run_dir)
     evidence = check_required_evidence(run_dir, task_type)
-    violations = acceptance_violations(handoffs, test, evidence)
-    final_verdict = verdict(handoffs, test, evidence)
+    anti_gaming = anti_gaming_check.check_run(run_dir)
+    write_json_artifact(artifacts / "anti-gaming-hard-gates.json", anti_gaming)
+    violations = acceptance_violations(handoffs, test, evidence, anti_gaming)
+    final_verdict = verdict(handoffs, test, evidence, anti_gaming)
     result = {
         "run": str(run_dir),
         "task_type": task_type,
         "handoffs": handoffs,
         "test": test,
         "evidence": evidence,
+        "anti_gaming": anti_gaming,
         "violations": violations,
         "verdict": final_verdict,
     }

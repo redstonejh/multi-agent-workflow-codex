@@ -58,11 +58,37 @@ def read_export(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def write_predictions(path: Path, ids: list[str], predictions: list[Any]) -> None:
+def probability_rows(model: Any, texts: list[str], predictions: list[Any]) -> list[float | None]:
+    if not hasattr(model, "predict_proba"):
+        return [None for _prediction in predictions]
+    try:
+        probabilities = model.predict_proba(texts)
+        classes = list(getattr(model, "classes_", []))
+        if not classes and hasattr(model, "named_steps"):
+            classifier = model.named_steps.get("classifier")
+            classes = list(getattr(classifier, "classes_", []))
+    except (AttributeError, ValueError):
+        return [None for _prediction in predictions]
+    result: list[float | None] = []
+    for row, prediction in zip(probabilities, predictions):
+        values = row.tolist() if hasattr(row, "tolist") else list(row)
+        if classes and prediction in classes:
+            result.append(float(values[classes.index(prediction)]))
+        elif values:
+            result.append(float(max(values)))
+        else:
+            result.append(None)
+    return result
+
+
+def write_predictions(path: Path, ids: list[str], predictions: list[Any], probabilities: list[float | None]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
-        for example_id, prediction in zip(ids, predictions):
-            handle.write(json.dumps({"id": str(example_id), "prediction": scalar(prediction)}, sort_keys=True) + "\n")
+        for example_id, prediction, probability in zip(ids, predictions, probabilities):
+            row = {"id": str(example_id), "prediction": scalar(prediction)}
+            if probability is not None:
+                row["probability"] = probability
+            handle.write(json.dumps(row, sort_keys=True) + "\n")
 
 
 def load_wilds_subset(dataset_name: str, split: str, root_dir: str | None) -> Any:
@@ -135,7 +161,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     train_texts, train_labels = train_rows(train_subset, args.max_train)
     model = fit_model(train_texts, train_labels)
     predictions = list(model.predict(texts))
-    write_predictions(Path(args.output_jsonl), ids, predictions)
+    probabilities = probability_rows(model, texts, predictions)
+    write_predictions(Path(args.output_jsonl), ids, predictions, probabilities)
     return {
         "check": "civilcomments_baseline_model",
         "passed": True,

@@ -153,6 +153,20 @@ def artifact_status(run_dir: Path, artifact: str) -> dict[str, str]:
     path = run_dir / artifact
     if not path.is_file():
         return {"artifact": artifact, "status": "MISSING", "reason": "missing"}
+    if path.suffix.lower() in {".md", ".txt"}:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            return {"artifact": artifact, "status": "FAIL", "reason": str(exc)}
+        match = re.search(r"(?im)^\s*Verdict:\s*(?P<verdict>[A-Z-]+)\s*$", text)
+        if match:
+            verdict = match.group("verdict")
+            if verdict in {"APPROVE", "PASS", "SHIP"}:
+                return {"artifact": artifact, "status": "PASS", "reason": f"verdict {verdict}"}
+            if verdict in {"REVISE", "FAIL", "NO-SHIP", "NEEDS-HUMAN"}:
+                return {"artifact": artifact, "status": "FAIL", "reason": f"verdict {verdict}"}
+            return {"artifact": artifact, "status": "UNKNOWN", "reason": f"verdict {verdict}"}
+        return {"artifact": artifact, "status": "not recorded", "reason": "text artifact has no verdict"}
     data, error = load_json(path)
     status, reason = artifact_pass_reason(data, error)
     return {"artifact": artifact, "status": status, "reason": reason}
