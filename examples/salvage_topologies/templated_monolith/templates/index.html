@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Templated Fixture</title>
+  <link rel="stylesheet" href="../static/app.css">
+</head>
+<body>
+  <main id="keep-root" class="screen">{{ user.name }}</main>
+  <form action="/api/save"><input name="token" value="{{ token }}"></form>
+  <script src="../static/app.js"></script>
+</body>
+</html>

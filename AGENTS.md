@@ -13,9 +13,22 @@ The main Codex entry point is `.codex/skills/maw/SKILL.md`. Role definitions liv
 - `acceptance_gate`: performs the final independent check and records `SHIP`, `NO-SHIP`, or `NEEDS-HUMAN`.
 
 Some workflow templates add specialized agents for ML validation, debugging,
-dependency analysis, research aggregation, or other focused review. These agents
-are optional and template-driven. MAW has one unified workflow system; there is
-no separate mode for specialized capabilities.
+dependency analysis, research aggregation, salvage verification, or other
+focused review. These agents are optional and template-driven. MAW has one
+unified workflow system; there is no separate mode for specialized capabilities.
+
+The `salvage` task type is a system-level polyglot refactor workflow for gutting
+legacy code while preserving a frozen surface. Its hard gates are preserved
+behavior parity, hidden dependency and cross-language coupling proof, dead-code
+proof, duplicate collapse, and salvage resistance. The required roster is the
+core roles plus `dependency_mapper`, `dependency_untangler`, and
+`dead_code_auditor`; `salvage_verifier` is advisory. `maw-tools/` evaluates only
+normalized JSON artifacts and remains standard-library-only: Python graph
+generation uses `ast`, HTML/CSS graph generation uses `html.parser` plus
+`web_checks.py`, and characterization replay uses stdlib HTTP/JSON. JS/TS graph
+generation and client-rendered browser capture live outside the deterministic
+spine in `maw_cli/`; when optional Node or browser dependencies are unavailable,
+those adapters must emit `NEEDS-HUMAN` rather than guessing.
 
 Default caps:
 
@@ -40,6 +53,11 @@ python maw-tools/scaffold_run.py handoff --run <run_dir> --from planner --to wor
 python maw-tools/validate_handoffs.py <run_dir>
 python maw-tools/checks.py test --cmd "<test command>"
 python maw-tools/acceptance_check.py --run <run_dir> --test-cmd "<test command>"
+python maw-tools/salvage_check.py verdict <run_dir>
+maw start salvage-task "<task>"
+maw code-graph <path> [--lang auto|py|js|ts|html|css] --output artifacts/code-graph.json
+maw characterize <path-or-url> --output artifacts/characterization-baseline.json
+maw salvage-check <run_dir>
 ```
 
 On Windows, `py` or `uv run python` are acceptable substitutes when `python` is unavailable.
@@ -107,3 +125,10 @@ For code work, record non-obvious couplings with:
 - `# MAW-BUG[id]:` known caveat
 - `# MAW-RCA[id]:` why the code is shaped this way
 - `# MAW-TODO[id]:` deferred work
+
+For salvage work, freeze `artifacts/preserved-surface.json` and
+`artifacts/preserved-surface.sha256` before iteration 0. Acceptance and verdict
+must force `NO-SHIP` if the preserved surface shrinks, the hash changes, graph
+entrypoints differ from the frozen surface, dead-code proof uses a different
+entrypoint set, parity lacks a pre-gut characterization baseline, or a
+cross-language coupling is dismissed without a justification.

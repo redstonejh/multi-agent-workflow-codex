@@ -1,0 +1,49 @@
+{
+  "id": "salvage-task",
+  "name": "Salvage Refactor Task",
+  "description": "Gut messy legacy code while preserving a frozen surface with hard dependency, dead-code, duplication, and parity gates.",
+  "caps": {"max_agents": 9, "max_parallel": 3},
+  "agents": ["conductor", "planner", "dependency_mapper", "dependency_untangler", "dead_code_auditor", "worker", "critic", "salvage_verifier", "acceptance_gate"],
+  "handoffs": [
+    {"from": "conductor", "to": "planner"},
+    {"from": "planner", "to": "dependency_mapper"},
+    {"from": "dependency_mapper", "to": "dependency_untangler"},
+    {"from": "dependency_untangler", "to": "dead_code_auditor"},
+    {"from": "dead_code_auditor", "to": "worker"},
+    {"from": "worker", "to": "critic"},
+    {"from": "critic", "to": "salvage_verifier"},
+    {"from": "salvage_verifier", "to": "acceptance_gate"}
+  ],
+  "required_artifacts": [
+    "artifacts/salvage-plan.md",
+    "artifacts/topology.json",
+    "artifacts/preserved-surface.json",
+    "artifacts/preserved-surface.sha256",
+    "artifacts/characterization-baseline.json",
+    "artifacts/code-graph.json",
+    "artifacts/hidden-deps.json",
+    "artifacts/cross-lang-couplings.json",
+    "artifacts/dead-code.json",
+    "artifacts/duplication.json",
+    "artifacts/preserve-parity.json",
+    "artifacts/salvage-resistance.json",
+    "artifacts/salvage-result.json",
+    "artifacts/critic-review.md",
+    "artifacts/acceptance-result.json"
+  ],
+  "acceptance_gates": ["topology-detected", "preserved-surface-frozen", "pre-gut-characterization-captured", "preserved-surface-parity", "hidden-dependencies-documented-and-tested", "cross-language-couplings-documented-tested-or-justified", "removed-code-proven-dead", "duplicate-logic-collapsed-and-rerouted", "salvage-regression-resistance", "handoffs-valid"],
+  "deterministic_checks": [
+    {"name": "topology", "command": "python maw-tools/salvage_check.py topology <path> --output artifacts/topology.json"},
+    {"name": "code-graph", "command": "maw code-graph <path> --lang auto --output artifacts/code-graph.json"},
+    {"name": "characterize", "command": "maw characterize <path> --output artifacts/characterization-baseline.json"},
+    {"name": "preserved-surface-freeze", "command": "python -c \"import hashlib, pathlib; p=pathlib.Path('artifacts/preserved-surface.json'); pathlib.Path('artifacts/preserved-surface.sha256').write_text(hashlib.sha256(p.read_bytes()).hexdigest() + '\\n', encoding='utf-8')\""},
+    {"name": "preserve-parity", "command": "python maw-tools/salvage_check.py preserve-parity --characterization-baseline artifacts/characterization-baseline.json --target <path> --preserved-surface artifacts/preserved-surface.json --run <run_dir> --output artifacts/preserve-parity.json"},
+    {"name": "hidden-deps", "command": "python maw-tools/salvage_check.py hidden-deps --graph artifacts/code-graph.json --root <path> --coverage artifacts/hidden-deps-tests.json --output artifacts/hidden-deps.json"},
+    {"name": "cross-lang", "command": "python maw-tools/salvage_check.py cross-lang --graph artifacts/code-graph.json --root <path> --coverage artifacts/hidden-deps-tests.json --output artifacts/cross-lang-couplings.json"},
+    {"name": "dead-code", "command": "python maw-tools/salvage_check.py dead-code --graph artifacts/code-graph.json --preserved-surface artifacts/preserved-surface.json --removed artifacts/removed-symbols.json --output artifacts/dead-code.json"},
+    {"name": "duplication", "command": "python maw-tools/salvage_check.py duplication --graph artifacts/code-graph.json --plan artifacts/duplication-plan.json --output artifacts/duplication.json"},
+    {"name": "salvage-resistance", "command": "python maw-tools/salvage_check.py resistance --graph artifacts/code-graph.json --preserved-surface artifacts/preserved-surface.json --removed artifacts/removed-symbols.json --duplication-plan artifacts/duplication-plan.json --coverage artifacts/hidden-deps-tests.json --baseline artifacts/characterization-baseline.json --root <path> --output artifacts/salvage-resistance.json"},
+    {"name": "salvage-result", "command": "python maw-tools/salvage_check.py verdict <run_dir> --output artifacts/salvage-result.json"},
+    {"name": "handoffs", "command": "python maw-tools/validate_handoffs.py <run_dir>"}
+  ]
+}

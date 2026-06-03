@@ -49,6 +49,9 @@ SPECIALIZED_AGENTS = [
     "debugger",
     "bug_hunter",
     "dependency_mapper",
+    "dependency_untangler",
+    "dead_code_auditor",
+    "salvage_verifier",
     "aggregator",
     "ui_builder",
     "a11y_auditor",
@@ -892,7 +895,7 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         result = json.loads(proc.stdout)
         self.assertTrue(result["passed"])
-        self.assertEqual(result["templates"], 8)
+        self.assertEqual(result["templates"], 9)
 
     def test_core_roster_stays_unchanged(self) -> None:
         template = json.loads((ROOT / "templates" / "workflows" / "standard-software-task.json").read_text(encoding="utf-8"))
@@ -1085,8 +1088,10 @@ class MawToolTests(unittest.TestCase):
                 "conductor",
                 "critic",
                 "data_quality_auditor",
+                "dead_code_auditor",
                 "debugger",
                 "dependency_mapper",
+                "dependency_untangler",
                 "leakage_auditor",
                 "markup_validator",
                 "overfitting_checker",
@@ -1095,6 +1100,7 @@ class MawToolTests(unittest.TestCase):
                 "planner",
                 "reproducibility_checker",
                 "responsive_checker",
+                "salvage_verifier",
                 "style_drift_auditor",
                 "ui_builder",
                 "ux_critic",
@@ -1111,6 +1117,7 @@ class MawToolTests(unittest.TestCase):
                 "ml-training-task": "ml",
                 "ml-validation-task": "ml",
                 "refactor-task": "refactor",
+                "salvage-task": "salvage",
                 "standard-software-task": "generic",
             },
         )
@@ -1123,6 +1130,7 @@ class MawToolTests(unittest.TestCase):
                 "frontend": ["a11y_auditor", "change_verifier"],
                 "code": ["critic", "dependency_mapper"],
                 "refactor": [],
+                "salvage": ["dependency_mapper", "dependency_untangler", "dead_code_auditor"],
             },
         )
         self.assertEqual(plan_check.DEFAULT_CAPS, {"max_agents": 5, "max_parallel": 3})
@@ -1162,6 +1170,14 @@ class MawToolTests(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         self.assertTrue(any(item["type"] == "insufficient_role_cap_for_required_roles" for item in json.loads(proc.stdout)["violations"]))
 
+        salvage_default = {
+            "task_type": "salvage",
+            "roles": ["conductor", "planner", "worker", "dependency_mapper", "dependency_untangler", "dead_code_auditor", "critic", "acceptance_gate"],
+        }
+        proc = self._run_plan_check(salvage_default)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertTrue(any(item["type"] == "insufficient_role_cap_for_required_roles" for item in json.loads(proc.stdout)["violations"]))
+
     def test_plan_check_template_caps_allow_specialist_workflows(self) -> None:
         ml_template_cap = {
             "task_type": "ml-validation-task",
@@ -1177,6 +1193,14 @@ class MawToolTests(unittest.TestCase):
             "caps": {"max_agents": 13, "max_parallel": 3},
         }
         proc = self._run_plan_check(frontend_template_cap)
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+
+        salvage_template_cap = {
+            "task_type": "salvage-task",
+            "roles": ["conductor", "planner", "worker", "dependency_mapper", "dependency_untangler", "dead_code_auditor", "critic", "acceptance_gate"],
+            "caps": {"max_agents": 9, "max_parallel": 3},
+        }
+        proc = self._run_plan_check(salvage_template_cap)
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
 
     def test_plan_check_rejects_plans_that_drop_core_roles_to_fit_caps(self) -> None:
@@ -1300,14 +1324,14 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         result = json.loads(proc.stdout)
         self.assertTrue(result["passed"])
-        self.assertEqual(set(result["checklists"]), {"refactor", "ml", "frontend", "debugging", "code", "generic"})
+        self.assertEqual(set(result["checklists"]), {"refactor", "salvage", "ml", "frontend", "debugging", "code", "generic"})
 
     def test_task_type_checklists_reject_unknown_deterministic_artifact(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             root = Path(tmp_dir)
             checklist_dir = root / ".codex" / "checklists"
             checklist_dir.mkdir(parents=True)
-            for name in ("refactor", "ml", "frontend", "debugging", "code", "generic"):
+            for name in ("refactor", "salvage", "ml", "frontend", "debugging", "code", "generic"):
                 artifact = "artifacts/not-a-real-check.json" if name == "code" else "artifacts/test-result.json"
                 (checklist_dir / f"{name}.md").write_text(
                     f"# {name}\n\n- Demo invariant. Evidence: `{artifact}`\n",
@@ -1368,6 +1392,7 @@ class MawToolTests(unittest.TestCase):
                 "style_drift_auditor",
                 "visual_verifier",
             },
+            "salvage-task": {"dependency_mapper", "dependency_untangler", "dead_code_auditor", "salvage_verifier"},
         }
 
         for template_id, agents in expected.items():
@@ -1436,6 +1461,7 @@ class MawToolTests(unittest.TestCase):
             "standard-software-task",
             "bug-investigation",
             "refactor-task",
+            "salvage-task",
             "ml-validation-task",
             "ml-training-task",
             "wilds-benchmark-task",
@@ -1498,8 +1524,9 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         result = json.loads(proc.stdout)
         self.assertTrue(result["passed"])
-        self.assertEqual(len(result["templates"]), 8)
+        self.assertEqual(len(result["templates"]), 9)
         self.assertIn("standard-software-task", {template["id"] for template in result["templates"]})
+        self.assertIn("salvage-task", {template["id"] for template in result["templates"]})
         self.assertIn("wilds-benchmark-task", {template["id"] for template in result["templates"]})
 
     def test_installed_style_module_entrypoint_lists_templates(self) -> None:
@@ -1508,7 +1535,7 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         result = json.loads(proc.stdout)
         self.assertTrue(result["passed"])
-        self.assertEqual(len(result["templates"]), 8)
+        self.assertEqual(len(result["templates"]), 9)
 
     def test_installed_console_script_lists_templates_with_uv(self) -> None:
         if shutil.which("uv") is None:
@@ -1525,7 +1552,7 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         result = json.loads(proc.stdout)
         self.assertTrue(result["passed"])
-        self.assertEqual(len(result["templates"]), 8)
+        self.assertEqual(len(result["templates"]), 9)
 
     def test_pyproject_declares_maw_console_script(self) -> None:
         data = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))

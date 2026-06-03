@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MAW salvage characterization",
+  "type": "object",
+  "required": ["schema_version", "check", "captured_at_epoch", "target", "items"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "check": {"const": "salvage_characterization"},
+    "target": {"type": "string"},
+    "root": {"type": "string"},
+    "captured_at_epoch": {"type": "number"},
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "name", "sha256"],
+        "properties": {
+          "type": {"enum": ["file", "http", "css_rules", "test_digest"]},
+          "name": {"type": "string"},
+          "path": {"type": "string"},
+          "url": {"type": "string"},
+          "method": {"type": "string"},
+          "status": {"type": "integer"},
+          "body_sha256": {"type": "string"},
+          "headers_sha256": {"type": "string"},
+          "sha256": {"type": "string"},
+          "bytes": {"type": "integer"},
+          "metadata": {"type": "object"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "test_command": {"type": "string"},
+    "passed": {"type": "boolean"},
+    "errors": {"type": "array"}
+  },
+  "additionalProperties": true
+}

@@ -15,7 +15,10 @@ MIRRORS = (
     (ROOT / "maw-tools", VENDORED_ROOT / "maw-tools", ("*.py",)),
     (ROOT / "templates" / "workflows", VENDORED_ROOT / "templates" / "workflows", ("*.json",)),
     (ROOT / "examples" / "ml_problems", VENDORED_ROOT / "examples" / "ml_problems", ("*.py", "hard_examples/*.json")),
+    (ROOT / "examples" / "salvage_js_ts", VENDORED_ROOT / "examples" / "salvage_js_ts", ("*.*",)),
+    (ROOT / "examples" / "salvage_topologies", VENDORED_ROOT / "examples" / "salvage_topologies", ("**/*.*",)),
     (ROOT / "packs", VENDORED_ROOT / "packs", ("*/manifest.json",)),
+    (ROOT / "schemas", VENDORED_ROOT / "schemas", ("*.json",)),
 )
 
 

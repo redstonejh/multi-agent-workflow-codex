@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/check-result.json",
+  "title": "MAW Deterministic Check Result",
+  "type": "object",
+  "required": ["passed", "status", "metrics", "thresholds", "reasons"],
+  "properties": {
+    "passed": {"type": "boolean"},
+    "status": {"type": "string"},
+    "metrics": {"type": "object"},
+    "thresholds": {"type": "object"},
+    "reasons": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  },
+  "additionalProperties": true
+}

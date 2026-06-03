@@ -35,6 +35,23 @@ maw ml-auto data.csv --goal "predict churn"
 
 Dependency boundary: the autopilot adapter in `maw_cli/ml_autopilot.py` may use pandas/scikit-learn for data loading and training. The deterministic spine, `maw-tools/`, and `examples/ml_problems/ml_checks.py` remain standard-library only.
 
+## Salvage Refactor Workflow
+
+For system-level cleanup where selected systems must stay intact, use:
+
+```bash
+maw start salvage-task "gut the legacy billing code while preserving invoice exports"
+maw code-graph <path> --lang auto --output artifacts/code-graph.json
+maw characterize <path-or-url> --output artifacts/characterization-baseline.json
+maw salvage-check runs/<run_id>
+```
+
+`salvage-task` freezes `artifacts/preserved-surface.json` and `artifacts/preserved-surface.sha256` before iteration 0. It detects topology, captures `artifacts/characterization-baseline.json`, and blocks shipping unless preserved behavior has zero drift, hidden dependencies have `MAW-DEP[id]` annotations plus test coverage, cross-language coupling candidates are documented/tested or explicitly justified, removed code is unreachable from the frozen surface, duplicate logic has one rerouted survivor, and planted salvage mutations trip the gates. `maw-tools/acceptance_check.py` and `maw-tools/verdict_check.py` independently force `NO-SHIP` when the preserved-surface hash changes, the surface shrinks, graph entrypoints differ from the frozen set, dead-code proof uses a different entrypoint set, parity lacks a pre-gut baseline, or a coupling dismissal lacks justification.
+
+Two-tier guarantee: within-language structural gates use parsers where available (`ast`, `html.parser`, CSS extraction in `maw-tools/web_checks.py`, and the optional JS/TS adapter). Cross-language couplings are heuristic candidates from routes, selectors, assets, template variables, and API strings; each candidate must be documented/tested or justified, while characterization replay remains the primary behavioral safety net.
+
+Dependency boundary: `maw-tools/code_graph_py.py`, `maw-tools/code_graph_html.py`, CSS extraction in `maw-tools/web_checks.py`, characterization replay, and `maw-tools/salvage_check.py` stay standard-library-only and consume normalized JSON (`schemas/code-graph.json`, `schemas/characterization.json`). `maw_cli/code_graph_js.py` shells out to `maw_cli/vendor/code_graph_js.js` and may require Node plus the TypeScript compiler API. `maw_cli/capture_web.py` may require Playwright for client-rendered DOM capture via `maw characterize --browser`. If optional JS/TS/browser dependencies are unavailable, those adapters emit `NEEDS-HUMAN`; the hard salvage gates do not guess or silently downgrade.
+
 For fixed-split WILDS-style benchmark harness work, use:
 
 ```bash
@@ -121,7 +138,7 @@ For the full role catalog, see `docs/maw-architecture.md`.
 
 ## Task Types And Caps
 
-The core pack knows these task types: `debugging`, `generic`, `ml`, `frontend`, `code`, and `refactor`.
+The core pack knows these task types: `debugging`, `generic`, `ml`, `frontend`, `code`, `refactor`, and `salvage`.
 
 Aliases:
 
@@ -130,11 +147,13 @@ Aliases:
 - `ml-training-task` and `ml-validation-task` -> `ml`
 - `frontend-ui-task` -> `frontend`
 - `refactor-task` -> `refactor`
+- `salvage-task` -> `salvage`
 
 Default caps are `max_agents: 5` and `max_parallel: 3`. Required roles by task type:
 
 - `generic`: core roles only
 - `refactor`: core roles only
+- `salvage`: `dependency_mapper`, `dependency_untangler`, `dead_code_auditor`
 - `code`: `critic`, `dependency_mapper`
 - `ml`: `leakage_auditor`, `baseline_enforcer`
 - `frontend`: `a11y_auditor`, `change_verifier`
@@ -148,6 +167,7 @@ Template caps currently are:
 |---|---:|---:|
 | `standard-software-task` | 5 | 3 |
 | `refactor-task` | 5 | 3 |
+| `salvage-task` | 9 | 3 |
 | `bug-investigation` | 8 | 3 |
 | `multi-agent-research-task` | 9 | 3 |
 | `ml-training-task` | 10 | 3 |
@@ -172,6 +192,9 @@ maw plan-check runs/<run_id>/artifacts/conductor-plan.json
 maw plan-graph artifacts/task-graph.json
 maw run-report runs/<run_id>
 maw dependency-audit <path> [--annotate] [--dry-run] [--fail-on low|medium|high]
+maw code-graph <path> [--lang auto|py|js|ts|html|css] --output artifacts/code-graph.json
+maw characterize <path-or-url> [--browser] --output artifacts/characterization-baseline.json
+maw salvage-check runs/<run_id> [subcommand passthrough]
 maw ml-auto <csv-or-parquet> --goal "<goal>"
 maw wilds-benchmark <manifest.json> <predictions.json> [--output artifacts/wilds-harness-result.json]
 maw wilds-export --wilds-dataset <name> --split <split> [--limit N] --output examples.jsonl [--model-cmd "... {input} {output}" --score-output score.json]
@@ -188,6 +211,7 @@ python maw-tools/validate_handoffs.py runs/<run_id>
 python maw-tools/checks.py test --cmd "python -m unittest discover -s tests"
 python maw-tools/acceptance_check.py --run runs/<run_id> --test-cmd "<cmd>"
 python maw-tools/verdict_check.py runs/<run_id>
+python maw-tools/salvage_check.py verdict runs/<run_id>
 python maw-tools/validate_workflow_template.py --root .
 python maw-tools/check_vendored_data.py
 ```
@@ -200,6 +224,7 @@ Template JSON files live in `templates/workflows/`; installed package data mirro
 
 - `standard-software-task`: core software task scaffold; required artifacts include test result, worker output, critic review, and acceptance result.
 - `refactor-task`: behavior baseline/diff, coverage, API surface, structure, complexity, perf budget, resistance, and baseline tests.
+- `salvage-task`: topology, frozen preserved surface, characterization baseline, code graph, hidden dependency proof, cross-language coupling proof, dead-code proof, duplicate collapse, parity, salvage resistance, and aggregate salvage result.
 - `bug-investigation`: dependency map/risk audit, reproduction notes, regression test, root-cause analysis, and fix verification.
 - `frontend-ui-task`: local HTML/CSS checks for contrast, accessibility, budgets, links, markup, style extraction, change verification, tokens, visual verification, and UX/critic artifacts.
 - `ml-training-task`: training/evaluation commands plus ML validator artifacts, split/config/log/report artifacts, and acceptance.
@@ -232,11 +257,14 @@ The hard example fixtures live in `examples/ml_problems/hard_examples/`.
 - `maw-tools/web_checks.py`: local-file front-end checks for contrast, accessibility, budget, links, markup, style extraction, changed CSS values, and design-token drift.
 - `maw-tools/dependency_risk_audit.py`: Python dependency/coupling risk audit with optional annotations and severity gating.
 - `maw-tools/behavior_baseline.py`: refactor behavior manifest/diff and related refactor checks.
+- `maw-tools/code_graph_py.py`: stdlib Python producer for `schemas/code-graph.json`.
+- `maw-tools/code_graph_html.py`: stdlib HTML/CSS producer for `schemas/code-graph.json`.
+- `maw-tools/salvage_check.py`: hard salvage gates for topology, characterization parity, hidden dependencies, cross-language couplings, dead code, duplication, resistance, and preserved-surface freeze.
 - `maw-tools/validate_handoffs.py`: checks generated handoffs contain all required sections and no placeholders.
 - `maw-tools/validate_workflow_template.py`: validates template schema and optional run conformance to a declared template.
 - `maw-tools/run_report.py`: writes `artifacts/run-summary.md` with task type, caps, role pipeline, deterministic gate status, required evidence status, and final verdict.
 - `maw-tools/checklist_check.py`: checks `.codex/checklists/` entries link to known deterministic evidence artifacts.
-- `maw-tools/check_vendored_data.py`: fails when package-data mirrors drift from top-level `maw-tools/`, `templates/workflows/`, `examples/ml_problems/`, or `packs/`.
+- `maw-tools/check_vendored_data.py`: fails when package-data mirrors drift from top-level `maw-tools/`, `templates/workflows/`, `examples/ml_problems/`, `examples/salvage_js_ts/`, `examples/salvage_topologies/`, `packs/`, or `schemas/`.
 - `maw-tools/readme_check.py`: fails when README `maw ...` subcommands or literal path references drift from the codebase.
 
 Task risk checklists live in `.codex/checklists/`. They are the source of checklist invariants; this README only summarizes them.
@@ -247,11 +275,12 @@ Task risk checklists live in `.codex/checklists/`. They are the source of checkl
 python -m unittest discover -s tests
 python maw-tools/selftest_all.py
 python maw-tools/selftest_ml_checks.py
+python maw-tools/selftest_salvage_checks.py
 python maw-tools/check_vendored_data.py
 python maw-tools/readme_check.py
 ```
 
-`selftest_all.py` aggregates core checks, web checks, ML checks, refactor checks, plan-gate checks, checklist validation, README reference validation, and vendored package-data drift validation.
+`selftest_all.py` aggregates core checks, web checks, ML checks, refactor checks, salvage checks, plan-gate checks, checklist validation, README reference validation, and vendored package-data drift validation.
 
 Manual pre-release WILDS smoke check, not part of `unittest discover`:
 
@@ -279,4 +308,4 @@ python maw-tools/validate_handoffs.py examples/sample_run
 python maw-tools/acceptance_check.py --run examples/sample_run --test-cmd "python test_textutil.py" --test-cwd examples/sample_app
 ```
 
-Additional examples live under `examples/ml_problems/`, `examples/frontend_demo/`, `examples/change_demo/`, and `examples/workflow_specific_examples/`.
+Additional examples live under `examples/ml_problems/`, `examples/frontend_demo/`, `examples/change_demo/`, `examples/salvage_js_ts/`, `examples/salvage_topologies/`, and `examples/workflow_specific_examples/`.

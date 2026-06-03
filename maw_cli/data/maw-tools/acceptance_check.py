@@ -14,6 +14,7 @@ import validate_handoffs
 import run_report
 import verdict_check
 import anti_gaming_check
+import salvage_check
 
 
 ACCEPTANCE_RESULT = "acceptance-result.json"
@@ -23,11 +24,14 @@ REFACTOR_RESISTANCE_ARTIFACT = "artifacts/refactor-resistance.json"
 REFACTOR_STRUCTURE_ARTIFACT = "artifacts/refactor-structure.json"
 REFACTOR_COMPLEXITY_ARTIFACT = "artifacts/complexity-report.json"
 REFACTOR_PERF_ARTIFACT = "artifacts/perf-budget.json"
+SALVAGE_RESISTANCE_ARTIFACT = "artifacts/salvage-resistance.json"
+SALVAGE_RESULT_ARTIFACT = "artifacts/salvage-result.json"
 DEFAULT_TASK_TYPE = "standard-software-task"
 WORKFLOW_TEMPLATE_RE = re.compile(r"(?m)^-\s*Workflow template:\s*(?P<value>[a-zA-Z0-9_-]+)\s*$")
 TASK_TYPE_RE = re.compile(r"(?m)^-\s*Task type:\s*(?P<value>[a-zA-Z0-9_-]+)\s*$")
 TASK_TYPE_ALIASES = {
     "generic": "standard-software-task",
+    "salvage": "salvage-task",
 }
 REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
     "standard-software-task": ("artifacts/test-result.json",),
@@ -107,6 +111,19 @@ REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
         REGRESSION_RESISTANCE_ARTIFACT,
     ),
     "multi-agent-research-task": ("artifacts/dependency-risk-report.json", "artifacts/aggregation.json"),
+    "salvage-task": (
+        "artifacts/preserved-surface.json",
+        "artifacts/topology.json",
+        "artifacts/characterization-baseline.json",
+        "artifacts/code-graph.json",
+        "artifacts/hidden-deps.json",
+        "artifacts/cross-lang-couplings.json",
+        "artifacts/dead-code.json",
+        "artifacts/duplication.json",
+        "artifacts/preserve-parity.json",
+        SALVAGE_RESISTANCE_ARTIFACT,
+        SALVAGE_RESULT_ARTIFACT,
+    ),
 }
 
 
@@ -351,7 +368,84 @@ def refactor_perf_reports_pass(data: Any) -> tuple[bool, str]:
     return bool(data["passed"]), "refactor perf budget schema passed" if data["passed"] else "refactor perf budget reports failed"
 
 
+def salvage_resistance_reports_pass(data: Any) -> tuple[bool, str]:
+    if not isinstance(data, dict):
+        return False, "salvage-resistance JSON must be an object"
+    if data.get("check") != "salvage_resistance":
+        return False, "check must be salvage_resistance"
+    if data.get("schema_version") != 1:
+        return False, "schema_version must be 1"
+    if not isinstance(data.get("passed"), bool):
+        return False, "passed must be a boolean"
+    mutations = data.get("mutations")
+    if not isinstance(mutations, list):
+        return False, "mutations must be a list"
+    expected = {
+        "reintroduced_hidden_dependency",
+        "resurrected_dead_reference",
+        "reduplicated_function",
+        "server_preserved_surface_behavior_break",
+        "client_preserved_surface_behavior_break",
+        "broken_cross_language_coupling",
+        "surface_shrink_gaming",
+    }
+    names = {item.get("name") for item in mutations if isinstance(item, dict)}
+    if names != expected:
+        return False, "mutations must cover hidden dependency, dead reference, duplicate, server/client behavior break, cross-language coupling, and surface-shrink planted failures"
+    for item in mutations:
+        if not isinstance(item, dict):
+            return False, "mutation item must be an object"
+        if item.get("planted") is not True:
+            return False, f"mutation was not planted: {item.get('name')}"
+        if item.get("caught") is not True:
+            return False, f"mutation was not caught: {item.get('name')}"
+        if item.get("mutant_passed") is not False:
+            return False, f"mutant gate must fail: {item.get('name')}"
+        if not isinstance(item.get("failed_checks"), list) or not item.get("failed_checks"):
+            return False, f"mutation must record failed checks: {item.get('name')}"
+    summary = data.get("summary")
+    if not isinstance(summary, dict) or summary.get("caught") != summary.get("total") or summary.get("total") != len(mutations):
+        return False, "summary must report every planted mutation caught"
+    return bool(data["passed"]), "salvage resistance schema passed" if data["passed"] else "salvage resistance reports failed"
+
+
+def preserved_surface_reports_pass(data: Any) -> tuple[bool, str]:
+    if not isinstance(data, dict):
+        return False, "preserved-surface JSON must be an object"
+    entrypoints = data.get("entrypoints")
+    if not isinstance(entrypoints, list) or not all(isinstance(item, str) and item.strip() for item in entrypoints):
+        return False, "entrypoints must be a non-empty list of strings"
+    before = data.get("entrypoints_before")
+    if before is not None and (not isinstance(before, list) or not all(isinstance(item, str) and item.strip() for item in before)):
+        return False, "entrypoints_before must be a list of strings when present"
+    if before and len(set(entrypoints)) < len(set(before)):
+        return False, "preserved surface shrank"
+    return True, "preserved surface schema passed"
+
+
+def salvage_result_reports_pass(data: Any) -> tuple[bool, str]:
+    if not isinstance(data, dict):
+        return False, "salvage-result JSON must be an object"
+    if data.get("check") != "salvage_result":
+        return False, "check must be salvage_result"
+    if data.get("schema_version") != 1:
+        return False, "schema_version must be 1"
+    if data.get("passed") is not True:
+        return False, "salvage result reports failed"
+    gates = data.get("gates")
+    if not isinstance(gates, list) or not gates:
+        return False, "gates must be a non-empty list"
+    if not all(isinstance(item, dict) and item.get("passed") is True for item in gates):
+        return False, "one or more salvage gates failed"
+    freeze = data.get("freeze")
+    if not isinstance(freeze, dict) or freeze.get("passed") is not True:
+        return False, "preserved-surface freeze check failed"
+    return True, "salvage result schema passed"
+
+
 def required_artifact_reports_pass(artifact: str, data: Any) -> tuple[bool, str]:
+    if artifact == "artifacts/preserved-surface.json":
+        return preserved_surface_reports_pass(data)
     if artifact == ML_VALIDATOR_ARTIFACT:
         return ml_validator_reports_pass(data)
     if artifact == REGRESSION_RESISTANCE_ARTIFACT:
@@ -364,6 +458,10 @@ def required_artifact_reports_pass(artifact: str, data: Any) -> tuple[bool, str]
         return refactor_complexity_reports_pass(data)
     if artifact == REFACTOR_PERF_ARTIFACT:
         return refactor_perf_reports_pass(data)
+    if artifact == SALVAGE_RESISTANCE_ARTIFACT:
+        return salvage_resistance_reports_pass(data)
+    if artifact == SALVAGE_RESULT_ARTIFACT:
+        return salvage_result_reports_pass(data)
     return artifact_reports_pass(data)
 
 
@@ -534,7 +632,7 @@ def check_required_evidence(run_dir: Path, task_type: str) -> dict[str, Any]:
     }
 
 
-def acceptance_violations(handoffs: dict, test: dict, evidence: dict, anti_gaming: dict | None = None) -> list[dict[str, Any]]:
+def acceptance_violations(handoffs: dict, test: dict, evidence: dict, anti_gaming: dict | None = None, salvage_gates: dict | None = None) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
     if not handoffs.get("passed"):
         result.append(violation("handoffs_invalid", "handoff validation failed"))
@@ -553,10 +651,22 @@ def acceptance_violations(handoffs: dict, test: dict, evidence: dict, anti_gamin
                         **extra,
                     )
                 )
+    if salvage_gates is not None and not salvage_gates.get("passed"):
+        for item in salvage_gates.get("violations", []):
+            if isinstance(item, dict):
+                extra = {key: value for key, value in item.items() if key not in {"type", "message"}}
+                result.append(
+                    violation(
+                        "salvage_gate_failed",
+                        item.get("message", "salvage hard gate failed"),
+                        salvage_type=item.get("type"),
+                        **extra,
+                    )
+                )
     return result
 
 
-def verdict(handoffs: dict, test: dict, evidence: dict, anti_gaming: dict | None = None) -> str:
+def verdict(handoffs: dict, test: dict, evidence: dict, anti_gaming: dict | None = None, salvage_gates: dict | None = None) -> str:
     if not handoffs.get("passed"):
         return "NO-SHIP"
     if not test.get("passed"):
@@ -564,6 +674,8 @@ def verdict(handoffs: dict, test: dict, evidence: dict, anti_gaming: dict | None
     if not evidence.get("passed"):
         return "NO-SHIP"
     if anti_gaming is not None and not anti_gaming.get("passed"):
+        return "NO-SHIP"
+    if salvage_gates is not None and not salvage_gates.get("passed"):
         return "NO-SHIP"
     return "SHIP"
 
@@ -617,9 +729,11 @@ def main(argv: list[str] | None = None) -> int:
     task_type = infer_task_type(run_dir)
     evidence = check_required_evidence(run_dir, task_type)
     anti_gaming = anti_gaming_check.check_run(run_dir)
+    salvage_gates = salvage_check.check_run(run_dir)
     write_json_artifact(artifacts / "anti-gaming-hard-gates.json", anti_gaming)
-    violations = acceptance_violations(handoffs, test, evidence, anti_gaming)
-    final_verdict = verdict(handoffs, test, evidence, anti_gaming)
+    write_json_artifact(artifacts / "salvage-hard-gates.json", salvage_gates)
+    violations = acceptance_violations(handoffs, test, evidence, anti_gaming, salvage_gates)
+    final_verdict = verdict(handoffs, test, evidence, anti_gaming, salvage_gates)
     result = {
         "run": str(run_dir),
         "task_type": task_type,
@@ -627,6 +741,7 @@ def main(argv: list[str] | None = None) -> int:
         "test": test,
         "evidence": evidence,
         "anti_gaming": anti_gaming,
+        "salvage_gates": salvage_gates,
         "violations": violations,
         "verdict": final_verdict,
     }

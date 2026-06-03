@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MAW normalized code graph",
+  "type": "object",
+  "required": ["schema_version", "modules", "symbols", "edges", "entrypoints"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "language": {"type": "string"},
+    "topology": {
+      "type": "object",
+      "description": "Detected project topology signals used by salvage gates.",
+      "additionalProperties": true
+    },
+    "root": {"type": "string"},
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path"],
+        "properties": {
+          "id": {"type": "string"},
+          "path": {"type": "string"},
+          "language": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "symbols": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "module_id", "name", "kind"],
+        "properties": {
+          "id": {"type": "string"},
+          "module_id": {"type": "string"},
+          "name": {"type": "string"},
+          "qualname": {"type": "string"},
+          "kind": {"enum": ["function", "class", "var", "method", "module", "dom", "css_selector", "route", "template_var", "asset", "form_field"]},
+          "location": {
+            "type": "object",
+            "properties": {
+              "path": {"type": "string"},
+              "line": {"type": "integer"},
+              "end_line": {"type": "integer"}
+            },
+            "additionalProperties": true
+          },
+          "exported": {"type": "boolean"},
+          "normalized_body_hash": {"type": "string"},
+          "token_signature": {"type": "array", "items": {"type": "string"}},
+          "status": {"enum": ["kept", "removed", "legacy"]}
+        },
+        "additionalProperties": true
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "from", "to"],
+        "properties": {
+          "type": {"enum": ["import", "call", "read_global", "write_global", "inherit", "alias", "dynamic", "dom_ref", "css_ref", "route_ref", "template_var", "asset_ref"]},
+          "from": {"type": "string"},
+          "to": {"type": "string"},
+          "location": {
+            "type": "object",
+            "properties": {
+              "path": {"type": "string"},
+              "line": {"type": "integer"}
+            },
+            "additionalProperties": true
+          },
+          "metadata": {"type": "object"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "entrypoints": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Frozen preserved-surface symbol ids."
+    },
+    "behavior_snapshot": {
+      "type": "object",
+      "description": "Optional subset-scoped behavior_baseline.py snapshot using the existing behavior_baseline schema."
+    }
+  },
+  "additionalProperties": true
+}

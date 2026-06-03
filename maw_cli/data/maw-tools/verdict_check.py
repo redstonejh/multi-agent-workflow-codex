@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import anti_gaming_check
+import salvage_check
 
 
 ACCEPTANCE_RESULT = "acceptance-result.json"
@@ -124,6 +125,7 @@ def check_run(run_dir: Path) -> dict[str, Any]:
         )
 
     anti_gaming = anti_gaming_check.check_run(run_dir)
+    salvage_gates = salvage_check.check_run(run_dir)
     if not anti_gaming.get("passed"):
         violations.append(
             violation(
@@ -140,6 +142,22 @@ def check_run(run_dir: Path) -> dict[str, Any]:
                 artifact_verdict=artifact_verdict,
             )
         )
+    if not salvage_gates.get("passed"):
+        violations.append(
+            violation(
+                "salvage_hard_gates_failed",
+                "salvage hard gates failed; final verdict cannot be SHIP",
+                salvage_gates=salvage_gates,
+            )
+        )
+    if artifact_verdict == "SHIP" and not salvage_gates.get("passed"):
+        violations.append(
+            violation(
+                "ship_with_failed_salvage_gates",
+                "acceptance artifact declares SHIP despite failed salvage hard gates",
+                artifact_verdict=artifact_verdict,
+            )
+        )
 
     return {
         "check": "final_verdict_matches_acceptance_artifact",
@@ -148,6 +166,7 @@ def check_run(run_dir: Path) -> dict[str, Any]:
         "artifact_verdict": artifact_verdict,
         "run_verdict": run_verdict,
         "anti_gaming": anti_gaming,
+        "salvage_gates": salvage_gates,
         "passed": not violations,
         "violations": violations,
     }

@@ -11,7 +11,7 @@ from typing import Any
 import acceptance_check
 
 
-REQUIRED_CHECKLISTS = ("refactor", "ml", "frontend", "debugging", "code", "generic")
+REQUIRED_CHECKLISTS = ("refactor", "salvage", "ml", "frontend", "debugging", "code", "generic")
 ARTIFACT_RE = re.compile(r"`(?P<artifact>artifacts/[A-Za-z0-9_.\-/]+)`")
 EVIDENCE_RE = re.compile(r"Evidence:\s*(?P<value>.+)$")
 ADVISORY = "advisory critic-only"

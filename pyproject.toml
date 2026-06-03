@@ -23,9 +23,13 @@ packages = ["maw_cli"]
 [tool.setuptools.package-data]
 maw_cli = [
   "py.typed",
+  "vendor/*.js",
   "data/maw-tools/*.py",
   "data/packs/*/manifest.json",
+  "data/schemas/*.json",
   "data/templates/workflows/*.json",
   "data/examples/ml_problems/*.py",
-  "data/examples/ml_problems/hard_examples/*.json"
+  "data/examples/ml_problems/hard_examples/*.json",
+  "data/examples/salvage_js_ts/*.*",
+  "data/examples/salvage_topologies/**/*.*"
 ]

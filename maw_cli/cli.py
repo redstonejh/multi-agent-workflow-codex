@@ -15,9 +15,12 @@ if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 
 import acceptance_check  # noqa: E402
+import code_graph_html  # noqa: E402
+import code_graph_py  # noqa: E402
 import dependency_risk_audit  # noqa: E402
 import plan_check  # noqa: E402
 import run_report  # noqa: E402
+import salvage_check  # noqa: E402
 import start_workflow  # noqa: E402
 import task_graph  # noqa: E402
 import validate_handoffs  # noqa: E402
@@ -132,6 +135,113 @@ def cmd_dependency_audit(args: argparse.Namespace) -> int:
     return dependency_risk_audit.main(argv)
 
 
+def cmd_code_graph(args: argparse.Namespace) -> int:
+    lang = args.lang
+    entry_args = []
+    for entrypoint in args.entrypoints or []:
+        entry_args.extend(["--entrypoint", entrypoint])
+    if lang == "auto":
+        return emit_combined_code_graph(Path(args.path), args.output, args.entrypoints or [])
+    if lang == "py":
+        return code_graph_py.main([args.path, "--output", args.output, *entry_args])
+    if lang in {"html", "css"}:
+        return code_graph_html.main([args.path, "--lang", lang, "--output", args.output, *entry_args])
+    if lang in {"js", "ts"}:
+        from . import code_graph_js
+
+        return code_graph_js.main([args.path, "--lang", lang, "--output", args.output, *entry_args])
+    emit({"passed": False, "status": "NEEDS-HUMAN", "errors": [f"unsupported language: {args.lang}"]})
+    return 1
+
+
+def graph_suffixes(path: Path) -> set[str]:
+    if path.is_file():
+        return {path.suffix.lower()}
+    ignored = {".git", "__pycache__", ".venv", "venv", "node_modules", "build", "dist"}
+    return {item.suffix.lower() for item in path.rglob("*") if item.is_file() and not (set(item.parts) & ignored)}
+
+
+def merge_graphs(path: Path, graphs: list[dict], entrypoints: list[str]) -> dict:
+    modules = []
+    symbols = []
+    edges = []
+    languages = []
+    errors = []
+    for graph in graphs:
+        languages.append(str(graph.get("language", "")))
+        modules.extend(item for item in graph.get("modules", []) if isinstance(item, dict))
+        symbols.extend(item for item in graph.get("symbols", []) if isinstance(item, dict))
+        edges.extend(item for item in graph.get("edges", []) if isinstance(item, dict))
+        errors.extend(str(item) for item in graph.get("errors", []) if item)
+    if not entrypoints:
+        seen = set()
+        for graph in graphs:
+            for item in graph.get("entrypoints", []):
+                if isinstance(item, str):
+                    seen.add(item)
+        entrypoints = sorted(seen)
+    return {
+        "schema_version": 1,
+        "language": "polyglot",
+        "root": str(path.resolve()),
+        "modules": sorted(modules, key=lambda item: str(item.get("id", ""))),
+        "symbols": sorted(symbols, key=lambda item: str(item.get("id", ""))),
+        "edges": sorted(edges, key=lambda item: (str(item.get("type", "")), str(item.get("from", "")), str(item.get("to", "")), int(item.get("location", {}).get("line", 0) or 0))),
+        "entrypoints": sorted(entrypoints),
+        "adapter_languages": sorted(set(filter(None, languages))),
+        "passed": not errors,
+        "errors": errors,
+    }
+
+
+def emit_combined_code_graph(path: Path, output: str, entrypoints: list[str]) -> int:
+    suffixes = graph_suffixes(path)
+    graphs = []
+    if suffixes & {".py"}:
+        graphs.append(code_graph_py.graph_for(path, entrypoints or None))
+    if suffixes & {".html", ".htm", ".jinja", ".jinja2", ".j2", ".css"}:
+        graphs.append(code_graph_html.graph_for(path, "auto", entrypoints or None))
+    if suffixes & {".js", ".jsx", ".ts", ".tsx"}:
+        from . import code_graph_js
+
+        tmp = Path(output).with_suffix(".js-adapter.tmp.json")
+        lang = "ts" if suffixes & {".ts", ".tsx"} else "js"
+        rc = code_graph_js.main([str(path), "--lang", lang, "--output", str(tmp), *sum((["--entrypoint", item] for item in entrypoints), [])])
+        if rc != 0:
+            data = json.loads(tmp.read_text(encoding="utf-8")) if tmp.is_file() else {"passed": False, "errors": ["JS/TS adapter failed"]}
+            emit({"passed": False, "status": "NEEDS-HUMAN", "errors": data.get("errors", []), "adapter": "js-ts"})
+            return 1
+        graphs.append(json.loads(tmp.read_text(encoding="utf-8")))
+        tmp.unlink(missing_ok=True)
+    if not graphs:
+        emit({"passed": False, "status": "NEEDS-HUMAN", "errors": ["no supported source files found"]})
+        return 1
+    result = merge_graphs(path, graphs, entrypoints)
+    Path(output).parent.mkdir(parents=True, exist_ok=True)
+    Path(output).write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    emit(result)
+    return 0 if result.get("passed") is True else 1
+
+
+def cmd_salvage_check(args: argparse.Namespace) -> int:
+    if args.passthrough:
+        return salvage_check.main(args.passthrough)
+    return salvage_check.main(["verdict", args.run_folder])
+
+
+def cmd_characterize(args: argparse.Namespace) -> int:
+    if args.browser:
+        from . import capture_web
+
+        return capture_web.main([args.target, "--output", args.output])
+    argv = ["characterize", args.target, "--output", args.output]
+    if args.root:
+        argv.extend(["--root", args.root])
+    if args.test_cmd:
+        argv.extend(["--test-cmd", args.test_cmd])
+    return salvage_check.main(argv)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Codex MAW command-line interface.")
     parser.add_argument("--root", default=str(ROOT), help="repository or installed data root")
@@ -187,6 +297,27 @@ def build_parser() -> argparse.ArgumentParser:
     dependency_audit.add_argument("--no-dossiers", action="store_true")
     dependency_audit.add_argument("--output")
     dependency_audit.set_defaults(func=cmd_dependency_audit)
+
+    code_graph = sub.add_parser("code-graph", help="emit normalized code graph JSON")
+    code_graph.add_argument("path")
+    code_graph.add_argument("--lang", choices=["auto", "py", "js", "ts", "html", "css"], default="auto")
+    code_graph.add_argument("--entrypoint", action="append", dest="entrypoints")
+    code_graph.add_argument("--output", required=True)
+    code_graph.set_defaults(func=cmd_code_graph)
+
+    salvage = sub.add_parser("salvage-check", help="run salvage hard gates or pass through a salvage subcommand")
+    salvage.add_argument("run_folder")
+    salvage.add_argument("passthrough", nargs=argparse.REMAINDER)
+    salvage.set_defaults(func=cmd_salvage_check)
+
+    characterize = sub.add_parser("characterize", help="capture a salvage characterization baseline")
+    characterize.add_argument("target")
+    characterize.add_argument("--root")
+    characterize.add_argument("--test-cmd")
+    characterize.add_argument("--browser", action="store_true", help="use optional Playwright client-DOM capture")
+    characterize.add_argument("--output", required=True)
+    characterize.set_defaults(func=cmd_characterize)
+
     ml_autopilot.add_parser(sub, ROOT)
     wilds_benchmark.add_parser(sub, ROOT)
     return parser
