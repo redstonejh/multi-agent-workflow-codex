@@ -1,0 +1,33 @@
+{
+  "id": "wilds-benchmark-task",
+  "name": "WILDS Benchmark Harness Task",
+  "description": "Implement or run fixed-split WILDS-style benchmark harness work without training a model.",
+  "caps": {"max_agents": 6, "max_parallel": 3},
+  "agents": ["conductor", "planner", "worker", "dependency_mapper", "critic", "acceptance_gate"],
+  "handoffs": [
+    {"from": "conductor", "to": "planner"},
+    {"from": "planner", "to": "dependency_mapper"},
+    {"from": "dependency_mapper", "to": "worker"},
+    {"from": "worker", "to": "critic"},
+    {"from": "critic", "to": "acceptance_gate"}
+  ],
+  "required_artifacts": [
+    "artifacts/plan.md",
+    "artifacts/dependency-map.json",
+    "artifacts/dependency-risk-report.json",
+    "artifacts/wilds-harness-result.json",
+    "artifacts/artifact-parse-report.json",
+    "artifacts/test-result.json",
+    "artifacts/critic-review.md",
+    "artifacts/acceptance-result.json"
+  ],
+  "acceptance_gates": ["fixed-splits-preserved", "prediction-id-alignment", "reproducibility-metadata-recorded", "dependency-boundary-clean", "artifacts-parse", "tests-pass", "requirements-covered", "handoffs-valid"],
+  "deterministic_checks": [
+    {"name": "wilds-harness-fixture", "command": "maw wilds-benchmark <manifest.json> <predictions.json> --output artifacts/wilds-harness-result.json"},
+    {"name": "dependency-map", "command": "python maw-tools/checks.py dependency-map --file artifacts/dependency-map.json"},
+    {"name": "dependency-risk-audit", "command": "python maw-tools/dependency_risk_audit.py maw_cli --output artifacts/dependency-risk-report.json"},
+    {"name": "artifact-parse", "command": "python maw-tools/checks.py artifacts-parse --run <run_dir> --artifacts artifacts/wilds-harness-result.json artifacts/dependency-map.json artifacts/dependency-risk-report.json --output artifacts/artifact-parse-report.json"},
+    {"name": "unit-tests", "command": "python -m unittest discover -s tests"},
+    {"name": "handoffs", "command": "python maw-tools/validate_handoffs.py <run_dir>"}
+  ]
+}

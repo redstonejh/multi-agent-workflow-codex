@@ -11,7 +11,11 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 README = ROOT / "README.md"
-CLI_FILES = (ROOT / "maw_cli" / "cli.py", ROOT / "maw_cli" / "ml_autopilot.py")
+CLI_FILES = (
+    ROOT / "maw_cli" / "cli.py",
+    ROOT / "maw_cli" / "ml_autopilot.py",
+    ROOT / "maw_cli" / "wilds_benchmark.py",
+)
 COMMAND_RE = re.compile(r"^\s*maw\s+(?P<command>[a-z][a-z0-9-]*)\b", re.MULTILINE)
 ADD_PARSER_RE = re.compile(r"\.add_parser\(\s*[\"'](?P<command>[a-z][a-z0-9-]*)[\"']")
 BACKTICK_RE = re.compile(r"`([^`\n]+)`")

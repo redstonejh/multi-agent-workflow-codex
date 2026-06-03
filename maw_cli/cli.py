@@ -17,12 +17,14 @@ if str(TOOLS) not in sys.path:
 import acceptance_check  # noqa: E402
 import dependency_risk_audit  # noqa: E402
 import plan_check  # noqa: E402
+import run_report  # noqa: E402
 import start_workflow  # noqa: E402
 import task_graph  # noqa: E402
 import validate_handoffs  # noqa: E402
 import validate_workflow_template  # noqa: E402
 import verdict_check  # noqa: E402
 from . import ml_autopilot  # noqa: E402
+from . import wilds_benchmark  # noqa: E402
 
 
 def emit(data: dict) -> None:
@@ -109,6 +111,10 @@ def cmd_plan_graph(args: argparse.Namespace) -> int:
     return task_graph.main(["plan", "--file", args.graph_json])
 
 
+def cmd_run_report(args: argparse.Namespace) -> int:
+    return run_report.main([args.run_folder])
+
+
 def cmd_dependency_audit(args: argparse.Namespace) -> int:
     argv = [args.path]
     if args.annotate:
@@ -168,6 +174,10 @@ def build_parser() -> argparse.ArgumentParser:
     plan_graph.add_argument("graph_json")
     plan_graph.set_defaults(func=cmd_plan_graph)
 
+    run_report_cmd = sub.add_parser("run-report", help="write artifacts/run-summary.md for a run")
+    run_report_cmd.add_argument("run_folder")
+    run_report_cmd.set_defaults(func=cmd_run_report)
+
     dependency_audit = sub.add_parser("dependency-audit", help="detect hidden dependency risks in Python source")
     dependency_audit.add_argument("path")
     dependency_audit.add_argument("--annotate", action="store_true")
@@ -178,6 +188,7 @@ def build_parser() -> argparse.ArgumentParser:
     dependency_audit.add_argument("--output")
     dependency_audit.set_defaults(func=cmd_dependency_audit)
     ml_autopilot.add_parser(sub, ROOT)
+    wilds_benchmark.add_parser(sub)
     return parser
 
 

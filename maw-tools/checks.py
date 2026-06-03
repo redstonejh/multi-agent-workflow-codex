@@ -210,6 +210,37 @@ def cmd_aggregation(args: argparse.Namespace) -> int:
     return 0 if result["passed"] else 1
 
 
+def cmd_artifacts_parse(args: argparse.Namespace) -> int:
+    run_dir = Path(args.run)
+    items: list[dict[str, object]] = []
+    errors: list[str] = []
+    for artifact in args.artifacts:
+        rel = artifact.replace("\\", "/")
+        path = run_dir / rel
+        item: dict[str, object] = {"artifact": rel, "path": str(path)}
+        if not path.is_file():
+            item.update({"passed": False, "reason": "missing"})
+            errors.append(f"{rel}: missing")
+            items.append(item)
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            item.update({"passed": False, "reason": str(exc)})
+            errors.append(f"{rel}: {exc}")
+            items.append(item)
+            continue
+        item.update({"passed": isinstance(data, dict), "reason": "parsed JSON object" if isinstance(data, dict) else "JSON must be an object"})
+        if not isinstance(data, dict):
+            errors.append(f"{rel}: JSON must be an object")
+        items.append(item)
+    result = {"check": "artifacts_parse", "passed": not errors, "items": items, "errors": errors}
+    if args.output:
+        Path(args.output).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    emit(result)
+    return 0 if result["passed"] else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run deterministic Codex MAW checks.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -238,6 +269,12 @@ def build_parser() -> argparse.ArgumentParser:
     aggregate = sub.add_parser("aggregation")
     aggregate.add_argument("--file", required=True)
     aggregate.set_defaults(func=cmd_aggregation)
+
+    artifacts = sub.add_parser("artifacts-parse")
+    artifacts.add_argument("--run", required=True)
+    artifacts.add_argument("--artifacts", nargs="+", required=True)
+    artifacts.add_argument("--output")
+    artifacts.set_defaults(func=cmd_artifacts_parse)
     return parser
 
 

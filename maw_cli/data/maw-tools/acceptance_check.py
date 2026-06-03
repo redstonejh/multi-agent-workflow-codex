@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import validate_handoffs
+import run_report
 
 
 ACCEPTANCE_RESULT = "acceptance-result.json"
@@ -30,6 +31,7 @@ REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
     "standard-software-task": ("artifacts/test-result.json",),
     "code": (
         "artifacts/test-result.json",
+        "artifacts/artifact-parse-report.json",
         "artifacts/checklist-validation.json",
         "artifacts/dependency-map.json",
         "artifacts/dependency-risk-report.json",
@@ -584,6 +586,9 @@ def main(argv: list[str] | None = None) -> int:
         "violations": violations,
         "verdict": verdict(handoffs, test, evidence),
     }
+    write_acceptance_artifact(run_dir, result)
+    summary_path = run_report.write_run_summary(run_dir)
+    result["run_summary"] = str(summary_path)
     write_acceptance_artifact(run_dir, result)
     print(json.dumps(result, indent=2))
     return 0 if result["verdict"] == "SHIP" else 1

@@ -35,6 +35,16 @@ maw ml-auto data.csv --goal "predict churn"
 
 Dependency boundary: the autopilot adapter in `maw_cli/ml_autopilot.py` may use pandas/scikit-learn for data loading and training. The deterministic spine, `maw-tools/`, and `examples/ml_problems/ml_checks.py` remain standard-library only.
 
+For fixed-split WILDS-style benchmark harness work, use:
+
+```bash
+maw wilds-benchmark manifest.json predictions.json --output artifacts/wilds-harness-result.json
+```
+
+`wilds-benchmark` is infrastructure for evaluating prediction exports by stable example id across fixed splits. It does not train a model and does not import WILDS or Torch; callers provide a small manifest with `id`, `split`, and `label` fields plus a prediction file with matching `id` values.
+
+When the WILDS package is available, `maw wilds-benchmark predictions.json --wilds-dataset <name> --split <split>` lazily loads `wilds.get_dataset(...)`, reads the fixed subset, and delegates metrics to `dataset.eval(all_y_pred, all_y_true, all_metadata)`.
+
 ## Run Loop
 
 The executing core roster is:
@@ -116,6 +126,7 @@ Template caps currently are:
 | `multi-agent-research-task` | 9 | 3 |
 | `ml-training-task` | 10 | 3 |
 | `ml-validation-task` | 10 | 3 |
+| `wilds-benchmark-task` | 6 | 3 |
 | `frontend-ui-task` | 13 | 3 |
 
 Templates define scaffolded agents, handoffs, artifacts, acceptance gates, and deterministic check commands. The plan gate is stricter than template schema validation: actual conductor plans must include all core roles and justify optional specialists.
@@ -133,8 +144,10 @@ maw acceptance runs/<run_id> [--test-cmd "<cmd>"] [--test-cwd <path>]
 maw verdict-check runs/<run_id>
 maw plan-check runs/<run_id>/artifacts/conductor-plan.json
 maw plan-graph artifacts/task-graph.json
+maw run-report runs/<run_id>
 maw dependency-audit <path> [--annotate] [--dry-run] [--fail-on low|medium|high]
 maw ml-auto <csv-or-parquet> --goal "<goal>"
+maw wilds-benchmark <manifest.json> <predictions.json> [--output artifacts/wilds-harness-result.json]
 ```
 
 Common direct tool commands:
@@ -163,6 +176,7 @@ Template JSON files live in `templates/workflows/`; installed package data mirro
 - `frontend-ui-task`: local HTML/CSS checks for contrast, accessibility, budgets, links, markup, style extraction, change verification, tokens, visual verification, and UX/critic artifacts.
 - `ml-training-task`: training/evaluation commands plus ML validator artifacts, split/config/log/report artifacts, and acceptance.
 - `ml-validation-task`: ML validator artifacts without the training-command/evaluation-command artifacts.
+- `wilds-benchmark-task`: fixed-split benchmark harness work with dependency mapping, parse-level artifact checks, and prediction-id alignment.
 - `multi-agent-research-task`: research plan, source notes, aggregation, dependency-risk audit, final report, and acceptance artifacts.
 
 Use `maw list-templates` and `maw validate-template [<template>]` to inspect/validate them.
@@ -192,6 +206,7 @@ The hard example fixtures live in `examples/ml_problems/hard_examples/`.
 - `maw-tools/behavior_baseline.py`: refactor behavior manifest/diff and related refactor checks.
 - `maw-tools/validate_handoffs.py`: checks generated handoffs contain all required sections and no placeholders.
 - `maw-tools/validate_workflow_template.py`: validates template schema and optional run conformance to a declared template.
+- `maw-tools/run_report.py`: writes `artifacts/run-summary.md` with task type, caps, role pipeline, deterministic gate status, required evidence status, and final verdict.
 - `maw-tools/checklist_check.py`: checks `.codex/checklists/` entries link to known deterministic evidence artifacts.
 - `maw-tools/check_vendored_data.py`: fails when package-data mirrors drift from top-level `maw-tools/`, `templates/workflows/`, `examples/ml_problems/`, or `packs/`.
 - `maw-tools/readme_check.py`: fails when README `maw ...` subcommands or literal path references drift from the codebase.
@@ -209,6 +224,14 @@ python maw-tools/readme_check.py
 ```
 
 `selftest_all.py` aggregates core checks, web checks, ML checks, refactor checks, plan-gate checks, checklist validation, README reference validation, and vendored package-data drift validation.
+
+Manual pre-release WILDS smoke check, not part of `unittest discover`:
+
+```bash
+MAW_WILDS_SMOKE=1 python tests/manual_wilds_smoke.py
+```
+
+This offline check requires the WILDS package and a locally available `civilcomments` dataset. It runs `maw wilds-benchmark` on the real `civilcomments` validation split with `download=False` and asserts that `dataset.eval(...)` returns parseable metrics. Set `MAW_WILDS_ROOT` to the local WILDS data root when needed, or `MAW_WILDS_SPLIT` to override the default `val` split.
 
 ## Examples
 

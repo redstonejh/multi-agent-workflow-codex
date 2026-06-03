@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
 import os
@@ -19,6 +20,7 @@ CHECKS = ROOT / "maw-tools" / "checks.py"
 VALIDATE = ROOT / "maw-tools" / "validate_handoffs.py"
 ACCEPTANCE = ROOT / "maw-tools" / "acceptance_check.py"
 VERDICT_CHECK = ROOT / "maw-tools" / "verdict_check.py"
+RUN_REPORT = ROOT / "maw-tools" / "run_report.py"
 TASK_GRAPH = ROOT / "maw-tools" / "task_graph.py"
 WORKFLOW_TEMPLATE = ROOT / "maw-tools" / "validate_workflow_template.py"
 START_WORKFLOW = ROOT / "maw-tools" / "start_workflow.py"
@@ -30,6 +32,7 @@ CHECKLIST_CHECK = ROOT / "maw-tools" / "checklist_check.py"
 MAW = ROOT / "maw.py"
 PYPROJECT = ROOT / "pyproject.toml"
 ML_CHECKS = ROOT / "examples" / "ml_problems" / "ml_checks.py"
+WILDS_BENCHMARK = ROOT / "maw_cli" / "wilds_benchmark.py"
 ML_CLASSIFICATION = ROOT / "examples" / "ml_problems" / "classification" / "run.py"
 ML_REGRESSION = ROOT / "examples" / "ml_problems" / "regression" / "run.py"
 ML_DATA_VALIDATION = ROOT / "examples" / "ml_problems" / "data_validation" / "run.py"
@@ -373,6 +376,99 @@ class MawToolTests(unittest.TestCase):
             self.assertFalse(result["evidence"]["passed"])
             self.assertTrue(any(item["type"] == "missing_required_evidence" for item in result["violations"]))
 
+    def _create_code_acceptance_run(self, root: Path) -> Path:
+        proc = run_tool(
+            str(SCAFFOLD),
+            "init",
+            "code acceptance fixture",
+            "--root",
+            str(root),
+            "--agents",
+            "conductor,planner,worker,dependency_mapper,critic,acceptance_gate",
+            "--json",
+        )
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        run_dir = Path(json.loads(proc.stdout)["run_dir"])
+        for frm, to in (
+            ("conductor", "planner"),
+            ("planner", "dependency_mapper"),
+            ("dependency_mapper", "worker"),
+            ("worker", "critic"),
+            ("critic", "acceptance_gate"),
+        ):
+            handoff = run_tool(str(SCAFFOLD), "handoff", "--run", str(run_dir), "--from", frm, "--to", to)
+            self.assertEqual(handoff.returncode, 0, handoff.stdout + handoff.stderr)
+        self._fill_handoff_placeholders(run_dir)
+        run_md = (run_dir / "run.md").read_text(encoding="utf-8")
+        run_md = run_md.replace("- Status: in-progress", "- Status: in-progress\n- Task type: code")
+        (run_dir / "run.md").write_text(run_md, encoding="utf-8")
+
+        artifacts = run_dir / "artifacts"
+        (artifacts / "test-result.json").write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
+        (artifacts / "artifact-parse-report.json").write_text(json.dumps({"passed": True, "items": [{"artifact": "artifacts/test-result.json", "passed": True}]}) + "\n", encoding="utf-8")
+        (artifacts / "checklist-validation.json").write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
+        (artifacts / "dependency-map.json").write_text(json.dumps({"passed": True, "nodes": [{"id": "harness", "depends_on": []}]}) + "\n", encoding="utf-8")
+        (artifacts / "dependency-risk-report.json").write_text(json.dumps({"passed": True, "summary": {"parse_errors": 0}}) + "\n", encoding="utf-8")
+        return run_dir
+
+    def test_code_acceptance_requires_parseable_artifact_parse_report(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = self._create_code_acceptance_run(Path(tmp_dir) / "runs")
+            proc = run_tool(str(ACCEPTANCE), "--run", str(run_dir))
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertEqual(json.loads(proc.stdout)["verdict"], "SHIP")
+
+            (run_dir / "artifacts" / "artifact-parse-report.json").write_text("{not json", encoding="utf-8")
+            proc = run_tool(str(ACCEPTANCE), "--run", str(run_dir))
+            self.assertNotEqual(proc.returncode, 0)
+            result = json.loads(proc.stdout)
+            self.assertEqual(result["verdict"], "NO-SHIP")
+            failing = next(item for item in result["violations"] if item["type"] == "failing_required_evidence")
+            self.assertEqual(failing["artifact"], "artifacts/artifact-parse-report.json")
+
+    def test_run_report_summarizes_fixture_run_and_acceptance_writes_it(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = self._create_code_acceptance_run(Path(tmp_dir) / "runs")
+            artifacts = run_dir / "artifacts"
+            (artifacts / "conductor-plan.json").write_text(
+                json.dumps(
+                    {
+                        "task_type": "code",
+                        "roles": ["conductor", "planner", "worker", "dependency_mapper", "critic", "acceptance_gate"],
+                        "caps": {"max_agents": 6, "max_parallel": 3, "max_iters": 3},
+                        "deterministic_checks": [
+                            {"name": "plan-check", "command": "python maw-tools/plan_check.py --file artifacts/conductor-plan.json"},
+                            {"name": "unit-tests", "command": "python -m unittest discover -s tests"},
+                            {"name": "dependency-map", "command": "python maw-tools/checks.py dependency-map --file artifacts/dependency-map.json"},
+                            {"name": "artifact-parse", "command": "python maw-tools/checks.py artifacts-parse --run <run> --artifacts artifacts/test-result.json"},
+                        ],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (artifacts / "plan-check-result.json").write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
+
+            proc = run_tool(str(ACCEPTANCE), "--run", str(run_dir))
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            summary = artifacts / "run-summary.md"
+            self.assertTrue(summary.is_file())
+            text = summary.read_text(encoding="utf-8")
+            self.assertIn("Task type: `code`", text)
+            self.assertIn("max_agents=6", text)
+            self.assertIn("planner -> dependency_mapper", text)
+            self.assertIn("| plan-check | PASS |", text)
+            self.assertIn("| required-evidence | PASS |", text)
+            self.assertIn("artifacts/dependency-map.json", text)
+            self.assertIn("Final verdict: `SHIP`", text)
+            self.assertEqual(json.loads((artifacts / "acceptance-result.json").read_text(encoding="utf-8"))["run_summary"], str(summary))
+
+            summary.unlink()
+            cli = run_tool(str(MAW), "run-report", str(run_dir))
+            self.assertEqual(cli.returncode, 0, cli.stdout + cli.stderr)
+            self.assertTrue(summary.is_file())
+            self.assertEqual(json.loads(cli.stdout)["summary"], str(summary))
+
     def test_ml_acceptance_missing_validator_or_regression_resistance_fails(self) -> None:
         for artifact in ("ml-validator.json", "regression-resistance.json"):
             with self.subTest(artifact=artifact), tempfile.TemporaryDirectory() as tmp_dir:
@@ -581,7 +677,7 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         result = json.loads(proc.stdout)
         self.assertTrue(result["passed"])
-        self.assertEqual(result["templates"], 7)
+        self.assertEqual(result["templates"], 8)
 
     def test_core_roster_stays_unchanged(self) -> None:
         template = json.loads((ROOT / "templates" / "workflows" / "standard-software-task.json").read_text(encoding="utf-8"))
@@ -1127,6 +1223,7 @@ class MawToolTests(unittest.TestCase):
             "refactor-task",
             "ml-validation-task",
             "ml-training-task",
+            "wilds-benchmark-task",
             "multi-agent-research-task",
             "frontend-ui-task",
         ]
@@ -1186,8 +1283,9 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         result = json.loads(proc.stdout)
         self.assertTrue(result["passed"])
-        self.assertEqual(len(result["templates"]), 7)
+        self.assertEqual(len(result["templates"]), 8)
         self.assertIn("standard-software-task", {template["id"] for template in result["templates"]})
+        self.assertIn("wilds-benchmark-task", {template["id"] for template in result["templates"]})
 
     def test_installed_style_module_entrypoint_lists_templates(self) -> None:
         proc = run_tool("-m", "maw_cli", "list-templates")
@@ -1195,7 +1293,7 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         result = json.loads(proc.stdout)
         self.assertTrue(result["passed"])
-        self.assertEqual(len(result["templates"]), 7)
+        self.assertEqual(len(result["templates"]), 8)
 
     def test_installed_console_script_lists_templates_with_uv(self) -> None:
         if shutil.which("uv") is None:
@@ -1212,7 +1310,7 @@ class MawToolTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         result = json.loads(proc.stdout)
         self.assertTrue(result["passed"])
-        self.assertEqual(len(result["templates"]), 6)
+        self.assertEqual(len(result["templates"]), 8)
 
     def test_pyproject_declares_maw_console_script(self) -> None:
         data = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
@@ -1974,6 +2072,158 @@ class MawToolTests(unittest.TestCase):
         result = json.loads(proc.stdout)
         self.assertFalse(result["passed"])
         self.assertTrue(any("unknown dependency" in error for error in result["errors"]))
+
+    def test_artifacts_parse_check_parses_json_objects(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = Path(tmp_dir)
+            artifacts = run_dir / "artifacts"
+            artifacts.mkdir()
+            (artifacts / "good.json").write_text(json.dumps({"passed": True}), encoding="utf-8")
+            (artifacts / "bad.json").write_text("{bad json", encoding="utf-8")
+            output = artifacts / "artifact-parse-report.json"
+
+            proc = run_tool(
+                str(CHECKS),
+                "artifacts-parse",
+                "--run",
+                str(run_dir),
+                "--artifacts",
+                "artifacts/good.json",
+                "artifacts/bad.json",
+                "--output",
+                str(output),
+            )
+            self.assertTrue(output.is_file())
+
+        self.assertNotEqual(proc.returncode, 0)
+        result = json.loads(proc.stdout)
+        self.assertFalse(result["passed"])
+        self.assertTrue(any("bad.json" in error for error in result["errors"]))
+
+    def test_wilds_benchmark_joins_out_of_order_predictions_by_id(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            manifest = root / "manifest.json"
+            predictions = root / "predictions.json"
+            output = root / "wilds-harness-result.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "dataset": {"name": "fixture-wilds", "version": "1"},
+                        "fixed_splits": True,
+                        "examples": [
+                            {"id": "a", "split": "train", "label": "0"},
+                            {"id": "b", "split": "val", "label": "1"},
+                            {"id": "c", "split": "test", "label": "1"},
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            predictions.write_text(
+                json.dumps({"predictions": [{"id": "c", "prediction": "1"}, {"id": "a", "prediction": "0"}, {"id": "b", "prediction": "1"}]}),
+                encoding="utf-8",
+            )
+
+            proc = run_tool(str(MAW), "wilds-benchmark", str(manifest), str(predictions), "--output", str(output))
+            self.assertTrue(output.is_file())
+            result = json.loads(output.read_text(encoding="utf-8"))
+
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue(result["passed"])
+        self.assertEqual(result["prediction_alignment"], "example_id")
+        self.assertEqual(result["splits"]["test"]["accuracy"], 1.0)
+        self.assertEqual(result["examples"]["joined_count"], 3)
+
+    def test_wilds_benchmark_rejects_missing_predictions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            manifest = root / "manifest.json"
+            predictions = root / "predictions.json"
+            manifest.write_text(json.dumps({"examples": [{"id": "a", "split": "test", "label": "0"}]}), encoding="utf-8")
+            predictions.write_text(json.dumps({"predictions": []}), encoding="utf-8")
+
+            proc = run_tool(str(MAW), "wilds-benchmark", str(manifest), str(predictions))
+
+        self.assertNotEqual(proc.returncode, 0)
+        result = json.loads(proc.stdout)
+        self.assertFalse(result["passed"])
+        self.assertEqual(result["problems"][0]["type"], "missing_predictions")
+
+    def test_wilds_benchmark_uses_dataset_eval_with_fake_wilds(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            fake_wilds = root / "wilds"
+            fake_wilds.mkdir()
+            (fake_wilds / "__init__.py").write_text(
+                "\n".join(
+                    [
+                        "class FakeSubset:",
+                        "    ids = ['b', 'a']",
+                        "    y_array = ['label-b', 'label-a']",
+                        "    metadata_array = [{'group': 'g2'}, {'group': 'g1'}]",
+                        "",
+                        "class FakeDataset:",
+                        "    version = 'offline-test'",
+                        "    def get_subset(self, split, transform=None):",
+                        "        assert split == 'test'",
+                        "        assert transform is None",
+                        "        return FakeSubset()",
+                        "    def eval(self, all_y_pred, all_y_true, all_metadata):",
+                        "        assert all_y_pred == ['pred-b', 'pred-a']",
+                        "        assert all_y_true == ['label-b', 'label-a']",
+                        "        assert all_metadata == [{'group': 'g2'}, {'group': 'g1'}]",
+                        "        return {'official_metric': 0.123, 'local_accuracy_would_differ': 999}, 'official eval used'",
+                        "",
+                        "def get_dataset(dataset, download=False, root_dir=None):",
+                        "    assert dataset == 'fake-wilds'",
+                        "    assert download is False",
+                        "    assert root_dir is None",
+                        "    return FakeDataset()",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            predictions = root / "predictions.json"
+            output = root / "result.json"
+            predictions.write_text(
+                json.dumps({"predictions": [{"id": "a", "prediction": "pred-a"}, {"id": "b", "prediction": "pred-b"}]}),
+                encoding="utf-8",
+            )
+            env = dict(os.environ)
+            env["PYTHONPATH"] = str(root) + os.pathsep + env.get("PYTHONPATH", "")
+
+            proc = subprocess.run(
+                [sys.executable, str(MAW), "wilds-benchmark", str(predictions), "--wilds-dataset", "fake-wilds", "--split", "test", "--output", str(output)],
+                cwd=ROOT,
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+            self.assertTrue(output.is_file())
+            result = json.loads(output.read_text(encoding="utf-8"))
+
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue(result["passed"])
+        self.assertEqual(result["metrics_source"], "wilds.dataset.eval")
+        self.assertEqual(result["metrics"]["official_metric"], 0.123)
+        self.assertEqual(result["metrics_summary"], "official eval used")
+        self.assertNotIn("splits", result)
+
+    def test_maw_tools_never_import_wilds_or_torch(self) -> None:
+        forbidden = {"wilds", "torch"}
+        violations: list[tuple[Path, str]] = []
+        for path in (ROOT / "maw-tools").glob("*.py"):
+            tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    for alias in node.names:
+                        if alias.name.split(".")[0] in forbidden:
+                            violations.append((path, alias.name))
+                elif isinstance(node, ast.ImportFrom) and node.module and node.module.split(".")[0] in forbidden:
+                    violations.append((path, node.module))
+        self.assertEqual(violations, [])
 
     def test_aggregation_check_requires_each_lane(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
