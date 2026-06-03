@@ -22,6 +22,7 @@ import task_graph  # noqa: E402
 import validate_handoffs  # noqa: E402
 import validate_workflow_template  # noqa: E402
 import verdict_check  # noqa: E402
+from . import ml_autopilot  # noqa: E402
 
 
 def emit(data: dict) -> None:
@@ -176,6 +177,7 @@ def build_parser() -> argparse.ArgumentParser:
     dependency_audit.add_argument("--no-dossiers", action="store_true")
     dependency_audit.add_argument("--output")
     dependency_audit.set_defaults(func=cmd_dependency_audit)
+    ml_autopilot.add_parser(sub, ROOT)
     return parser
 
 

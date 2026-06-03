@@ -17,6 +17,7 @@ SELFTEST_ML = TOOLS / "selftest_ml_checks.py"
 SELFTEST_REFACTOR = TOOLS / "selftest_refactor_checks.py"
 SELFTEST_PLAN = TOOLS / "selftest_plan_check.py"
 VENDORED_DATA_CHECK = TOOLS / "check_vendored_data.py"
+README_CHECK = TOOLS / "readme_check.py"
 PLAN_CHECK = TOOLS / "plan_check.py"
 CHECKLIST_CHECK = TOOLS / "checklist_check.py"
 REPO_ROOT = TOOLS.parent
@@ -114,6 +115,7 @@ def main() -> int:
         ("refactor_checks", [sys.executable, str(SELFTEST_REFACTOR)]),
         ("plan_check", [sys.executable, str(SELFTEST_PLAN)]),
         ("checklists", [sys.executable, str(CHECKLIST_CHECK), "--root", str(REPO_ROOT)]),
+        ("readme", [sys.executable, str(README_CHECK)]),
         ("vendored_data", [sys.executable, str(VENDORED_DATA_CHECK)]),
     ):
         code, data, stdout, stderr = run_json(command)
