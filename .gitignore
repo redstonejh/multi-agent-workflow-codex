@@ -1,17 +1,8 @@
 # Multi-Agent Workflow — ignored artifacts
 
 # Run folders are local logbooks, not source. Keep them out of version control.
-runs/*
-!runs/2026-06-02_add-front-end-ui-workflow_a8d3/
-!runs/2026-06-02_add-front-end-ui-workflow_a8d3/**
-!runs/2026-06-02_extend-frontend-pack-with-change_4e1a/
-!runs/2026-06-02_extend-frontend-pack-with-change_4e1a/**
-!runs/2026-06-02_add-pre-execution-plan-gate_*/
-!runs/2026-06-02_add-pre-execution-plan-gate_*/**
-!runs/2026-06-02_plan-gate-demo-missing-ml_99e1/
-!runs/2026-06-02_plan-gate-demo-missing-ml_99e1/**
-!runs/2026-06-02_audit-and-fix-workflow-governor_9430/
-!runs/2026-06-02_audit-and-fix-workflow-governor_9430/**
+runs/
+selftest_output.txt
 
 # Python
 __pycache__/
