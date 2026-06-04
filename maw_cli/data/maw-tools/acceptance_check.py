@@ -114,6 +114,7 @@ REQUIRED_EVIDENCE: dict[str, tuple[str, ...]] = {
     "salvage-task": (
         "artifacts/preserved-surface.json",
         "artifacts/topology.json",
+        "artifacts/test-triage.json",
         "artifacts/characterization-baseline.json",
         "artifacts/code-graph.json",
         "artifacts/hidden-deps.json",

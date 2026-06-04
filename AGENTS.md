@@ -19,13 +19,14 @@ unified workflow system; there is no separate mode for specialized capabilities.
 
 The `salvage` task type is a system-level polyglot refactor workflow for gutting
 legacy code while preserving a frozen surface. Its hard gates are preserved
-behavior parity, hidden dependency and cross-language coupling proof, dead-code
-proof, duplicate collapse, and salvage resistance. The required roster is the
+behavior parity, static-first test triage, hidden dependency and cross-language
+coupling proof, dead-code proof, duplicate collapse, and salvage resistance. The required roster is the
 core roles plus `dependency_mapper`, `dependency_untangler`, and
 `dead_code_auditor`; `salvage_verifier` is advisory. `maw-tools/` evaluates only
 normalized JSON artifacts and remains standard-library-only: Python graph
 generation uses `ast`, HTML/CSS graph generation uses `html.parser` plus
-`web_checks.py`, and characterization replay uses stdlib HTTP/JSON. JS/TS graph
+`web_checks.py`, characterization replay uses stdlib HTTP/JSON, and test triage
+uses static symbol evidence before any target test suite execution. JS/TS graph
 generation and client-rendered browser capture live outside the deterministic
 spine in `maw_cli/`; when optional Node or browser dependencies are unavailable,
 those adapters must emit `NEEDS-HUMAN` rather than guessing.
@@ -56,6 +57,7 @@ python maw-tools/acceptance_check.py --run <run_dir> --test-cmd "<test command>"
 python maw-tools/salvage_check.py verdict <run_dir>
 maw start salvage-task "<task>"
 maw code-graph <path> [--lang auto|py|js|ts|html|css] --output artifacts/code-graph.json
+python maw-tools/salvage_check.py test-triage --root <path> --graph artifacts/code-graph.json --plan artifacts/salvage-plan.md --test-cmd "<active test command with {tests}>" --output artifacts/test-triage.json
 maw characterize <path-or-url> --output artifacts/characterization-baseline.json
 maw salvage-check <run_dir>
 ```
@@ -127,8 +129,10 @@ For code work, record non-obvious couplings with:
 - `# MAW-TODO[id]:` deferred work
 
 For salvage work, freeze `artifacts/preserved-surface.json` and
-`artifacts/preserved-surface.sha256` before iteration 0. Acceptance and verdict
-must force `NO-SHIP` if the preserved surface shrinks, the hash changes, graph
-entrypoints differ from the frozen surface, dead-code proof uses a different
-entrypoint set, parity lacks a pre-gut characterization baseline, or a
+`artifacts/preserved-surface.sha256` only after static-first test triage defines
+the ACTIVE keep-bound test contract. Acceptance and verdict must force `NO-SHIP`
+if the preserved surface shrinks, the hash changes, graph entrypoints differ
+from the frozen surface, dead-code proof uses a different entrypoint set, parity
+lacks a pre-gut characterization baseline, field-level interaction evidence
+drifts beyond tolerance, legacy do-not-resurrect symbols return, or a
 cross-language coupling is dismissed without a justification.

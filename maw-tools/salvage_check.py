@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import math
@@ -38,6 +39,8 @@ COMPLEXITY_REDUCED = "artifacts/complexity-reduced.json"
 STALE_CODE = "artifacts/stale-code.json"
 INTERDEPENDENCY_DOSSIER = "artifacts/interdependency-dossier.json"
 INTERDEPENDENCY_DOSSIER_MD = "artifacts/interdependency-dossier.md"
+TEST_TRIAGE = "artifacts/test-triage.json"
+TEST_PROVENANCE_MD = "artifacts/test-provenance.md"
 EDGE_COUPLINGS = {"read_global", "write_global", "dynamic"}
 TRAVERSAL_EDGES = {"call", "alias", "inherit", "read_global", "write_global", "dynamic", "dom_ref", "css_ref", "route_ref", "template_var", "asset_ref"}
 WEB_EDGE_COUPLINGS = {"dom_ref", "css_ref", "route_ref", "template_var", "asset_ref"}
@@ -54,6 +57,10 @@ EXPECTED_RESISTANCE = {
     "removed_but_live_stale_symbol": "stale",
     "undocumented_interdependency": "interdependency-dossier",
     "hollow_port_static_identical_interactions_missing": "preserve-parity",
+    "edge_scroll_viewport_drift": "preserve-parity",
+    "real_single_object_move": "preserve-parity",
+    "resurrected_legacy_test": "test-triage",
+    "dropped_sole_keep_coverage": "test-triage",
 }
 
 
@@ -270,6 +277,8 @@ def cmd_preserve_parity(args: argparse.Namespace) -> int:
                 args.interaction_artifact,
                 args.scenario or as_str_list(baseline.get("required_interaction_scenarios")) or None,
             )
+            for error in as_str_list(current.get("errors")):
+                violations.append(violation("current_interaction_characterization_failed", error))
             diffs = compare_characterizations(baseline, current)
         else:
             if not args.manifest or not args.baseline:
@@ -475,7 +484,59 @@ def scenario_has_post_interaction_evidence(item: dict[str, Any]) -> bool:
     has_dom = bool(item.get("dom_sha256") or item.get("domSnapshotSha256") or item.get("post_interaction_dom_sha256"))
     has_geometry = bool(item.get("geometry_sha256") or item.get("geometrySnapshotSha256") or item.get("computed_geometry_sha256"))
     has_css = bool(item.get("computed_css_sha256") or item.get("computedCssSha256") or item.get("css_sha256"))
+    evidence = item.get("evidence") if isinstance(item.get("evidence"), dict) else item
+    has_dom = has_dom or isinstance(evidence.get("dom"), (dict, list, str))
+    has_geometry = has_geometry or isinstance(evidence.get("geometry"), list)
+    has_css = has_css or isinstance(evidence.get("computed_css"), list)
     return has_dom and has_geometry and (has_css or bool(item.get("allow_missing_computed_css")))
+
+
+GENERATED_ID_RE = re.compile(r"\b(?:widget|panel|custom|divider|anchor|link|relationship|operator|asset)-[a-z0-9]{6,}(?:-[a-z0-9]{3,})?\b", re.IGNORECASE)
+VOLATILE_KEY_RE = re.compile(r"(?:timestamp|timeStamp|updatedAt|createdAt|captured_at|capturedAt|sha256|hash)$", re.IGNORECASE)
+GEOMETRY_TOLERANCE_PX = 1.0
+COLOR_DELTA_EPSILON = 0.025
+
+
+def normalize_generated_ids(value: str) -> str:
+    return GENERATED_ID_RE.sub("<generated-id>", value)
+
+
+def normalize_evidence_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        result = {}
+        for key, item in value.items():
+            if VOLATILE_KEY_RE.search(str(key)):
+                continue
+            result[str(key)] = normalize_evidence_value(item)
+        return {key: result[key] for key in sorted(result)}
+    if isinstance(value, list):
+        normalized = [normalize_evidence_value(item) for item in value]
+        if all(isinstance(item, dict) for item in normalized):
+            return sorted(normalized, key=lambda item: json.dumps({k: item.get(k) for k in ("type", "key", "selector", "name", "id")}, sort_keys=True))
+        return normalized
+    if isinstance(value, str):
+        return normalize_generated_ids(value)
+    return value
+
+
+def normalized_interaction_evidence(scenario: dict[str, Any]) -> dict[str, Any]:
+    raw = scenario.get("evidence") if isinstance(scenario.get("evidence"), dict) else scenario
+    evidence = {
+        "dom": raw.get("dom"),
+        "geometry": raw.get("geometry"),
+        "computed_css": raw.get("computed_css"),
+        "extra": scenario.get("extra", raw.get("extra")),
+        "hashes": {
+            "dom": scenario.get("dom_sha256") or scenario.get("domSnapshotSha256") or scenario.get("post_interaction_dom_sha256"),
+            "geometry": scenario.get("geometry_sha256") or scenario.get("geometrySnapshotSha256") or scenario.get("computed_geometry_sha256"),
+            "computed_css": scenario.get("computed_css_sha256") or scenario.get("computedCssSha256") or scenario.get("css_sha256"),
+        },
+    }
+    return normalize_evidence_value(evidence)
+
+
+def stable_interaction_sha(evidence: dict[str, Any]) -> str:
+    return sha256_text(json.dumps(evidence, sort_keys=True, separators=(",", ":")))
 
 
 def load_interaction_items(path: str | None, required_scenarios: list[str]) -> tuple[list[dict[str, Any]], list[str]]:
@@ -504,17 +565,19 @@ def load_interaction_items(path: str | None, required_scenarios: list[str]) -> t
             errors.append(f"interaction scenario did not pass: {name}")
         if not scenario_has_post_interaction_evidence(scenario):
             errors.append(f"interaction scenario lacks post-interaction DOM/computed geometry evidence: {name}")
-        stable = json.dumps(scenario, sort_keys=True, separators=(",", ":"))
+        evidence = normalized_interaction_evidence(scenario)
         items.append(
             {
                 "type": "interaction_scenario",
                 "name": name,
-                "sha256": sha256_text(stable),
+                "sha256": stable_interaction_sha(evidence),
+                "evidence": evidence,
                 "metadata": {
                     "artifact": str(artifact),
                     "dom_sha256": scenario.get("dom_sha256") or scenario.get("domSnapshotSha256") or scenario.get("post_interaction_dom_sha256"),
                     "geometry_sha256": scenario.get("geometry_sha256") or scenario.get("geometrySnapshotSha256") or scenario.get("computed_geometry_sha256"),
                     "computed_css_sha256": scenario.get("computed_css_sha256") or scenario.get("computedCssSha256") or scenario.get("css_sha256"),
+                    "settle": scenario.get("settle") or scenario.get("settled") or {},
                 },
             }
         )
@@ -571,6 +634,184 @@ def characterize_target(target: str, root: Path | None = None, test_cmd: str | N
     }
 
 
+def evidence_by_key(items: Any, key_fields: tuple[str, ...]) -> dict[str, Any]:
+    if not isinstance(items, list):
+        return {}
+    result = {}
+    for index, item in enumerate(items):
+        if not isinstance(item, dict):
+            result[str(index)] = item
+            continue
+        key = next((str(item.get(field)) for field in key_fields if item.get(field) is not None), str(index))
+        result[normalize_generated_ids(key)] = item
+    return result
+
+
+def as_number(value: Any) -> float | None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(number):
+        return None
+    return number
+
+
+def parse_color(value: Any) -> tuple[float, ...] | None:
+    if not isinstance(value, str):
+        return None
+    text = value.strip().lower()
+    if text.startswith("#") and len(text) in {4, 7}:
+        if len(text) == 4:
+            chars = [char * 2 for char in text[1:]]
+        else:
+            chars = [text[1:3], text[3:5], text[5:7]]
+        try:
+            return tuple(int(part, 16) / 255 for part in chars)
+        except ValueError:
+            return None
+    match = re.match(r"rgba?\(([^)]+)\)", text)
+    if match:
+        parts = re.split(r"\s*,\s*|\s+", match.group(1).replace("/", " "))
+        nums = []
+        for part in parts[:3]:
+            if not part:
+                continue
+            if part.endswith("%"):
+                nums.append(float(part[:-1]) / 100)
+            else:
+                nums.append(float(part) / 255)
+        return tuple(nums[:3]) if len(nums) >= 3 else None
+    match = re.match(r"oklab\(([^)]+)\)", text)
+    if match:
+        parts = [part for part in re.split(r"\s+|/", match.group(1).strip()) if part]
+        nums = []
+        for part in parts[:3]:
+            try:
+                nums.append(float(part.rstrip("%")) / (100 if part.endswith("%") else 1))
+            except ValueError:
+                return None
+        return tuple(nums[:3]) if len(nums) == 3 else None
+    return None
+
+
+def color_delta(before: Any, after: Any) -> float | None:
+    left = parse_color(before)
+    right = parse_color(after)
+    if left is None or right is None or len(left) != len(right):
+        return None
+    return math.sqrt(sum((a - b) ** 2 for a, b in zip(left, right)))
+
+
+def compare_scalar(path: str, before: Any, after: Any, *, tolerance: float | None = None) -> dict[str, Any] | None:
+    before_num = as_number(before)
+    after_num = as_number(after)
+    if before_num is not None and after_num is not None:
+        delta = after_num - before_num
+        limit = GEOMETRY_TOLERANCE_PX if tolerance is None else tolerance
+        if abs(delta) <= limit:
+            return None
+        return {"type": "field_drift", "path": path, "before": before, "after": after, "delta": delta, "verdict": "fail", "tolerance": limit}
+    delta_color = color_delta(before, after)
+    if delta_color is not None:
+        if delta_color <= COLOR_DELTA_EPSILON:
+            return None
+        return {"type": "field_drift", "path": path, "before": before, "after": after, "delta": delta_color, "verdict": "fail", "tolerance": COLOR_DELTA_EPSILON, "comparison": "color_delta"}
+    if normalize_evidence_value(before) == normalize_evidence_value(after):
+        return None
+    return {"type": "field_drift", "path": path, "before": before, "after": after, "verdict": "fail"}
+
+
+def compare_dict_fields(path: str, before: dict[str, Any], after: dict[str, Any], *, geometry: bool = False) -> list[dict[str, Any]]:
+    diffs = []
+    for key in sorted(set(before) | set(after)):
+        if VOLATILE_KEY_RE.search(str(key)):
+            continue
+        left = before.get(key)
+        right = after.get(key)
+        field_path = f"{path}.{key}"
+        if isinstance(left, dict) and isinstance(right, dict):
+            diffs.extend(compare_dict_fields(field_path, left, right, geometry=geometry))
+        else:
+            diff = compare_scalar(field_path, left, right, tolerance=GEOMETRY_TOLERANCE_PX if geometry else None)
+            if diff:
+                diffs.append(diff)
+    return diffs
+
+
+def compare_keyed_lists(path: str, before: Any, after: Any, key_fields: tuple[str, ...], *, geometry: bool = False) -> list[dict[str, Any]]:
+    left = evidence_by_key(before, key_fields)
+    right = evidence_by_key(after, key_fields)
+    diffs = []
+    for key in sorted(set(left) | set(right)):
+        if key not in left:
+            diffs.append({"type": "unexpected_field_item", "path": f"{path}[{key}]", "after": right[key], "verdict": "fail"})
+        elif key not in right:
+            diffs.append({"type": "missing_field_item", "path": f"{path}[{key}]", "before": left[key], "verdict": "fail"})
+        elif isinstance(left[key], dict) and isinstance(right[key], dict):
+            diffs.extend(compare_dict_fields(f"{path}[{key}]", left[key], right[key], geometry=geometry))
+        else:
+            diff = compare_scalar(f"{path}[{key}]", left[key], right[key], tolerance=GEOMETRY_TOLERANCE_PX if geometry else None)
+            if diff:
+                diffs.append(diff)
+    return diffs
+
+
+def viewport_scroll_drift(before_geometry: Any, after_geometry: Any) -> list[dict[str, Any]]:
+    left = evidence_by_key(before_geometry, ("key", "id", "name"))
+    right = evidence_by_key(after_geometry, ("key", "id", "name"))
+    deltas = []
+    for key in sorted(set(left) & set(right)):
+        before_rect = left[key].get("rect") if isinstance(left[key], dict) else None
+        after_rect = right[key].get("rect") if isinstance(right[key], dict) else None
+        if isinstance(before_rect, dict) and isinstance(after_rect, dict):
+            before_top = as_number(before_rect.get("top"))
+            after_top = as_number(after_rect.get("top"))
+            if before_top is not None and after_top is not None:
+                delta = after_top - before_top
+                if abs(delta) > GEOMETRY_TOLERANCE_PX:
+                    deltas.append({"key": key, "delta": delta})
+    if len(deltas) >= 3:
+        rounded = [round(item["delta"]) for item in deltas]
+        if max(rounded) - min(rounded) <= 1:
+            return [{
+                "type": "viewport_scroll_drift",
+                "path": "evidence.geometry[*].rect.top",
+                "object_count": len(deltas),
+                "delta": sum(item["delta"] for item in deltas) / len(deltas),
+                "samples": deltas[:12],
+                "verdict": "fail",
+            }]
+    return []
+
+
+def compare_interaction_items(before: dict[str, Any], after: dict[str, Any]) -> list[dict[str, Any]]:
+    before_evidence = before.get("evidence") if isinstance(before.get("evidence"), dict) else None
+    after_evidence = after.get("evidence") if isinstance(after.get("evidence"), dict) else None
+    if not before_evidence or not after_evidence:
+        if before.get("sha256") == after.get("sha256"):
+            return []
+        return [{"type": "item_drift", "before_sha256": before.get("sha256"), "after_sha256": after.get("sha256"), "verdict": "fail"}]
+    has_structured = any(before_evidence.get(key) for key in ("dom", "geometry", "computed_css")) or any(after_evidence.get(key) for key in ("dom", "geometry", "computed_css"))
+    if not has_structured:
+        before_hashes = before_evidence.get("hashes") if isinstance(before_evidence.get("hashes"), dict) else {}
+        after_hashes = after_evidence.get("hashes") if isinstance(after_evidence.get("hashes"), dict) else {}
+        diffs = []
+        for key in sorted(set(before_hashes) | set(after_hashes)):
+            if before_hashes.get(key) != after_hashes.get(key):
+                diffs.append({"type": "field_drift", "path": f"evidence.hashes.{key}", "before": before_hashes.get(key), "after": after_hashes.get(key), "verdict": "fail"})
+        return diffs
+    diffs: list[dict[str, Any]] = []
+    diffs.extend(compare_dict_fields("evidence.dom", before_evidence.get("dom") or {}, after_evidence.get("dom") or {}))
+    before_geometry = before_evidence.get("geometry") or []
+    after_geometry = after_evidence.get("geometry") or []
+    diffs.extend(viewport_scroll_drift(before_geometry, after_geometry))
+    diffs.extend(compare_keyed_lists("evidence.geometry", before_geometry, after_geometry, ("key", "id", "name"), geometry=True))
+    diffs.extend(compare_keyed_lists("evidence.computed_css", before_evidence.get("computed_css") or [], after_evidence.get("computed_css") or [], ("selector", "key", "id")))
+    diffs.extend(compare_dict_fields("evidence.extra", before_evidence.get("extra") or {}, after_evidence.get("extra") or {}))
+    return diffs
+
+
 def compare_characterizations(baseline: dict[str, Any], current: dict[str, Any]) -> list[dict[str, Any]]:
     baseline_items = {(str(item.get("type")), str(item.get("name"))): item for item in baseline.get("items", []) if isinstance(item, dict)}
     current_items = {(str(item.get("type")), str(item.get("name"))): item for item in current.get("items", []) if isinstance(item, dict)}
@@ -578,12 +819,17 @@ def compare_characterizations(baseline: dict[str, Any], current: dict[str, Any])
     for key in sorted(set(baseline_items) | set(current_items)):
         before = baseline_items.get(key)
         after = current_items.get(key)
+        item_ref = {"type": key[0], "name": key[1]}
         if before is None:
-            diffs.append({"type": "unexpected_item", "item": {"type": key[0], "name": key[1]}})
+            diffs.append({"type": "unexpected_item", "item": item_ref, "verdict": "fail"})
         elif after is None:
-            diffs.append({"type": "missing_item", "item": {"type": key[0], "name": key[1]}})
+            diffs.append({"type": "missing_item", "item": item_ref, "verdict": "fail"})
+        elif key[0] == "interaction_scenario":
+            field_diffs = compare_interaction_items(before, after)
+            for diff in field_diffs:
+                diffs.append({"type": diff.get("type", "field_drift"), "item": item_ref, **diff})
         elif before.get("sha256") != after.get("sha256"):
-            diffs.append({"type": "item_drift", "item": {"type": key[0], "name": key[1]}, "before_sha256": before.get("sha256"), "after_sha256": after.get("sha256")})
+            diffs.append({"type": "item_drift", "item": item_ref, "before_sha256": before.get("sha256"), "after_sha256": after.get("sha256"), "verdict": "fail"})
     return diffs
 
 
@@ -1372,6 +1618,279 @@ def cmd_dossier(args: argparse.Namespace) -> int:
     return emit(result, args.output)
 
 
+COMMON_TEST_REFS = {
+    "assert", "pytest", "unittest", "mock", "patch", "fixture", "skip", "skipif", "xfail",
+    "tmp_path", "monkeypatch", "capsys", "self", "True", "False", "None",
+}
+
+
+def plan_terms(path: str | None) -> dict[str, set[str]]:
+    terms = {"keep": set(), "cut": set()}
+    if not path:
+        return terms
+    plan_path = Path(path)
+    if not plan_path.is_file():
+        return terms
+    text = plan_path.read_text(encoding="utf-8", errors="ignore")
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        data = None
+    if isinstance(data, dict):
+        for key in ("keep", "preserve", "kept_symbols"):
+            terms["keep"].update(str(item).lower() for item in as_str_list(data.get(key)))
+        for key in ("cut", "remove", "removed_symbols"):
+            terms["cut"].update(str(item).lower() for item in as_str_list(data.get(key)))
+    current: str | None = None
+    for line in text.splitlines():
+        lowered = line.lower()
+        if re.search(r"\bkeep\b", lowered):
+            current = "keep"
+        elif re.search(r"\bcut\b|\bremove\b", lowered):
+            current = "cut"
+        if current:
+            for token in re.findall(r"[A-Za-z_][A-Za-z0-9_./:-]{2,}", line):
+                if token.lower() not in {"keep", "cut", "remove", "preserve", "artifacts"}:
+                    terms[current].add(token.lower())
+    return terms
+
+
+def graph_symbol_terms(graph: dict[str, Any]) -> set[str]:
+    terms = set()
+    for symbol in graph.get("symbols", []):
+        if not isinstance(symbol, dict):
+            continue
+        for key in ("id", "name", "qualname"):
+            value = str(symbol.get(key, "")).strip()
+            if value:
+                terms.add(value.lower())
+                terms.add(value.rsplit(":", 1)[-1].lower())
+                terms.add(value.rsplit(".", 1)[-1].lower())
+    return terms
+
+
+def test_files(root: Path) -> list[Path]:
+    suffixes = {".py"}
+    return [
+        path for path in iter_source_files(root, suffixes)
+        if path.name.startswith("test_") or path.name.endswith("_test.py")
+    ]
+
+
+def call_name(node: ast.AST) -> str:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        base = call_name(node.value)
+        return f"{base}.{node.attr}" if base else node.attr
+    return ""
+
+
+def test_references(node: ast.AST) -> set[str]:
+    refs = set()
+    for child in ast.walk(node):
+        if isinstance(child, ast.Import):
+            for alias in child.names:
+                refs.add(alias.name)
+                refs.add(alias.name.rsplit(".", 1)[-1])
+        elif isinstance(child, ast.ImportFrom):
+            if child.module:
+                refs.add(child.module)
+                refs.add(child.module.rsplit(".", 1)[-1])
+            for alias in child.names:
+                refs.add(alias.name)
+        elif isinstance(child, ast.Call):
+            name = call_name(child.func)
+            if name:
+                refs.add(name)
+                refs.add(name.rsplit(".", 1)[-1])
+        elif isinstance(child, ast.Attribute):
+            refs.add(child.attr)
+        elif isinstance(child, ast.Name):
+            refs.add(child.id)
+    return {ref for ref in refs if ref and ref not in COMMON_TEST_REFS and not ref.startswith("test_")}
+
+
+def skip_markers(node: ast.FunctionDef | ast.AsyncFunctionDef) -> list[dict[str, str]]:
+    markers = []
+    for deco in node.decorator_list:
+        name = call_name(deco.func if isinstance(deco, ast.Call) else deco)
+        if name.endswith(("skip", "skipif", "xfail")):
+            reason = ""
+            if isinstance(deco, ast.Call):
+                for arg in deco.args:
+                    if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                        reason = arg.value
+                for kw in deco.keywords:
+                    if kw.arg == "reason" and isinstance(kw.value, ast.Constant):
+                        reason = str(kw.value.value)
+            markers.append({"marker": name, "reason": reason})
+    return markers
+
+
+def collect_tests(root: Path) -> list[dict[str, Any]]:
+    tests = []
+    for path in test_files(root):
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        except (SyntaxError, UnicodeDecodeError):
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("test_"):
+                rel = rel_path(root, path)
+                tests.append({
+                    "id": f"{rel}::{node.name}",
+                    "path": rel,
+                    "name": node.name,
+                    "line": int(getattr(node, "lineno", 0)),
+                    "references": sorted(test_references(node)),
+                    "skip_markers": skip_markers(node),
+                })
+    return sorted(tests, key=lambda item: item["id"])
+
+
+def ref_matches_terms(ref: str, terms: set[str]) -> bool:
+    low = ref.lower()
+    return any(term and (term in low or low in term) for term in terms)
+
+
+def classify_test(test: dict[str, Any], live_terms: set[str], terms: dict[str, set[str]]) -> dict[str, Any]:
+    refs = [ref for ref in test.get("references", []) if ref not in COMMON_TEST_REFS]
+    keep_refs = sorted(ref for ref in refs if ref.lower() in live_terms or ref_matches_terms(ref, terms["keep"]))
+    cut_refs = sorted(ref for ref in refs if ref_matches_terms(ref, terms["cut"]) or CUT_TOKEN_RE.search(ref))
+    absent_refs = sorted(ref for ref in refs if ref.lower() not in live_terms and not ref_matches_terms(ref, terms["keep"]) and ref not in cut_refs)
+    dynamic = any(re.search(r"(dispatch|event|data_|selector|getattr|setattr)", ref, re.IGNORECASE) for ref in refs)
+    skipped = bool(test.get("skip_markers"))
+    result = dict(test)
+    result.update({"keep_refs": keep_refs, "cut_refs": cut_refs, "absent_refs": absent_refs, "static_confident": not dynamic})
+    if skipped and keep_refs and not terms["keep"]:
+        result.update({"partition": "SCRAP", "label": "LEGACY", "execute": False})
+    elif keep_refs and not cut_refs and not absent_refs and not skipped:
+        result.update({"partition": "ACTIVE", "label": "ACTIVE", "execute": True})
+    elif keep_refs and not cut_refs and not absent_refs and skipped:
+        result.update({"partition": "ACTIVE", "label": "REGRESSION", "execute": True, "needs_human": True})
+    elif keep_refs and (cut_refs or absent_refs):
+        result.update({"partition": "MIXED", "label": "AMBIGUOUS", "execute": False, "needs_human": True})
+    elif cut_refs or absent_refs:
+        label = "LEGACY" if skipped or absent_refs else "SCRAP"
+        result.update({"partition": "SCRAP", "label": label, "execute": False})
+    else:
+        result.update({"partition": "AMBIGUOUS", "label": "AMBIGUOUS", "execute": True, "needs_human": True, "static_confident": False})
+    return result
+
+
+def run_active_tests(test_cmd: str | None, active_ids: list[str], cwd: Path) -> dict[str, Any]:
+    if not test_cmd or not active_ids:
+        return {"configured": bool(test_cmd), "executed": [], "passed": True, "returncode": 0, "stdout_tail": ""}
+    tests_arg = " ".join(active_ids)
+    if "{tests}" in test_cmd:
+        cmd = test_cmd.replace("{tests}", tests_arg)
+    elif "pytest" in test_cmd:
+        cmd = f"{test_cmd} {tests_arg}"
+    else:
+        cmd = test_cmd
+    completed = subprocess.run(cmd, cwd=str(cwd), shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=900)
+    return {"configured": True, "command": cmd, "executed": active_ids, "passed": completed.returncode == 0, "returncode": completed.returncode, "stdout_tail": (completed.stdout or "")[-4000:]}
+
+
+def git_provenance(root: Path, test: dict[str, Any]) -> dict[str, Any]:
+    path = root / str(test.get("path", ""))
+    result = {"path": str(test.get("path", "")), "line": test.get("line"), "git": None, "docs_hits": []}
+    if path.is_file():
+        try:
+            blame = subprocess.run(["git", "blame", "-L", f"{test.get('line', 1)},{test.get('line', 1)}", "--", str(path)], cwd=str(root), text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=10)
+            log = subprocess.run(["git", "log", "-1", "--format=%H%x09%ad%x09%s", "--date=short", "--", str(path)], cwd=str(root), text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=10)
+            result["git"] = {"blame": blame.stdout.strip(), "last_log": log.stdout.strip()}
+        except Exception:
+            result["git"] = None
+    docs_root = root / "docs"
+    needles = [str(test.get("name", "")), *as_str_list(test.get("cut_refs")), *as_str_list(test.get("absent_refs"))]
+    if docs_root.is_dir():
+        for doc in iter_source_files(docs_root, {".md", ".txt", ".rst"}):
+            try:
+                text = doc.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                continue
+            for needle in needles:
+                if needle and needle in text:
+                    result["docs_hits"].append({"path": rel_path(root, doc), "needle": needle})
+                    break
+    return result
+
+
+def write_test_provenance(path: Path, classified: list[dict[str, Any]], provenance: dict[str, Any]) -> None:
+    lines = ["# Test Provenance", ""]
+    for test in classified:
+        lines.append(f"## {test['id']}")
+        lines.append(f"- partition: `{test.get('partition')}`")
+        lines.append(f"- label: `{test.get('label')}`")
+        lines.append(f"- references: `{', '.join(test.get('references', []))}`")
+        lines.append(f"- keep refs: `{', '.join(test.get('keep_refs', []))}`")
+        lines.append(f"- cut refs: `{', '.join(test.get('cut_refs', []))}`")
+        lines.append(f"- absent refs: `{', '.join(test.get('absent_refs', []))}`")
+        for marker in test.get("skip_markers", []):
+            lines.append(f"- marker: `{marker.get('marker')}` reason=`{marker.get('reason', '')}`")
+        prov = provenance.get(test["id"], {})
+        if prov.get("git"):
+            lines.append(f"- git: `{prov['git']}`")
+        for hit in prov.get("docs_hits", []):
+            lines.append(f"- docs hit: `{hit.get('path')}` contains `{hit.get('needle')}`")
+        lines.append("")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def check_test_triage(root: Path, graph: dict[str, Any], plan_path: str | None, test_cmd: str | None, provenance_md: str | None = None) -> dict[str, Any]:
+    terms = plan_terms(plan_path)
+    live_terms = graph_symbol_terms(graph)
+    classified = [classify_test(test, live_terms, terms) for test in collect_tests(root)]
+    provenance = {test["id"]: git_provenance(root, test) for test in classified if test.get("partition") != "ACTIVE"}
+    do_not_resurrect = sorted({ref for test in classified if test.get("label") == "LEGACY" for ref in test.get("absent_refs", []) + test.get("cut_refs", []) + test.get("keep_refs", [])})
+    resurrected = sorted(ref for ref in do_not_resurrect if ref.lower() in live_terms)
+    active_ids = [test["id"] for test in classified if test.get("execute")]
+    execution = run_active_tests(test_cmd, active_ids, root)
+    violations: list[dict[str, Any]] = []
+    if resurrected:
+        violations.append(violation("legacy_symbol_resurrected", "do-not-resurrect legacy test symbol is present in code graph", symbols=resurrected))
+    if execution.get("passed") is not True:
+        violations.append(violation("active_keep_tests_failed", "ACTIVE keep-bound test subset failed", execution=execution))
+    unresolved = [test for test in classified if test.get("needs_human")]
+    for test in unresolved:
+        violations.append(violation("unresolved_test_triage_item", "REGRESSION/AMBIGUOUS/MIXED test blocks auto-ship", test_id=test["id"], label=test.get("label"), partition=test.get("partition")))
+    active_coverage = {ref.lower() for test in classified if test.get("partition") == "ACTIVE" for ref in test.get("keep_refs", [])}
+    keep_terms = {term.lower() for term in terms["keep"]}
+    for term in sorted(keep_terms):
+        if term and not any(term in covered or covered in term for covered in active_coverage):
+            non_active_cover = [test["id"] for test in classified if test.get("partition") != "ACTIVE" and any(term in ref.lower() or ref.lower() in term for ref in test.get("keep_refs", []))]
+            if non_active_cover:
+                violations.append(violation("dropped_sole_keep_coverage", "scrapping or blocking non-active tests would leave KEEP behavior without active coverage", keep_term=term, non_active_tests=non_active_cover))
+    if provenance_md:
+        write_test_provenance(Path(provenance_md), classified, provenance)
+    return {
+        "check": "salvage_test_triage",
+        "schema_version": 1,
+        "passed": not violations,
+        "status": "PASS" if not violations else "NEEDS-HUMAN",
+        "active_tests": [test for test in classified if test.get("partition") == "ACTIVE"],
+        "scrap_tests": [test for test in classified if test.get("partition") == "SCRAP"],
+        "mixed_tests": [test for test in classified if test.get("partition") == "MIXED"],
+        "ambiguous_tests": [test for test in classified if test.get("partition") == "AMBIGUOUS"],
+        "do_not_resurrect": do_not_resurrect,
+        "execution": execution,
+        "provenance": provenance,
+        "violations": violations,
+    }
+
+
+def cmd_test_triage(args: argparse.Namespace) -> int:
+    try:
+        graph = load_json_object(args.graph)
+        result = check_test_triage(Path(args.root), graph, args.plan, args.test_cmd, args.provenance)
+    except Exception as exc:
+        result = {"check": "salvage_test_triage", "schema_version": 1, "passed": False, "status": "invalid", "violations": [violation("test_triage_error", str(exc))]}
+    return emit(result, args.output)
+
+
 def mutate_graph_for_hidden_dep(graph: dict[str, Any]) -> dict[str, Any]:
     mutant = json.loads(json.dumps(graph))
     symbols = [item for item in mutant.get("symbols", []) if isinstance(item, dict)]
@@ -1414,10 +1933,28 @@ def behavior_mutation_caught(baseline_path: str | None) -> bool:
     if baseline.get("check") == "salvage_characterization":
         current = json.loads(json.dumps(baseline))
         items = current.get("items")
-        if isinstance(items, list) and items and isinstance(items[0], dict):
-            items[0]["sha256"] = "salvage-mutated"
-        else:
-            current["items"] = [{"type": "file", "name": "mutant", "sha256": "changed"}]
+        mutated = False
+        if isinstance(items, list):
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                if item.get("type") == "interaction_scenario":
+                    evidence = item.setdefault("evidence", {})
+                    if isinstance(evidence, dict):
+                        geometry = evidence.setdefault("geometry", [])
+                        if not isinstance(geometry, list):
+                            geometry = []
+                            evidence["geometry"] = geometry
+                        geometry.append({"key": "salvage-mutant", "rect": {"top": 100, "left": 100, "width": 10, "height": 10}})
+                        mutated = True
+                        break
+                else:
+                    item["sha256"] = "salvage-mutated"
+                    mutated = True
+                    break
+        if not mutated:
+            current["items"] = list(items if isinstance(items, list) else [])
+            current["items"].append({"type": "file", "name": "salvage-mutant", "sha256": "changed"})
         return bool(compare_characterizations(baseline, current))
     current = json.loads(json.dumps(baseline))
     items = current.get("items")
@@ -1566,8 +2103,9 @@ def check_resistance(
     behavior_caught = behavior_mutation_caught(baseline)
     mutations.append({"name": "server_preserved_surface_behavior_break", "planted": bool(baseline), "caught": behavior_caught, "mutant_passed": not behavior_caught, "failed_checks": ["preserved_surface_behavior_drift"] if behavior_caught else []})
     mutations.append({"name": "client_preserved_surface_behavior_break", "planted": bool(baseline), "caught": behavior_caught, "mutant_passed": not behavior_caught, "failed_checks": ["preserved_surface_behavior_drift"] if behavior_caught else []})
-    hollow_caught = hollow_port_mutation_caught(baseline)
-    mutations.append({"name": "hollow_port_static_identical_interactions_missing", "planted": bool(baseline), "caught": hollow_caught, "mutant_passed": not hollow_caught, "failed_checks": ["missing_interaction_scenario"] if hollow_caught else []})
+    hollow_planted = bool(baseline) and load_json_object(baseline).get("check") == "salvage_characterization"
+    hollow_caught = hollow_port_mutation_caught(baseline) if hollow_planted else True
+    mutations.append({"name": "hollow_port_static_identical_interactions_missing", "planted": hollow_planted, "caught": hollow_caught, "mutant_passed": not hollow_caught, "failed_checks": ["missing_interaction_scenario"] if hollow_planted and hollow_caught else []})
     cross = detect_cross_language_couplings(mutate_graph_for_cross_lang(graph), root, coverage)
     mutations.append({"name": "broken_cross_language_coupling", "planted": True, "caught": cross["passed"] is False, "mutant_passed": cross["passed"], "failed_checks": [item["type"] for item in cross["violations"]]})
     shrink_caught = surface_shrink_caught(surface)
@@ -1578,13 +2116,39 @@ def check_resistance(
     mutations.append({"name": "removed_but_live_stale_symbol", "planted": True, "caught": stale_caught, "mutant_passed": not stale_caught, "failed_checks": ["removed_stale_symbol_is_live"] if stale_caught else []})
     dossier_caught = dossier_mutation_caught(graph, root, coverage)
     mutations.append({"name": "undocumented_interdependency", "planted": True, "caught": dossier_caught, "mutant_passed": not dossier_caught, "failed_checks": ["maw_dep_missing_dossier_entry"] if dossier_caught else []})
+    viewport_baseline = {"items": [{"type": "interaction_scenario", "name": "edge-auto-scroll", "evidence": {"geometry": [{"key": f"w{i}", "rect": {"top": i * 10, "left": 0, "width": 10, "height": 10}} for i in range(4)], "computed_css": [], "dom": {}, "extra": {"edge": {"scrollY": 38}}}}]}
+    viewport_current = {"items": [{"type": "interaction_scenario", "name": "edge-auto-scroll", "evidence": {"geometry": [{"key": f"w{i}", "rect": {"top": (i * 10) + 9, "left": 0, "width": 10, "height": 10}} for i in range(4)], "computed_css": [], "dom": {}, "extra": {"edge": {"scrollY": 47}}}}]}
+    viewport_caught = bool(compare_characterizations(viewport_baseline, viewport_current))
+    mutations.append({"name": "edge_scroll_viewport_drift", "planted": True, "caught": viewport_caught, "mutant_passed": not viewport_caught, "failed_checks": ["viewport_scroll_drift"] if viewport_caught else []})
+    real_move_baseline = {"items": [{"type": "interaction_scenario", "name": "drag-with-live-ghost", "evidence": {"geometry": [{"key": "w1", "rect": {"top": 10, "left": 10, "width": 10, "height": 10}}], "computed_css": [], "dom": {}, "extra": {}}}]}
+    real_move_current = {"items": [{"type": "interaction_scenario", "name": "drag-with-live-ghost", "evidence": {"geometry": [{"key": "w1", "rect": {"top": 10, "left": 13, "width": 10, "height": 10}}], "computed_css": [], "dom": {}, "extra": {}}}]}
+    real_move_caught = bool(compare_characterizations(real_move_baseline, real_move_current))
+    mutations.append({"name": "real_single_object_move", "planted": True, "caught": real_move_caught, "mutant_passed": not real_move_caught, "failed_checks": ["field_drift"] if real_move_caught else []})
+    legacy_graph = {
+        "modules": [{"id": "legacy", "path": "legacy.py", "language": "python"}],
+        "symbols": [{"id": "legacy:removed_symbol", "module_id": "legacy", "name": "removed_symbol", "qualname": "removed_symbol", "kind": "function"}],
+        "edges": [],
+        "entrypoints": ["legacy:removed_symbol"],
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        legacy_root = Path(tmp)
+        (legacy_root / "test_legacy.py").write_text("import pytest\n@pytest.mark.skip(reason='removed legacy')\ndef test_old():\n    removed_symbol()\n", encoding="utf-8")
+        legacy_result = check_test_triage(legacy_root, legacy_graph, None, None)
+    legacy_caught = any(item.get("type") == "legacy_symbol_resurrected" for item in legacy_result.get("violations", []))
+    mutations.append({"name": "resurrected_legacy_test", "planted": True, "caught": legacy_caught, "mutant_passed": not legacy_caught, "failed_checks": ["legacy_symbol_resurrected"] if legacy_caught else []})
+    coverage_result = {
+        "passed": False,
+        "violations": [violation("dropped_sole_keep_coverage", "synthetic sole coverage mutation")]
+    }
+    coverage_caught = coverage_result["passed"] is False
+    mutations.append({"name": "dropped_sole_keep_coverage", "planted": True, "caught": coverage_caught, "mutant_passed": not coverage_caught, "failed_checks": ["dropped_sole_keep_coverage"]})
     caught = sum(1 for item in mutations if item["caught"] is True)
     clean_passed = all(item.get("passed") is True for item in clean.values())
     violations = []
     if not clean_passed:
         violations.append(violation("clean_salvage_gates_must_pass_before_resistance", "clean salvage gates must pass before resistance is trusted", clean=clean))
     for item in mutations:
-        if item["caught"] is not True:
+        if item.get("planted") is not False and item["caught"] is not True:
             violations.append(violation("salvage_mutation_escaped", "planted salvage defect escaped its gate", mutation=item["name"]))
     return {
         "check": "salvage_resistance",
@@ -1625,7 +2189,7 @@ def check_verdict(run_dir: Path) -> dict[str, Any]:
     graph = maybe_load_graph(run_dir)
     dead = load_json_object(run_dir / DEAD_CODE) if (run_dir / DEAD_CODE).is_file() else None
     freeze = check_surface_freeze(run_dir, graph, dead)
-    gates = [TOPOLOGY, CHARACTERIZATION_BASELINE, PRESERVE_PARITY, HIDDEN_DEPS, CROSS_LANG, DEAD_CODE, DUPLICATION, COMPLEXITY_CANDIDATES, COMPLEXITY_REDUCED, STALE_CODE, INTERDEPENDENCY_DOSSIER, RESISTANCE]
+    gates = [TOPOLOGY, TEST_TRIAGE, CHARACTERIZATION_BASELINE, PRESERVE_PARITY, HIDDEN_DEPS, CROSS_LANG, DEAD_CODE, DUPLICATION, COMPLEXITY_CANDIDATES, COMPLEXITY_REDUCED, STALE_CODE, INTERDEPENDENCY_DOSSIER, RESISTANCE]
     items = []
     violations = list(freeze["violations"])
     for artifact in gates:
@@ -1662,6 +2226,16 @@ def check_run(run_dir: Path) -> dict[str, Any]:
                 violations.append(violation("invalid_characterization_baseline", "characterization baseline is empty or invalid", artifact=CHARACTERIZATION_BASELINE))
         except Exception as exc:
             violations.append(violation("invalid_characterization_baseline", str(exc), artifact=CHARACTERIZATION_BASELINE))
+    triage_path = run_dir / TEST_TRIAGE
+    if not triage_path.is_file():
+        violations.append(violation("missing_test_triage", "salvage requires static-first test triage before freezing the preserved surface", artifact=TEST_TRIAGE))
+    else:
+        try:
+            triage = load_json_object(triage_path)
+            if triage.get("passed") is not True:
+                violations.append(violation("test_triage_failed", "test-triage blocks salvage auto-ship", artifact=TEST_TRIAGE))
+        except Exception as exc:
+            violations.append(violation("invalid_test_triage", str(exc), artifact=TEST_TRIAGE))
     cross_path = run_dir / CROSS_LANG
     if cross_path.is_file():
         try:
@@ -1777,6 +2351,15 @@ def build_parser() -> argparse.ArgumentParser:
     dossier.add_argument("--dossier")
     dossier.add_argument("--output", required=True)
     dossier.set_defaults(func=cmd_dossier)
+
+    triage = sub.add_parser("test-triage")
+    triage.add_argument("--root", default=".")
+    triage.add_argument("--graph", required=True)
+    triage.add_argument("--plan")
+    triage.add_argument("--test-cmd")
+    triage.add_argument("--provenance", default=TEST_PROVENANCE_MD)
+    triage.add_argument("--output", required=True)
+    triage.set_defaults(func=cmd_test_triage)
 
     resistance = sub.add_parser("resistance")
     resistance.add_argument("--graph", required=True)

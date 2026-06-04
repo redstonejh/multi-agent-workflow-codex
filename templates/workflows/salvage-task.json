@@ -22,6 +22,8 @@
     "artifacts/interaction-baseline.json",
     "artifacts/characterization-baseline.json",
     "artifacts/code-graph.json",
+    "artifacts/test-triage.json",
+    "artifacts/test-provenance.md",
     "artifacts/hidden-deps.json",
     "artifacts/cross-lang-couplings.json",
     "artifacts/dead-code.json",
@@ -38,10 +40,11 @@
     "artifacts/critic-review.md",
     "artifacts/acceptance-result.json"
   ],
-  "acceptance_gates": ["topology-detected", "preserved-surface-frozen", "pre-gut-characterization-captured", "preserved-surface-parity", "hidden-dependencies-documented-and-tested", "cross-language-couplings-documented-tested-or-justified", "removed-code-proven-dead", "duplicate-logic-collapsed-and-rerouted", "complexity-candidates-detected-and-touched-candidates-reduced", "stale-legacy-code-removed-or-justified", "interdependency-dossier-documented-and-tested", "salvage-regression-resistance", "handoffs-valid"],
+  "acceptance_gates": ["topology-detected", "static-first-test-triage-complete", "preserved-test-contract-active-only", "legacy-tests-not-resurrected", "preserved-surface-frozen", "pre-gut-characterization-captured", "preserved-surface-parity", "hidden-dependencies-documented-and-tested", "cross-language-couplings-documented-tested-or-justified", "removed-code-proven-dead", "duplicate-logic-collapsed-and-rerouted", "complexity-candidates-detected-and-touched-candidates-reduced", "stale-legacy-code-removed-or-justified", "interdependency-dossier-documented-and-tested", "salvage-regression-resistance", "handoffs-valid"],
   "deterministic_checks": [
     {"name": "topology", "command": "python maw-tools/salvage_check.py topology <path> --output artifacts/topology.json"},
     {"name": "code-graph", "command": "maw code-graph <path> --lang auto --output artifacts/code-graph.json"},
+    {"name": "test-triage", "command": "python maw-tools/salvage_check.py test-triage --root <path> --graph artifacts/code-graph.json --plan artifacts/salvage-plan.md --test-cmd \"<active test command with {tests}>\" --provenance artifacts/test-provenance.md --output artifacts/test-triage.json"},
     {"name": "characterize", "command": "python maw-tools/salvage_check.py characterize <path> --root <path> --test-cmd \"<playwright baseline command>\" --interaction-artifact artifacts/interaction-baseline.json --output artifacts/characterization-baseline.json"},
     {"name": "preserved-surface-freeze", "command": "python -c \"import hashlib, pathlib; p=pathlib.Path('artifacts/preserved-surface.json'); pathlib.Path('artifacts/preserved-surface.sha256').write_text(hashlib.sha256(p.read_bytes()).hexdigest() + '\\n', encoding='utf-8')\""},
     {"name": "preserve-parity", "command": "python maw-tools/salvage_check.py preserve-parity --characterization-baseline artifacts/characterization-baseline.json --target <path> --test-cmd \"<electron e2e command>\" --interaction-artifact artifacts/interaction-current.json --preserved-surface artifacts/preserved-surface.json --run <run_dir> --output artifacts/preserve-parity.json"},

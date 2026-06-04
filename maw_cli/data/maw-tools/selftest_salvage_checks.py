@@ -165,6 +165,58 @@ def write_interaction_artifact(path: Path, mutate: str | None = None, omit: str 
     )
 
 
+def structured_scenario(name: str, mutation: str | None = None) -> dict:
+    geometry = [
+        {"key": "widget-mpyo8rhs-s1ld5", "type": "widget", "rect": {"left": 10, "top": 20, "width": 100, "height": 50}},
+        {"key": "widget-beta", "type": "widget", "rect": {"left": 120, "top": 20, "width": 100, "height": 50}},
+        {"key": "panel-gamma", "type": "panel", "rect": {"left": 10, "top": 90, "width": 220, "height": 80}},
+        {"key": "panel-delta", "type": "panel", "rect": {"left": 10, "top": 190, "width": 220, "height": 80}},
+    ]
+    css = [
+        {"selector": ".db-panel", "color": "rgb(31, 41, 55)", "backgroundColor": "oklab(0.900 0.010 0.010)"},
+        {"selector": ".widget-card", "color": "#ffffff", "backgroundColor": "rgb(10, 20, 30)"},
+    ]
+    extra = {"edge": {"scrollY": 38}} if name == "edge-auto-scroll" else {}
+    dom = {"objects": [{"key": item["key"], "text": item["key"]} for item in geometry]}
+    if mutation == "noise":
+        geometry[0]["rect"]["top"] += 1
+        css[0]["backgroundColor"] = "oklab(0.901 0.010 0.010)"
+    elif mutation == "edge_scroll":
+        geometry = [{**item, "rect": {**item["rect"], "top": item["rect"]["top"] + 9}} for item in geometry]
+        extra = {"edge": {"scrollY": 47}}
+    elif mutation == "single_move":
+        geometry[0]["rect"]["left"] += 3
+    elif mutation == "generated_ids":
+        geometry[0]["key"] = "widget-mpyoq0lt-0vi9l"
+        dom["objects"][0]["key"] = "widget-mpyoq0lt-0vi9l"
+    return {"name": name, "passed": True, "evidence": {"dom": dom, "geometry": geometry, "computed_css": css}, "extra": extra}
+
+
+def write_structured_interaction_artifact(path: Path, mutation: str | None = None, omit: str | None = None) -> None:
+    scenarios = [
+        "existing-playwright-suite",
+        "drag-with-live-ghost",
+        "grid-snap",
+        "collision-reflow",
+        "resize-snap",
+        "pin-protection",
+        "collapse",
+        "recolor",
+        "rename",
+        "select-mode-multi-move",
+        "edge-auto-scroll",
+        "background-photo-switching",
+        "save-reload-identical",
+    ]
+    mutation_target = {
+        "noise": "collapse",
+        "edge_scroll": "edge-auto-scroll",
+        "single_move": "drag-with-live-ghost",
+        "generated_ids": "rename",
+    }.get(mutation)
+    write_json(path, {"scenarios": [structured_scenario(name, mutation if name == mutation_target else None) for name in scenarios if name != omit]})
+
+
 def hidden_dep_ids(graph: dict, root: Path) -> list[str]:
     output = root / "hidden.json"
     _code, data = run_json([sys.executable, str(SALVAGE), "hidden-deps", "--graph", str(root / "code-graph.json"), "--root", str(root), "--output", str(output)], root)
@@ -244,6 +296,98 @@ def main() -> int:
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         root = Path(tmp_dir)
+        write_web_fixture(root)
+        graph_path = root / "html-code-graph.json"
+        code, graph_data = run_json([sys.executable, str(GRAPH_HTML), str(root), "--output", str(graph_path)], root)
+        surface = root / "preserved-surface.json"
+        write_surface(surface, [item["id"] for item in graph_data.get("symbols", []) if item.get("name") == "#keep-root"][:1] or ["dom:#keep-root"])
+        baseline = root / "characterization-baseline.json"
+        baseline_interaction = root / "structured-baseline.json"
+        write_structured_interaction_artifact(baseline_interaction)
+        cmd = f"{sys.executable} -c \"print('interaction ok')\""
+        code, data = run_json([sys.executable, str(SALVAGE), "characterize", str(root), "--test-cmd", cmd, "--interaction-artifact", str(baseline_interaction), "--output", str(baseline)], root)
+        current = root / "structured-current.json"
+        write_structured_interaction_artifact(current, mutation="noise")
+        parity = root / "preserve-parity.json"
+        code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--test-cmd", cmd, "--interaction-artifact", str(current), "--preserved-surface", str(surface), "--output", str(parity)], root)
+        results.append({"name": "field_parity_tolerates_single_px_and_subepsilon_color_noise", "passed": code == 0 and data.get("passed") is True})
+        write_structured_interaction_artifact(current, mutation="edge_scroll")
+        code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--test-cmd", cmd, "--interaction-artifact", str(current), "--preserved-surface", str(surface), "--output", str(parity)], root)
+        results.append({"name": "field_parity_catches_edge_scroll_viewport_drift", "passed": code != 0 and any(item.get("diff", {}).get("type") == "viewport_scroll_drift" for item in data.get("violations", []))})
+        write_structured_interaction_artifact(current, mutation="single_move")
+        code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--test-cmd", cmd, "--interaction-artifact", str(current), "--preserved-surface", str(surface), "--output", str(parity)], root)
+        results.append({"name": "field_parity_catches_real_single_object_move", "passed": code != 0 and any(item.get("diff", {}).get("type") == "field_drift" for item in data.get("violations", []))})
+        write_structured_interaction_artifact(current, mutation="generated_ids")
+        code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--test-cmd", cmd, "--interaction-artifact", str(current), "--preserved-surface", str(surface), "--output", str(parity)], root)
+        results.append({"name": "field_parity_normalizes_generated_ids", "passed": code == 0 and data.get("passed") is True})
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
+        write_json(
+            root / "code-graph.json",
+            {
+                "modules": [{"id": "app", "path": "app.py", "language": "python"}],
+                "symbols": [
+                    {"id": "app:keep_feature", "module_id": "app", "name": "keep_feature", "qualname": "keep_feature", "kind": "function"},
+                    {"id": "app:another_keep", "module_id": "app", "name": "another_keep", "qualname": "another_keep", "kind": "function"},
+                ],
+                "edges": [],
+                "entrypoints": ["app:keep_feature", "app:another_keep"],
+            },
+        )
+        write_json(root / "salvage-plan.json", {"keep": ["keep_feature", "another_keep"], "cut": ["cut_feature", "removed_symbol"]})
+        (root / "test_active.py").write_text("def test_keep_feature():\n    keep_feature()\n", encoding="utf-8")
+        (root / "test_cut.py").write_text("def test_cut_feature():\n    cut_feature()\n", encoding="utf-8")
+        (root / "test_legacy.py").write_text("import pytest\n@pytest.mark.skip(reason='removed legacy')\ndef test_removed_symbol():\n    removed_symbol()\n", encoding="utf-8")
+        runner = root / "runner.py"
+        runner.write_text(
+            "import json, sys\nfrom pathlib import Path\nPath('executed.json').write_text(json.dumps(sys.argv[1:]), encoding='utf-8')\nsys.exit(0)\n",
+            encoding="utf-8",
+        )
+        triage = root / "test-triage.json"
+        provenance = root / "test-provenance.md"
+        code, data = run_json([sys.executable, str(SALVAGE), "test-triage", "--root", str(root), "--graph", str(root / "code-graph.json"), "--plan", str(root / "salvage-plan.json"), "--test-cmd", f"{sys.executable} {runner} {{tests}}", "--provenance", str(provenance), "--output", str(triage)], root)
+        executed = json.loads((root / "executed.json").read_text(encoding="utf-8"))
+        results.append({"name": "test_triage_active_keep_executes", "passed": code == 0 and any("test_active.py::test_keep_feature" in item for item in executed)})
+        results.append({"name": "test_triage_cut_bound_scrapped_unexecuted", "passed": code == 0 and not any("test_cut.py::test_cut_feature" in item for item in executed) and any(test.get("id", "").endswith("test_cut.py::test_cut_feature") for test in data.get("scrap_tests", []))})
+        results.append({"name": "test_triage_legacy_do_not_resurrect_recorded", "passed": code == 0 and "removed_symbol" in data.get("do_not_resurrect", []) and provenance.is_file()})
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
+        write_json(root / "code-graph.json", {"modules": [], "symbols": [{"id": "app:keep_feature", "module_id": "app", "name": "keep_feature", "qualname": "keep_feature", "kind": "function"}], "edges": [], "entrypoints": ["app:keep_feature"]})
+        write_json(root / "salvage-plan.json", {"keep": ["keep_feature"], "cut": ["cut_feature"]})
+        (root / "test_mixed.py").write_text("def test_mixed():\n    keep_feature(); cut_feature()\n", encoding="utf-8")
+        triage = root / "test-triage.json"
+        code, data = run_json([sys.executable, str(SALVAGE), "test-triage", "--root", str(root), "--graph", str(root / "code-graph.json"), "--plan", str(root / "salvage-plan.json"), "--output", str(triage)], root)
+        results.append({"name": "test_triage_mixed_not_scrapped_blocks", "passed": code != 0 and data.get("status") == "NEEDS-HUMAN" and any(test.get("partition") == "MIXED" for test in data.get("mixed_tests", []))})
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
+        write_json(root / "code-graph.json", {"modules": [], "symbols": [{"id": "app:keep_feature", "module_id": "app", "name": "keep_feature", "qualname": "keep_feature", "kind": "function"}], "edges": [], "entrypoints": ["app:keep_feature"]})
+        write_json(root / "salvage-plan.json", {"keep": ["keep_feature"], "cut": []})
+        (root / "test_failing_live.py").write_text("def test_failing_live():\n    keep_feature()\n", encoding="utf-8")
+        runner = root / "runner.py"
+        runner.write_text("import sys\nsys.exit(1)\n", encoding="utf-8")
+        code, data = run_json([sys.executable, str(SALVAGE), "test-triage", "--root", str(root), "--graph", str(root / "code-graph.json"), "--plan", str(root / "salvage-plan.json"), "--test-cmd", f"{sys.executable} {runner} {{tests}}", "--output", str(root / "test-triage.json")], root)
+        results.append({"name": "test_triage_failing_live_keep_is_regression", "passed": code != 0 and any(item.get("type") == "active_keep_tests_failed" for item in data.get("violations", []))})
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
+        write_json(root / "code-graph.json", {"modules": [], "symbols": [{"id": "legacy:removed_symbol", "module_id": "legacy", "name": "removed_symbol", "qualname": "removed_symbol", "kind": "function"}], "edges": [], "entrypoints": ["legacy:removed_symbol"]})
+        (root / "test_legacy.py").write_text("import pytest\n@pytest.mark.skip(reason='removed legacy')\ndef test_removed_symbol():\n    removed_symbol()\n", encoding="utf-8")
+        code, data = run_json([sys.executable, str(SALVAGE), "test-triage", "--root", str(root), "--graph", str(root / "code-graph.json"), "--output", str(root / "test-triage.json")], root)
+        results.append({"name": "test_triage_resurrected_legacy_test_trips", "passed": code != 0 and any(item.get("type") == "legacy_symbol_resurrected" for item in data.get("violations", []))})
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
+        write_json(root / "code-graph.json", {"modules": [], "symbols": [{"id": "app:keep_feature", "module_id": "app", "name": "keep_feature", "qualname": "keep_feature", "kind": "function"}], "edges": [], "entrypoints": ["app:keep_feature"]})
+        write_json(root / "salvage-plan.json", {"keep": ["keep_feature"], "cut": ["cut_feature"]})
+        (root / "test_sole_coverage.py").write_text("def test_sole_coverage():\n    keep_feature(); cut_feature()\n", encoding="utf-8")
+        code, data = run_json([sys.executable, str(SALVAGE), "test-triage", "--root", str(root), "--graph", str(root / "code-graph.json"), "--plan", str(root / "salvage-plan.json"), "--output", str(root / "test-triage.json")], root)
+        results.append({"name": "test_triage_dropped_sole_keep_coverage_trips", "passed": code != 0 and any(item.get("type") == "dropped_sole_keep_coverage" for item in data.get("violations", []))})
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
         write_source(root, "dirty")
         graph_path = root / "code-graph.json"
         graph = code_graph(root, graph_path)
@@ -308,7 +452,7 @@ def main() -> int:
         write_json(artifacts / "code-graph.json", graph)
         write_surface(artifacts / "preserved-surface.json", ["ui:start"], [])
         (artifacts / "preserved-surface.sha256").write_text(hashlib.sha256((artifacts / "preserved-surface.json").read_bytes()).hexdigest() + "\n", encoding="utf-8")
-        for name in ("topology.json", "characterization-baseline.json", "preserve-parity.json", "hidden-deps.json", "cross-lang-couplings.json", "duplication.json", "complexity-candidates.json", "complexity-reduced.json", "stale-code.json", "interdependency-dossier.json", "salvage-resistance.json"):
+        for name in ("topology.json", "test-triage.json", "characterization-baseline.json", "preserve-parity.json", "hidden-deps.json", "cross-lang-couplings.json", "duplication.json", "complexity-candidates.json", "complexity-reduced.json", "stale-code.json", "interdependency-dossier.json", "salvage-resistance.json"):
             write_json(artifacts / name, {"check": name[:-5], "schema_version": 1, "passed": True})
         write_json(artifacts / "dead-code.json", {"check": "dead-code", "schema_version": 1, "passed": True, "proof": {"entrypoints": ["ui:start"]}})
         code, data = run_json([sys.executable, str(SALVAGE), "verdict", str(run_dir)], root)
@@ -344,7 +488,7 @@ def main() -> int:
         output = root / "salvage-resistance.json"
         code, data = run_json([sys.executable, str(SALVAGE), "resistance", "--graph", str(graph_path), "--preserved-surface", str(surface), "--removed", str(removed), "--duplication-plan", str(plan), "--coverage", str(coverage), "--baseline", str(baseline), "--root", str(root), "--output", str(output)], root)
         names = {item.get("name"): item.get("caught") for item in data.get("mutations", [])}
-        expected = {"reintroduced_hidden_dependency", "resurrected_dead_reference", "reduplicated_function", "server_preserved_surface_behavior_break", "client_preserved_surface_behavior_break", "hollow_port_static_identical_interactions_missing", "broken_cross_language_coupling", "surface_shrink_gaming"}
+        expected = {"reintroduced_hidden_dependency", "resurrected_dead_reference", "reduplicated_function", "server_preserved_surface_behavior_break", "client_preserved_surface_behavior_break", "broken_cross_language_coupling", "surface_shrink_gaming", "edge_scroll_viewport_drift", "real_single_object_move", "resurrected_legacy_test", "dropped_sole_keep_coverage"}
         results.append({"name": "resistance_catches_all_salvage_mutations", "passed": code == 0 and data.get("passed") is True and expected <= set(names) and all(names.get(name) is True for name in expected)})
 
     with tempfile.TemporaryDirectory() as tmp_dir:

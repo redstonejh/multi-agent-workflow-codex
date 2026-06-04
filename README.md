@@ -42,11 +42,14 @@ For system-level cleanup where selected systems must stay intact, use:
 ```bash
 maw start salvage-task "gut the legacy billing code while preserving invoice exports"
 maw code-graph <path> --lang auto --output artifacts/code-graph.json
+python maw-tools/salvage_check.py test-triage --root <path> --graph artifacts/code-graph.json --plan artifacts/salvage-plan.md --test-cmd "<active test command with {tests}>" --output artifacts/test-triage.json
 maw characterize <path-or-url> --output artifacts/characterization-baseline.json
 maw salvage-check runs/<run_id>
 ```
 
-`salvage-task` freezes `artifacts/preserved-surface.json` and `artifacts/preserved-surface.sha256` before iteration 0. It detects topology, captures `artifacts/characterization-baseline.json`, and blocks shipping unless preserved behavior has zero drift, hidden dependencies have `MAW-DEP[id]` annotations plus test coverage, cross-language coupling candidates are documented/tested or explicitly justified, removed code is unreachable from the frozen surface, duplicate logic has one rerouted survivor, and planted salvage mutations trip the gates. `maw-tools/acceptance_check.py` and `maw-tools/verdict_check.py` independently force `NO-SHIP` when the preserved-surface hash changes, the surface shrinks, graph entrypoints differ from the frozen set, dead-code proof uses a different entrypoint set, parity lacks a pre-gut baseline, or a coupling dismissal lacks justification.
+`salvage-task` runs static-first test triage before freeze, then freezes `artifacts/preserved-surface.json` and `artifacts/preserved-surface.sha256` before iteration 0. It detects topology, captures `artifacts/characterization-baseline.json`, and blocks shipping unless only ACTIVE keep-bound tests define the preserved test contract, LEGACY tests stay on the do-not-resurrect list, preserved behavior has field-level zero drift beyond principled tolerance, hidden dependencies have `MAW-DEP[id]` annotations plus test coverage, cross-language coupling candidates are documented/tested or explicitly justified, removed code is unreachable from the frozen surface, duplicate logic has one rerouted survivor, and planted salvage mutations trip the gates. `maw-tools/acceptance_check.py` and `maw-tools/verdict_check.py` independently force `NO-SHIP` when the preserved-surface hash changes, the surface shrinks, graph entrypoints differ from the frozen set, dead-code proof uses a different entrypoint set, parity lacks a pre-gut baseline, interaction evidence drifts beyond field tolerance, legacy symbols are resurrected, or a coupling dismissal lacks justification.
+
+Preserve-parity compares settled interaction evidence at the field level. Geometry differences up to 1px and sub-epsilon color differences are treated as noise, but consistent multi-object viewport or scroll offsets, hollow ports with missing handlers, and real object moves still fail with per-field diffs.
 
 Two-tier guarantee: within-language structural gates use parsers where available (`ast`, `html.parser`, CSS extraction in `maw-tools/web_checks.py`, and the optional JS/TS adapter). Cross-language couplings are heuristic candidates from routes, selectors, assets, template variables, and API strings; each candidate must be documented/tested or justified, while characterization replay remains the primary behavioral safety net.
 
@@ -195,6 +198,7 @@ maw dependency-audit <path> [--annotate] [--dry-run] [--fail-on low|medium|high]
 maw code-graph <path> [--lang auto|py|js|ts|html|css] --output artifacts/code-graph.json
 maw characterize <path-or-url> [--browser] --output artifacts/characterization-baseline.json
 maw salvage-check runs/<run_id> [subcommand passthrough]
+python maw-tools/salvage_check.py test-triage --root <path> --graph artifacts/code-graph.json --plan artifacts/salvage-plan.md --test-cmd "<active test command with {tests}>" --output artifacts/test-triage.json
 maw ml-auto <csv-or-parquet> --goal "<goal>"
 maw wilds-benchmark <manifest.json> <predictions.json> [--output artifacts/wilds-harness-result.json]
 maw wilds-export --wilds-dataset <name> --split <split> [--limit N] --output examples.jsonl [--model-cmd "... {input} {output}" --score-output score.json]
@@ -224,7 +228,7 @@ Template JSON files live in `templates/workflows/`; installed package data mirro
 
 - `standard-software-task`: core software task scaffold; required artifacts include test result, worker output, critic review, and acceptance result.
 - `refactor-task`: behavior baseline/diff, coverage, API surface, structure, complexity, perf budget, resistance, and baseline tests.
-- `salvage-task`: topology, frozen preserved surface, characterization baseline, code graph, hidden dependency proof, cross-language coupling proof, dead-code proof, duplicate collapse, parity, salvage resistance, and aggregate salvage result.
+- `salvage-task`: topology, static-first test triage, frozen preserved surface, characterization baseline, code graph, hidden dependency proof, cross-language coupling proof, dead-code proof, duplicate collapse, field-level parity, salvage resistance, and aggregate salvage result.
 - `bug-investigation`: dependency map/risk audit, reproduction notes, regression test, root-cause analysis, and fix verification.
 - `frontend-ui-task`: local HTML/CSS checks for contrast, accessibility, budgets, links, markup, style extraction, change verification, tokens, visual verification, and UX/critic artifacts.
 - `ml-training-task`: training/evaluation commands plus ML validator artifacts, split/config/log/report artifacts, and acceptance.
@@ -259,7 +263,7 @@ The hard example fixtures live in `examples/ml_problems/hard_examples/`.
 - `maw-tools/behavior_baseline.py`: refactor behavior manifest/diff and related refactor checks.
 - `maw-tools/code_graph_py.py`: stdlib Python producer for `schemas/code-graph.json`.
 - `maw-tools/code_graph_html.py`: stdlib HTML/CSS producer for `schemas/code-graph.json`.
-- `maw-tools/salvage_check.py`: hard salvage gates for topology, characterization parity, hidden dependencies, cross-language couplings, dead code, duplication, resistance, and preserved-surface freeze.
+- `maw-tools/salvage_check.py`: hard salvage gates for topology, static-first test triage, field-level characterization parity, hidden dependencies, cross-language couplings, dead code, duplication, resistance, and preserved-surface freeze.
 - `maw-tools/validate_handoffs.py`: checks generated handoffs contain all required sections and no placeholders.
 - `maw-tools/validate_workflow_template.py`: validates template schema and optional run conformance to a declared template.
 - `maw-tools/run_report.py`: writes `artifacts/run-summary.md` with task type, caps, role pipeline, deterministic gate status, required evidence status, and final verdict.
