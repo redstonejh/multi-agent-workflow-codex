@@ -16,6 +16,7 @@ SELFTEST_WEB = TOOLS / "selftest_web_checks.py"
 SELFTEST_ML = TOOLS / "selftest_ml_checks.py"
 SELFTEST_REFACTOR = TOOLS / "selftest_refactor_checks.py"
 SELFTEST_SALVAGE = TOOLS / "selftest_salvage_checks.py"
+SELFTEST_ARCHIVE = TOOLS / "selftest_archive_run.py"
 SELFTEST_PLAN = TOOLS / "selftest_plan_check.py"
 VENDORED_DATA_CHECK = TOOLS / "check_vendored_data.py"
 README_CHECK = TOOLS / "readme_check.py"
@@ -115,6 +116,7 @@ def main() -> int:
         ("ml_checks", [sys.executable, str(SELFTEST_ML)]),
         ("refactor_checks", [sys.executable, str(SELFTEST_REFACTOR)]),
         ("salvage_checks", [sys.executable, str(SELFTEST_SALVAGE)]),
+        ("archive_run", [sys.executable, str(SELFTEST_ARCHIVE)]),
         ("plan_check", [sys.executable, str(SELFTEST_PLAN)]),
         ("checklists", [sys.executable, str(CHECKLIST_CHECK), "--root", str(REPO_ROOT)]),
         ("readme", [sys.executable, str(README_CHECK)]),

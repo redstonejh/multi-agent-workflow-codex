@@ -287,6 +287,51 @@ def write_archive_root_index(archive_root: Path) -> None:
     (archive_root / "incident-index.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def write_archive_root_manifest(archive_root: Path) -> Path:
+    capture_timestamp = utc_now()
+    runs: list[dict[str, Any]] = []
+    for manifest_path in sorted(archive_root.glob("*/manifest.json")):
+        manifest = load_json(manifest_path)
+        if not manifest:
+            continue
+        run_dir = manifest_path.parent
+        index_path = run_dir / "incident-index.md"
+        run_entry = {
+            "run_id": manifest.get("run_id", run_dir.name),
+            "archive_path": run_dir.relative_to(archive_root).as_posix(),
+            "manifest": {
+                "path": manifest_path.relative_to(archive_root).as_posix(),
+                "size": manifest_path.stat().st_size,
+                "sha256": file_sha256(manifest_path),
+            },
+            "incident_index": {
+                "path": index_path.relative_to(archive_root).as_posix(),
+                "size": index_path.stat().st_size if index_path.is_file() else 0,
+                "sha256": file_sha256(index_path) if index_path.is_file() else None,
+            },
+            "executor_commits": manifest.get("executor_commits", {}),
+            "files_archived": len(manifest.get("files", [])),
+            "excluded_stubs": len(manifest.get("excluded_stubs", [])),
+        }
+        runs.append(run_entry)
+    root_index = archive_root / "incident-index.md"
+    root_manifest = {
+        "schema_version": 1,
+        "capture_timestamp": capture_timestamp,
+        "archive_root": str(archive_root),
+        "run_count": len(runs),
+        "runs": runs,
+        "incident_index": {
+            "path": root_index.name,
+            "size": root_index.stat().st_size if root_index.is_file() else 0,
+            "sha256": file_sha256(root_index) if root_index.is_file() else None,
+        },
+    }
+    path = archive_root / "manifest.json"
+    path.write_text(json.dumps(root_manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
 def archive_run(
     run_dir: Path,
     archive_root: Path | None = None,
@@ -354,6 +399,7 @@ def archive_run(
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     write_incident_index(archive_dir, manifest)
     write_archive_root_index(archive_root)
+    root_manifest_path = write_archive_root_manifest(archive_root)
     return {
         "check": "research_archive_export",
         "schema_version": 1,
@@ -361,6 +407,7 @@ def archive_run(
         "run": str(run_dir),
         "archive_dir": str(archive_dir),
         "manifest": str(manifest_path),
+        "archive_root_manifest": str(root_manifest_path),
         "files_archived": len(manifest["files"]),
         "hash_only_stubs": len(manifest["excluded_stubs"]),
         "capture_timestamp": capture_timestamp,
