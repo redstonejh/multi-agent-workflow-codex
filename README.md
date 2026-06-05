@@ -59,6 +59,8 @@ Dependency boundary: `maw-tools/code_graph_py.py`, `maw-tools/code_graph_html.py
 
 Reusable design packs live under `packs/`. `packs/liquid-glass/` ships the extracted liquid-glass design language as project-agnostic kit data: authoritative tokens, `.glass` / `.glass-strong` / `.glass-control` / `.glass-popover` classes, background compensation helpers, and an optional `initLiquidGlass({ photoSelector, surfaceSelector })` WebGL enhancement. The CSS glass classes are the faithful baseline; WebGL refraction is an opt-in enhancement outside the deterministic spine.
 
+`packs/restrained-acrylic-utility/` captures the CoreSetup desktop utility style for native/Electron apps: compact task-first layout, dense picker rows, native acrylic/vibrancy as the only blur layer, translucent component tints, one primary action, and no dashboard/hero/glow treatment. It is a reference pack for agents, not an automatic `apply-design` target.
+
 Apply the pack to a web/HTML target with:
 
 ```bash

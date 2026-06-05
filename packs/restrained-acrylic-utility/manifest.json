@@ -1,0 +1,62 @@
+{
+  "id": "restrained-acrylic-utility",
+  "version": "1.0.0",
+  "description": "Reference design language for compact native desktop utilities using restrained acrylic surfaces, dense picker rows, and no component-level blur stacking.",
+  "files": [
+    "STYLE.md",
+    "tokens.css"
+  ],
+  "api": {
+    "type": "reference-pack",
+    "target_surfaces": [
+      "Electron desktop apps",
+      "native utility dialogs",
+      "installer pickers",
+      "package-manager style lists"
+    ],
+    "classes": [
+      "app-window",
+      "search-input",
+      "app-row",
+      "app-status",
+      "action-bar",
+      "button"
+    ]
+  },
+  "tokens": [
+    "--acrylic-panel",
+    "--acrylic-button",
+    "--acrylic-search-surface",
+    "--acrylic-secondary-surface",
+    "--acrylic-option-hover",
+    "--acrylic-button-hover",
+    "--acrylic-selected",
+    "--acrylic-accent",
+    "--acrylic-accent-action",
+    "--acrylic-text",
+    "--acrylic-muted-text",
+    "--acrylic-border",
+    "--acrylic-highlight",
+    "--acrylic-status-installed",
+    "--acrylic-status-update"
+  ],
+  "rules": [
+    "Use native OS acrylic/vibrancy for blur; do not add CSS backdrop-filter to controls.",
+    "Prefer dense rows over dashboard cards for task-completion utilities.",
+    "Keep one primary action; secondary and tertiary actions must remain visually quieter.",
+    "Do not use hero headers, marketing copy, glowing buttons, neon accents, or decorative glass borders.",
+    "Use compositing math when matching tones across layered translucent surfaces."
+  ],
+  "roles": [],
+  "core_roles": [],
+  "task_types": [],
+  "task_type_aliases": {},
+  "role_aliases": {},
+  "caps": {
+    "max_agents": 5,
+    "max_parallel": 3
+  },
+  "required_roles": [],
+  "required_evidence": [],
+  "task_type_caps": {}
+}

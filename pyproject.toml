@@ -25,7 +25,7 @@ maw_cli = [
   "py.typed",
   "vendor/*.js",
   "data/maw-tools/*.py",
-  "data/packs/*/manifest.json",
+  "data/packs/**/*.*",
   "data/schemas/*.json",
   "data/templates/workflows/*.json",
   "data/examples/ml_problems/*.py",

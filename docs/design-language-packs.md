@@ -37,3 +37,31 @@ initLiquidGlass({ photoSelector: "[data-liquid-glass-photo]", surfaceSelector: "
 
 Frontend MAW runs can select this optional step when the target is a web/HTML
 project. Non-web targets should return `NEEDS-HUMAN` instead of guessing.
+
+## Restrained Acrylic Utility
+
+`packs/restrained-acrylic-utility/` captures the CoreSetup desktop utility
+style. It is a reference pack for native/Electron utilities, not an automatic
+HTML injection pack.
+
+Use it when building:
+
+- desktop installers
+- package pickers
+- setup utilities
+- small internal tools where the user completes one task quickly
+
+The style is intentionally restrained:
+
+- native OS acrylic/vibrancy owns blur
+- component surfaces use translucent tints only
+- no CSS `backdrop-filter` on buttons, search, rows, or footer
+- dense list rows instead of cards
+- search first, row list second, sticky footer actions last
+- one primary action, quieter secondary actions, text-like tertiary actions
+- no hero headers, dashboard panels, decorative glow, neon accents, or tutorial sidebars
+
+The pack includes `STYLE.md` for the full deconstruction and `tokens.css` for
+the CoreSetup-derived surface palette. Because it targets native desktop apps,
+`maw apply-design restrained-acrylic-utility ...` should return `NEEDS-HUMAN`
+until a native-app-specific applier exists.

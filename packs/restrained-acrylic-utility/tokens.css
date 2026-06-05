@@ -1,0 +1,17 @@
+:root {
+  --acrylic-panel: rgba(26, 34, 51, .66);
+  --acrylic-button: rgba(32, 42, 61, .34);
+  --acrylic-search-surface: rgba(39, 49, 70, .512);
+  --acrylic-secondary-surface: rgba(52, 64, 88, .26);
+  --acrylic-option-hover: rgba(82, 96, 125, .20);
+  --acrylic-button-hover: rgba(36, 48, 71, .32);
+  --acrylic-selected: rgba(96, 165, 250, .10);
+  --acrylic-accent: #3b82f6;
+  --acrylic-accent-action: rgba(59, 130, 246, .72);
+  --acrylic-text: #f8fafc;
+  --acrylic-muted-text: #94a3b8;
+  --acrylic-border: rgba(148, 163, 184, .22);
+  --acrylic-highlight: rgba(255, 255, 255, .07);
+  --acrylic-status-installed: #a7f3d0;
+  --acrylic-status-update: #93c5fd;
+}

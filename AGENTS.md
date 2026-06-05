@@ -151,7 +151,13 @@ maw apply-design liquid-glass <target> --output artifacts/apply-design.json
 maw design-parity <target> --output artifacts/design-parity.json
 ```
 
+`packs/restrained-acrylic-utility/` is the canonical reference for compact
+native/Electron utility apps: native acrylic/vibrancy owns blur, component
+surfaces are translucent tints only, lists use dense rows rather than cards, and
+the footer holds the workflow actions. It is a reference pack, not an automatic
+web injector.
+
 `maw-tools/apply_design.py` and `maw-tools/design_parity.py` must remain Python
 standard-library-only. The optional `liquid-glass-webgl.js` file is pack data,
-not deterministic-tool logic. When a frontend run selects a design pack,
-acceptance should include `artifacts/design-parity.json`.
+not deterministic-tool logic. When a frontend run selects an applicable web
+design pack, acceptance should include `artifacts/design-parity.json`.
