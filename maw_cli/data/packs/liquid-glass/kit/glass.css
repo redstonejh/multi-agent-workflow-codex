@@ -1,0 +1,76 @@
+.glass,
+.glass-strong,
+.glass-control,
+.glass-popover {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, var(--liquid-glass-border-alpha));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, var(--liquid-glass-top-highlight-alpha)), transparent 34%),
+    color-mix(in srgb, var(--glass-surface) calc(var(--surface-glass-alpha) * 100%), transparent);
+  color: var(--ink);
+  box-shadow:
+    0 18px 42px rgba(15, 23, 42, var(--liquid-glass-drop-shadow-alpha)),
+    inset 0 1px 0 rgba(255, 255, 255, var(--liquid-glass-inner-highlight-alpha));
+  backdrop-filter: blur(var(--liquid-glass-backdrop-blur)) saturate(var(--liquid-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--liquid-glass-backdrop-blur)) saturate(var(--liquid-glass-saturate));
+}
+
+.glass::before,
+.glass-strong::before,
+.glass-control::before,
+.glass-popover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, var(--liquid-glass-shine-bg-alpha)), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, var(--liquid-glass-sheen-alpha)), transparent 48%);
+  filter: blur(var(--liquid-glass-shine-filter-blur)) brightness(var(--liquid-glass-shine-brightness));
+  opacity: var(--liquid-glass-shine-opacity);
+}
+
+.glass {
+  border-radius: var(--radius-lg);
+}
+
+.glass-strong {
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, calc(var(--liquid-glass-top-highlight-alpha) + .08)), transparent 34%),
+    color-mix(in srgb, var(--glass-surface-strong) 82%, transparent);
+  box-shadow:
+    0 22px 54px rgba(15, 23, 42, calc(var(--liquid-glass-drop-shadow-alpha) + .04)),
+    inset 0 1px 0 rgba(255, 255, 255, calc(var(--liquid-glass-inner-highlight-alpha) + .06));
+}
+
+.glass-control {
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, var(--liquid-glass-top-highlight-alpha)), transparent 42%),
+    color-mix(in srgb, var(--glass-surface-strong) 76%, transparent);
+  box-shadow:
+    0 8px 20px rgba(15, 23, 42, calc(var(--liquid-glass-drop-shadow-alpha) * .72)),
+    inset 0 1px 0 rgba(255, 255, 255, var(--liquid-glass-inner-highlight-alpha));
+}
+
+.glass-popover {
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--glass-surface-strong) 96%, transparent), color-mix(in srgb, var(--glass-surface) 86%, transparent)),
+    color-mix(in srgb, var(--surface-raised) 84%, transparent);
+  box-shadow:
+    0 24px 60px rgba(15, 23, 42, calc(var(--liquid-glass-drop-shadow-alpha) + .08)),
+    inset 0 1px 0 rgba(255, 255, 255, calc(var(--liquid-glass-inner-highlight-alpha) + .08));
+}
+
+body.has-photo-background .glass,
+body.has-photo-background .glass-strong,
+body.has-photo-background .glass-control,
+body.has-photo-background .glass-popover {
+  border-color: rgba(255, 255, 255, var(--liquid-glass-edge-alpha));
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, var(--liquid-glass-drop-shadow-alpha)),
+    inset 0 1px 0 rgba(255, 255, 255, var(--liquid-glass-inner-highlight-alpha));
+}

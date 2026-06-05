@@ -1,0 +1,2467 @@
+{
+  "kit_sha256": "aa85cbf6d3ac89a425257330ae4b2703cc49f93cae1e9a5f66ce38ca1f942282",
+  "pack": "liquid-glass",
+  "palettes": {
+    "black": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "blue-mist": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "blue-slate": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "charcoal": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "charcoal-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "cool-dark-steel": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "cool-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "cool-white": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "dark-blue-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "dark-frosted": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "dark-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "dark-steel": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "darker-soft-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "deep-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "deep-navy": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "deep-slate": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "default": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "desaturated-dark-blue": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "frosted-light": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "graphite": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "graphite-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "graphite-light": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "gunmetal": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "industrial-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "light-blue-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "medium-cool-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "medium-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "medium-soft-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "muted-blue-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "muted-midnight-blue": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "muted-navy": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "near-black": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "near-black-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "neutral-dim": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "neutral-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "pale-cool-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "pale-warm-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "slate": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "slate-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "soft-black": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "soft-charcoal": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "soft-cinema": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "soft-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "stone-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "stone-slate": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "very-pale-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "warm-grey": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "warm-near-black": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    },
+    "warm-white": {
+      ".glass": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .68) calc(0.6404 * 100%), transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 18px 42px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 42%), color-mix(in srgb, rgba(255, 255, 255, .84) 76%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 8px 20px rgba(15, 23, 42, calc(0.12 * .72)), inset 0 1px 0 rgba(255, 255, 255, 0.16)"
+      },
+      ".glass-control::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-popover": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, color-mix(in srgb, rgba(255, 255, 255, .84) 96%, transparent), color-mix(in srgb, rgba(255, 255, 255, .68) 86%, transparent)), color-mix(in srgb, #ffffff 84%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 24px 60px rgba(15, 23, 42, calc(0.12 + .08)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .08))"
+      },
+      ".glass-popover::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass-strong": {
+        "-webkit-backdrop-filter": "blur(6px) saturate(180%)",
+        "backdrop-filter": "blur(6px) saturate(180%)",
+        "background": "linear-gradient(180deg, rgba(255, 255, 255, calc(0.52 + .08)), transparent 34%), color-mix(in srgb, rgba(255, 255, 255, .84) 82%, transparent)",
+        "border": "1px solid rgba(255, 255, 255, 0.40)",
+        "box-shadow": "0 22px 54px rgba(15, 23, 42, calc(0.12 + .04)), inset 0 1px 0 rgba(255, 255, 255, calc(0.16 + .06))"
+      },
+      ".glass-strong::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      },
+      ".glass::before": {
+        "background": "linear-gradient(135deg, rgba(255, 255, 255, 0.07), transparent 42%), linear-gradient(180deg, rgba(255, 255, 255, 0.20), transparent 48%)",
+        "filter": "blur(1px) brightness(1.08)",
+        "opacity": "0.32"
+      }
+    }
+  },
+  "properties": [
+    "background",
+    "backdrop-filter",
+    "-webkit-backdrop-filter",
+    "border",
+    "border-color",
+    "box-shadow",
+    "filter",
+    "opacity"
+  ],
+  "schema_version": 1
+}

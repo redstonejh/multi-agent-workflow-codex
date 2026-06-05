@@ -1,0 +1,328 @@
+:root {
+  --bg: #edf2f8;
+  --bg-end: #f7faff;
+  /* Default values for default bright bg (luminance ≈ 0.78, darkness ≈ 0.22).
+     JS overwrites these dynamically when a background is applied. Formula:
+       whiteMixCompensation  = 0.70 + darkness × 0.22
+       saturationCompensation = min(1.10, 1.08 − max(0, darkness − 0.10) × 0.34)
+       surfaceGlassAlpha     = 0.68 − darkness × 0.18
+       exposureCompensation  = 0.24 − darkness × 0.22 */
+  --workspace-bg-luminance: 0.78;
+  --workspace-bg-darkness: 0.22;
+  --surface-exposure-compensation: 0.1916;
+  --surface-white-mix-compensation: 0.7484;
+  --surface-saturation-compensation: 1.0390;
+  --surface-glass-alpha: 0.6404;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-soft: #f2f6fb;
+  --glass-surface: rgba(255, 255, 255, .68);
+  --glass-surface-strong: rgba(255, 255, 255, .84);
+  --glass-border: rgba(190, 202, 220, .82);
+  --glass-highlight: rgba(255, 255, 255, .60);
+  --liquid-glass-bg-alpha: 0.10;
+  --liquid-glass-backdrop-blur: 6px;
+  --liquid-glass-saturate: 180%;
+  --liquid-glass-border-alpha: 0.40;
+  --liquid-glass-inner-highlight-alpha: 0.16;
+  --liquid-glass-shine-bg-alpha: 0.07;
+  --liquid-glass-shine-blur: 1px;
+  --liquid-glass-edge-alpha: 0.74;
+  --liquid-glass-shine-opacity: 0.32;
+  --liquid-glass-shine-filter-blur: 1px;
+  --liquid-glass-drop-shadow-alpha: 0.12;
+  --liquid-glass-shine-brightness: 1.08;
+  --liquid-glass-top-highlight-alpha: 0.52;
+  --liquid-glass-sheen-alpha: 0.20;
+  --field-bg: rgba(255, 255, 255, .82);
+  --field-border: rgba(196, 206, 221, .90);
+  --ink: #1f2937;
+  --ink-strong: #111827;
+  --muted: #64748b;
+  --muted-strong: #475569;
+  --line: #c4cedd;
+  --line-soft: #d8e0ec;
+  --blue: #2563eb;
+  --blue-hover: #1d4ed8;
+  --blue-soft: #eff6ff;
+  --red: #dc2626;
+  --red-soft: #fef2f2;
+  --amber: #d97706;
+  --amber-soft: #fffbeb;
+  --ok: #0f766e;
+  --ok-soft: #ecfdf5;
+  --green: #10b981;
+  --green-hover: #059669;
+  --green-soft: #ecfdf5;
+  --shadow-card: 0 2px 7px rgba(15, 23, 42, .045);
+  --shadow-soft: 0 2px 6px rgba(15, 23, 42, .04);
+  --shadow-glass: 0 18px 42px rgba(15, 23, 42, .10), inset 0 1px 0 var(--glass-highlight);
+  --shadow-control: 0 8px 20px rgba(15, 23, 42, .08), inset 0 1px 0 var(--glass-highlight);
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --motion-fast: .15s ease;
+  --motion-grid: .18s cubic-bezier(.2, .8, .2, 1);
+  --motion-popover: .18s ease;
+  --pressable-hover-transform: translateY(.75px);
+  --pressable-active-transform: translateY(1.5px);
+  --pressable-focus-transform: translateY(0);
+  --z-header: 1500;
+  --z-dropdown: 1501;
+  --z-popover: 1600;
+  --z-modal: 1700;
+  --z-object-control: 1450;
+  --z-object-popover: 1480;
+  --z-navbar-dropdown: 1650;
+  --z-menu-overlay: 2600;
+  --z-drag-ghost: 90;
+  --z-resize-handle: 121;
+}
+
+html {
+  --panel-hover-tint: #ffffff;
+  --panel-hover-inset: rgba(255, 255, 255, .22);
+}
+
+html[data-background="warm-white"] {
+  --bg: #f4efe8;
+  --bg-end: #fbf8f3;
+}
+
+html[data-background="cool-white"] {
+  --bg: #eef4fb;
+  --bg-end: #f8fbff;
+}
+
+html[data-background="soft-grey"] {
+  --bg: #edf0f4;
+  --bg-end: #f7f8fa;
+}
+
+html[data-background="cool-grey"] {
+  --bg: #d0d8e1;
+  --bg-end: #e6ebf1;
+}
+
+html[data-background="medium-cool-grey"] {
+  --bg: #bec6cf;
+  --bg-end: #d6dee7;
+}
+
+html[data-background="darker-soft-grey"] {
+  --bg: #b7bdc5;
+  --bg-end: #d2d7de;
+}
+
+html[data-background="warm-grey"] {
+  --bg: #ded8cf;
+  --bg-end: #f0ede7;
+}
+
+html[data-background="slate"] {
+  --bg: #bdc8d5;
+  --bg-end: #dbe3ec;
+}
+
+html[data-background="slate-grey"] {
+  --bg: #aeb8c5;
+  --bg-end: #cbd3dc;
+}
+
+html[data-background="graphite-light"] {
+  --bg: #b5bfca;
+  --bg-end: #d3dce6;
+}
+
+html[data-background="graphite-grey"] {
+  --bg: #a6adb7;
+  --bg-end: #c5ccd5;
+}
+
+html[data-background="light-blue-grey"] {
+  --bg: #e7eef6;
+  --bg-end: #f5f8fb;
+}
+
+html[data-background="muted-blue-grey"] {
+  --bg: #c6d4df;
+  --bg-end: #e1e9f0;
+}
+
+html[data-background="blue-slate"] {
+  --bg: #b4c2d0;
+  --bg-end: #d3dde7;
+}
+
+html[data-background="neutral-dim"] {
+  --bg: #c4c1ba;
+  --bg-end: #ddd9d2;
+}
+
+html[data-background="stone-slate"] {
+  --bg: #bcc5c8;
+  --bg-end: #d7dee1;
+}
+
+html[data-background="stone-grey"] {
+  --bg: #bab8b1;
+  --bg-end: #d4d1ca;
+}
+
+html[data-background="industrial-grey"] {
+  --bg: #aeb3b8;
+  --bg-end: #c9ced3;
+}
+
+html[data-background="blue-mist"] {
+  --bg: #eaf3fb;
+  --bg-end: #f8fbff;
+}
+
+html[data-background="frosted-light"] {
+  --bg: #edf2f8;
+  --bg-end: #f7faff;
+}
+
+html[data-background="very-pale-grey"] {
+  --bg: #f1f3f5;
+  --bg-end: #fafbfc;
+}
+
+html[data-background="pale-cool-grey"] {
+  --bg: #e4e9ef;
+  --bg-end: #f3f6f9;
+}
+
+html[data-background="pale-warm-grey"] {
+  --bg: #e8e5df;
+  --bg-end: #f6f4f0;
+}
+
+html[data-background="medium-soft-grey"] {
+  --bg: #c8ced5;
+  --bg-end: #e0e5ea;
+}
+
+html[data-background="medium-grey"] {
+  --bg: #9fa6ad;
+  --bg-end: #bdc3ca;
+}
+
+html[data-background="neutral-grey"] {
+  --bg: #8b929a;
+  --bg-end: #aeb4bb;
+}
+
+html[data-background="charcoal-grey"] {
+  --bg: #333941;
+  --bg-end: #4a515a;
+}
+
+html[data-background="deep-grey"] {
+  --bg: #1f2329;
+  --bg-end: #303640;
+}
+
+html[data-background="near-black-grey"] {
+  --bg: #0e1014;
+  --bg-end: #181b21;
+}
+
+html[data-background="black"] {
+  --bg: #030406;
+  --bg-end: #090b0f;
+}
+
+html[data-background="near-black"] {
+  --bg: #07080b;
+  --bg-end: #101218;
+}
+
+html[data-background="soft-black"] {
+  --bg: #05070d;
+  --bg-end: #0c111c;
+}
+
+html[data-background="warm-near-black"] {
+  --bg: #0d0b09;
+  --bg-end: #18130f;
+}
+
+html[data-background="charcoal"] {
+  --bg: #090f1c;
+  --bg-end: #101827;
+}
+
+html[data-background="soft-charcoal"] {
+  --bg: #0f141c;
+  --bg-end: #171f2a;
+}
+
+html[data-background="graphite"] {
+  --bg: #111827;
+  --bg-end: #182235;
+}
+
+html[data-background="gunmetal"] {
+  --bg: #11191f;
+  --bg-end: #1a252d;
+}
+
+html[data-background="dark-grey"] {
+  --bg: #181a1f;
+  --bg-end: #252830;
+}
+
+html[data-background="dark-blue-grey"] {
+  --bg: #101927;
+  --bg-end: #162436;
+}
+
+html[data-background="deep-navy"] {
+  --bg: #071225;
+  --bg-end: #0d1c34;
+}
+
+html[data-background="desaturated-dark-blue"] {
+  --bg: #101a2a;
+  --bg-end: #19263a;
+}
+
+html[data-background="muted-navy"] {
+  --bg: #0c1726;
+  --bg-end: #142236;
+}
+
+html[data-background="muted-midnight-blue"] {
+  --bg: #061127;
+  --bg-end: #0a1a36;
+}
+
+html[data-background="deep-slate"] {
+  --bg: #0d1621;
+  --bg-end: #172434;
+}
+
+html[data-background="cool-dark-steel"] {
+  --bg: #101820;
+  --bg-end: #1b2731;
+}
+
+html[data-background="dark-steel"] {
+  --bg: #121922;
+  --bg-end: #202a36;
+}
+
+html[data-background="soft-cinema"] {
+  --bg: #11131a;
+  --bg-end: #1d2029;
+}
+
+html[data-background="dark-frosted"] {
+  --bg: #0b1220;
+  --bg-end: #121d2f;
+}
+* {
+  box-sizing: border-box;
+}

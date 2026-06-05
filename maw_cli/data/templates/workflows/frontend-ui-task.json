@@ -43,6 +43,8 @@
     {"name": "style", "command": "uv run python maw-tools/web_checks.py style <css> --selector <selector> --property <property>"},
     {"name": "changed", "command": "uv run python maw-tools/web_checks.py changed --before <before.css> --after <after.css> --selector <selector> --property <property> --expected <value>"},
     {"name": "tokens", "command": "uv run python maw-tools/web_checks.py tokens --token-file <design-tokens.json> <css...>"},
+    {"name": "apply-design", "command": "maw apply-design liquid-glass <target> --output artifacts/apply-design.json"},
+    {"name": "design-parity", "command": "maw design-parity <target> --output artifacts/design-parity.json"},
     {"name": "handoffs", "command": "uv run python maw-tools/validate_handoffs.py <run_dir>"}
   ]
 }

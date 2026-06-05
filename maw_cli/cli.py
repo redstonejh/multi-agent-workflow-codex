@@ -16,8 +16,10 @@ if str(TOOLS) not in sys.path:
 
 import acceptance_check  # noqa: E402
 import archive_run  # noqa: E402
+import apply_design  # noqa: E402
 import code_graph_html  # noqa: E402
 import code_graph_py  # noqa: E402
+import design_parity  # noqa: E402
 import dependency_risk_audit  # noqa: E402
 import plan_check  # noqa: E402
 import run_report  # noqa: E402
@@ -256,6 +258,20 @@ def cmd_characterize(args: argparse.Namespace) -> int:
     return salvage_check.main(argv)
 
 
+def cmd_apply_design(args: argparse.Namespace) -> int:
+    argv = [args.pack, args.target, "--photo", args.photo, "--surface-class", args.surface_class]
+    if args.output:
+        argv.extend(["--output", args.output])
+    return apply_design.main(argv)
+
+
+def cmd_design_parity(args: argparse.Namespace) -> int:
+    argv = [args.target, "--reference", args.reference]
+    if args.output:
+        argv.extend(["--output", args.output])
+    return design_parity.main(argv)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Codex MAW command-line interface.")
     parser.add_argument("--root", default=str(ROOT), help="repository or installed data root")
@@ -339,6 +355,20 @@ def build_parser() -> argparse.ArgumentParser:
     characterize.add_argument("--browser", action="store_true", help="use optional Playwright client-DOM capture")
     characterize.add_argument("--output", required=True)
     characterize.set_defaults(func=cmd_characterize)
+
+    apply_design_cmd = sub.add_parser("apply-design", help="apply a reusable design-language pack to a web target")
+    apply_design_cmd.add_argument("pack")
+    apply_design_cmd.add_argument("target")
+    apply_design_cmd.add_argument("--photo", default="[data-liquid-glass-photo]")
+    apply_design_cmd.add_argument("--surface-class", default="glass")
+    apply_design_cmd.add_argument("--output")
+    apply_design_cmd.set_defaults(func=cmd_apply_design)
+
+    design_parity_cmd = sub.add_parser("design-parity", help="compare an adopted design pack against its frozen reference")
+    design_parity_cmd.add_argument("target")
+    design_parity_cmd.add_argument("--reference", default=str(ROOT / "packs" / "liquid-glass" / "reference" / "reference-render.json"))
+    design_parity_cmd.add_argument("--output")
+    design_parity_cmd.set_defaults(func=cmd_design_parity)
 
     ml_autopilot.add_parser(sub, ROOT)
     wilds_benchmark.add_parser(sub, ROOT)

@@ -1,0 +1,21 @@
+.glass-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.glass-pad {
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+.glass-button {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+
+.glass-button:hover,
+.glass-button:focus-visible {
+  transform: translateY(-1px);
+  outline: none;
+}

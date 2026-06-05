@@ -17,7 +17,7 @@ MIRRORS = (
     (ROOT / "examples" / "ml_problems", VENDORED_ROOT / "examples" / "ml_problems", ("*.py", "hard_examples/*.json")),
     (ROOT / "examples" / "salvage_js_ts", VENDORED_ROOT / "examples" / "salvage_js_ts", ("*.*",)),
     (ROOT / "examples" / "salvage_topologies", VENDORED_ROOT / "examples" / "salvage_topologies", ("**/*.*",)),
-    (ROOT / "packs", VENDORED_ROOT / "packs", ("*/manifest.json",)),
+    (ROOT / "packs", VENDORED_ROOT / "packs", ("**/*.*",)),
     (ROOT / "schemas", VENDORED_ROOT / "schemas", ("*.json",)),
 )
 

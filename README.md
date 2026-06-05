@@ -55,6 +55,21 @@ Two-tier guarantee: within-language structural gates use parsers where available
 
 Dependency boundary: `maw-tools/code_graph_py.py`, `maw-tools/code_graph_html.py`, CSS extraction in `maw-tools/web_checks.py`, characterization replay, and `maw-tools/salvage_check.py` stay standard-library-only and consume normalized JSON (`schemas/code-graph.json`, `schemas/characterization.json`). `maw_cli/code_graph_js.py` shells out to `maw_cli/vendor/code_graph_js.js` and may require Node plus the TypeScript compiler API. `maw_cli/capture_web.py` may require Playwright for client-rendered DOM capture via `maw characterize --browser`. If optional JS/TS/browser dependencies are unavailable, those adapters emit `NEEDS-HUMAN`; the hard salvage gates do not guess or silently downgrade.
 
+## Design-Language Packs
+
+Reusable design packs live under `packs/`. `packs/liquid-glass/` ships the extracted liquid-glass design language as project-agnostic kit data: authoritative tokens, `.glass` / `.glass-strong` / `.glass-control` / `.glass-popover` classes, background compensation helpers, and an optional `initLiquidGlass({ photoSelector, surfaceSelector })` WebGL enhancement. The CSS glass classes are the faithful baseline; WebGL refraction is an opt-in enhancement outside the deterministic spine.
+
+Apply the pack to a web/HTML target with:
+
+```bash
+maw apply-design liquid-glass <target> --output artifacts/apply-design.json
+maw design-parity <target> --output artifacts/design-parity.json
+```
+
+`maw apply-design` copies `packs/liquid-glass/kit/` into an assets/liquid-glass folder in the target project and idempotently wires `glass-kit.css`, `background.js`, and `liquid-glass-webgl.js` into entry HTML. Non-web targets return `NEEDS-HUMAN`.
+
+`maw design-parity` compares the adopted `.glass` family against `packs/liquid-glass/reference/reference-render.json`, the frozen computed-CSS oracle across every `data-background` palette. It fails on token drift, missing layers, or unloaded kit CSS. The resistance selftest perturbs `--liquid-glass-backdrop-blur` and must trip.
+
 For fixed-split WILDS-style benchmark harness work, use:
 
 ```bash
@@ -198,6 +213,8 @@ maw dependency-audit <path> [--annotate] [--dry-run] [--fail-on low|medium|high]
 maw code-graph <path> [--lang auto|py|js|ts|html|css] --output artifacts/code-graph.json
 maw characterize <path-or-url> [--browser] --output artifacts/characterization-baseline.json
 maw salvage-check runs/<run_id> [subcommand passthrough]
+maw apply-design liquid-glass <target> [--photo <selector>] [--surface-class glass]
+maw design-parity <target> [--output artifacts/design-parity.json]
 python maw-tools/salvage_check.py test-triage --root <path> --graph artifacts/code-graph.json --plan artifacts/salvage-plan.md --test-cmd "<active test command with {tests}>" --output artifacts/test-triage.json
 maw ml-auto <csv-or-parquet> --goal "<goal>"
 maw wilds-benchmark <manifest.json> <predictions.json> [--output artifacts/wilds-harness-result.json]
@@ -231,6 +248,7 @@ Template JSON files live in `templates/workflows/`; installed package data mirro
 - `salvage-task`: topology, static-first test triage, frozen preserved surface, characterization baseline, code graph, hidden dependency proof, cross-language coupling proof, dead-code proof, duplicate collapse, field-level parity, salvage resistance, and aggregate salvage result.
 - `bug-investigation`: dependency map/risk audit, reproduction notes, regression test, root-cause analysis, and fix verification.
 - `frontend-ui-task`: local HTML/CSS checks for contrast, accessibility, budgets, links, markup, style extraction, change verification, tokens, visual verification, and UX/critic artifacts.
+- `frontend-ui-task`: can optionally apply `packs/liquid-glass/` and require `artifacts/design-parity.json` when a run selects the liquid-glass design language.
 - `ml-training-task`: training/evaluation commands plus ML validator artifacts, split/config/log/report artifacts, and acceptance.
 - `ml-validation-task`: ML validator artifacts without the training-command/evaluation-command artifacts.
 - `wilds-benchmark-task`: fixed-split benchmark harness work with dependency mapping, parse-level artifact checks, and prediction-id alignment.

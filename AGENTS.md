@@ -136,3 +136,22 @@ from the frozen surface, dead-code proof uses a different entrypoint set, parity
 lacks a pre-gut characterization baseline, field-level interaction evidence
 drifts beyond tolerance, legacy do-not-resurrect symbols return, or a
 cross-language coupling is dismissed without a justification.
+
+## Design-Language Packs
+
+Reusable design-language packs live under `packs/` and are mirrored into
+`maw_cli/data/packs/`. `packs/liquid-glass/` is the canonical liquid-glass pack:
+`kit/` contains the CSS/JS data, `manifest.json` declares the public API and kit
+hash, and `reference/reference-render.json` is the frozen computed-CSS oracle.
+
+Use:
+
+```bash
+maw apply-design liquid-glass <target> --output artifacts/apply-design.json
+maw design-parity <target> --output artifacts/design-parity.json
+```
+
+`maw-tools/apply_design.py` and `maw-tools/design_parity.py` must remain Python
+standard-library-only. The optional `liquid-glass-webgl.js` file is pack data,
+not deterministic-tool logic. When a frontend run selects a design pack,
+acceptance should include `artifacts/design-parity.json`.
