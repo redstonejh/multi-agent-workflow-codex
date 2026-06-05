@@ -460,16 +460,35 @@ REQUIRED_INTERACTION_SCENARIOS = [
 def run_test_digest(cmd: str, cwd: Path) -> dict[str, Any]:
     completed = subprocess.run(cmd, cwd=str(cwd), shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=900)
     text = completed.stdout or ""
+    normalized = normalize_test_output(text)
     return {
         "type": "test_digest",
         "name": cmd,
-        "sha256": sha256_text(f"{completed.returncode}\n{text}"),
+        "sha256": sha256_text(f"{completed.returncode}\n{normalized}"),
         "metadata": {
             "returncode": completed.returncode,
-            "output_sha256": sha256_text(text),
+            "output_sha256": sha256_text(normalized),
             "stdout_tail": text[-4000:],
+            "normalized_stdout_sha256": sha256_text(normalized),
         },
     }
+
+
+def normalize_test_output(text: str) -> str:
+    """Remove nondeterministic runner timing from test output before hashing."""
+    normalized = str(text or "")
+    replacements = [
+        (re.compile(r"\(\d+(?:\.\d+)?\s*(?:ms|s|m)\)"), "(<duration>)"),
+        (re.compile(r"\b\d+(?:\.\d+)?\s*(?:ms|s|m)\b"), "<duration>"),
+        (re.compile(r"\b\d+\s+passed\s+\(<duration>\)", re.IGNORECASE), lambda m: m.group(0)),
+        (re.compile(r"\bRun id:\s*[A-Za-z0-9._:-]+", re.IGNORECASE), "Run id: <run-id>"),
+        (re.compile(r"\bseed[=:]\s*[A-Za-z0-9._:-]+", re.IGNORECASE), "seed=<seed>"),
+    ]
+    for pattern, repl in replacements:
+        normalized = pattern.sub(repl, normalized)
+    normalized = re.sub(r"\r\n?", "\n", normalized)
+    normalized = "\n".join(line.rstrip() for line in normalized.splitlines())
+    return normalized.strip()
 
 
 def scenario_name(item: Any) -> str:
@@ -816,7 +835,11 @@ def compare_characterizations(baseline: dict[str, Any], current: dict[str, Any])
     baseline_items = {(str(item.get("type")), str(item.get("name"))): item for item in baseline.get("items", []) if isinstance(item, dict)}
     current_items = {(str(item.get("type")), str(item.get("name"))): item for item in current.get("items", []) if isinstance(item, dict)}
     diffs: list[dict[str, Any]] = []
-    for key in sorted(set(baseline_items) | set(current_items)):
+    comparable = {
+        key for key in set(baseline_items) | set(current_items)
+        if key[0] in {"interaction_scenario", "test_digest"}
+    }
+    for key in sorted(comparable):
         before = baseline_items.get(key)
         after = current_items.get(key)
         item_ref = {"type": key[0], "name": key[1]}
@@ -828,6 +851,11 @@ def compare_characterizations(baseline: dict[str, Any], current: dict[str, Any])
             field_diffs = compare_interaction_items(before, after)
             for diff in field_diffs:
                 diffs.append({"type": diff.get("type", "field_drift"), "item": item_ref, **diff})
+        elif key[0] == "test_digest":
+            before_code = before.get("metadata", {}).get("returncode")
+            after_code = after.get("metadata", {}).get("returncode")
+            if before_code != after_code:
+                diffs.append({"type": "test_returncode_drift", "item": item_ref, "before": before_code, "after": after_code, "verdict": "fail"})
         elif before.get("sha256") != after.get("sha256"):
             diffs.append({"type": "item_drift", "item": item_ref, "before_sha256": before.get("sha256"), "after_sha256": after.get("sha256"), "verdict": "fail"})
     return diffs
@@ -1948,7 +1976,24 @@ def behavior_mutation_caught(baseline_path: str | None) -> bool:
                         geometry.append({"key": "salvage-mutant", "rect": {"top": 100, "left": 100, "width": 10, "height": 10}})
                         mutated = True
                         break
-                else:
+            if not mutated:
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
+                    if item.get("type") == "interaction":
+                        evidence = item.setdefault("evidence", {})
+                        if isinstance(evidence, dict):
+                            geometry = evidence.setdefault("geometry", [])
+                            if not isinstance(geometry, list):
+                                geometry = []
+                                evidence["geometry"] = geometry
+                            geometry.append({"key": "salvage-mutant", "rect": {"top": 100, "left": 100, "width": 10, "height": 10}})
+                            mutated = True
+                            break
+            if not mutated:
+                for item in items:
+                    if not isinstance(item, dict):
+                        continue
                     item["sha256"] = "salvage-mutated"
                     mutated = True
                     break

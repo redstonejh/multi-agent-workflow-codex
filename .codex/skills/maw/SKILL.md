@@ -36,7 +36,8 @@ capabilities.
 10. Critic runs deterministic checks where possible and returns PASS or a specific revision request.
 11. Repeat worker/critic up to `max_iters` if needed.
 12. Acceptance gate validates handoffs, plan-gate evidence, public test results, and every task-type required deterministic evidence artifact. Passing public tests alone is not sufficient. The gate writes `artifacts/acceptance-result.json`, then records `SHIP`, `NO-SHIP`, or `NEEDS-HUMAN` in `run.md`. The acceptance-result artifact is the single canonical verdict source.
-13. Run the verdict post-check:
+13. Acceptance also exports a curated research archive bundle outside the run tree. By default this lands beside the checkout in `../research-archive`; set `MAW_RESEARCH_ARCHIVE_DIR`, `MAW_TARGET_REPO`, and `MAW_EXECUTOR_COMMIT` when a run needs an explicit archive root or commit citation. The archive copies only logbooks, handoffs, selected gate artifacts, and interaction-current parity evidence; large code graphs are recorded as sha256/size stubs and target work clones are represented by commit hash only.
+14. Run the verdict post-check:
 
    ```bash
    python maw-tools/verdict_check.py <run_dir>
@@ -55,6 +56,7 @@ python maw-tools/scaffold_run.py handoff --run <run_dir> --from <from_agent> --t
 python maw-tools/validate_handoffs.py <run_dir>
 python maw-tools/checks.py test --cmd "<test command>" --cwd <path>
 python maw-tools/acceptance_check.py --run <run_dir> --test-cmd "<test command>" --test-cwd <path>
+python maw-tools/archive_run.py <run_dir> --archive-root ../research-archive --target-repo <path> --maw-commit <sha>
 maw plan-check <conductor-plan.json>
 maw run-report <run_dir>
 uv run python maw-tools/plan_check.py --file <conductor-plan.json>

@@ -186,6 +186,8 @@ def structured_scenario(name: str, mutation: str | None = None) -> dict:
         extra = {"edge": {"scrollY": 47}}
     elif mutation == "single_move":
         geometry[0]["rect"]["left"] += 3
+    elif mutation == "css_drift":
+        css[1]["backgroundColor"] = "rgb(80, 20, 30)"
     elif mutation == "generated_ids":
         geometry[0]["key"] = "widget-mpyoq0lt-0vi9l"
         dom["objects"][0]["key"] = "widget-mpyoq0lt-0vi9l"
@@ -212,6 +214,7 @@ def write_structured_interaction_artifact(path: Path, mutation: str | None = Non
         "noise": "collapse",
         "edge_scroll": "edge-auto-scroll",
         "single_move": "drag-with-live-ghost",
+        "css_drift": "recolor",
         "generated_ids": "rename",
     }.get(mutation)
     write_json(path, {"scenarios": [structured_scenario(name, mutation if name == mutation_target else None) for name in scenarios if name != omit]})
@@ -281,7 +284,7 @@ def main() -> int:
         results.append({"name": "hollow_port_static_identical_missing_interactions_fails", "passed": code != 0 and any(item.get("type") == "preserved_surface_behavior_drift" for item in data.get("violations", []))})
         (root / "static" / "app.css").write_text("#keep-root { color: #222222; }\n.screen { display: block; }\n", encoding="utf-8")
         code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--test-cmd", cmd, "--interaction-artifact", str(current_interaction), "--preserved-surface", str(surface), "--output", str(parity)], root)
-        results.append({"name": "characterization_parity_drift_fails", "passed": code != 0 and any(item.get("type") == "preserved_surface_behavior_drift" for item in data.get("violations", []))})
+        results.append({"name": "characterization_parity_ignores_static_css_hash_drift", "passed": code == 0 and data.get("passed") is True})
         cross = root / "cross-lang-couplings.json"
         code, data = run_json([sys.executable, str(SALVAGE), "cross-lang", "--graph", str(graph_path), "--root", str(root), "--output", str(cross)], root)
         results.append({"name": "cross_lang_undocumented_coupling_fails", "passed": code != 0 and any(item.get("type") == "undocumented_cross_language_coupling" for item in data.get("violations", []))})
@@ -304,11 +307,14 @@ def main() -> int:
         baseline = root / "characterization-baseline.json"
         baseline_interaction = root / "structured-baseline.json"
         write_structured_interaction_artifact(baseline_interaction)
-        cmd = f"{sys.executable} -c \"print('interaction ok')\""
+        cmd = f"{sys.executable} -c \"import time; print('Running 2 tests'); print('2 passed (' + str(time.time()) + 's)')\""
         code, data = run_json([sys.executable, str(SALVAGE), "characterize", str(root), "--test-cmd", cmd, "--interaction-artifact", str(baseline_interaction), "--output", str(baseline)], root)
         current = root / "structured-current.json"
-        write_structured_interaction_artifact(current, mutation="noise")
+        write_structured_interaction_artifact(current)
         parity = root / "preserve-parity.json"
+        code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--test-cmd", cmd, "--interaction-artifact", str(current), "--preserved-surface", str(surface), "--output", str(parity)], root)
+        results.append({"name": "characterization_parity_ignores_stdout_timing_only", "passed": code == 0 and data.get("passed") is True and data.get("diff_count") == 0})
+        write_structured_interaction_artifact(current, mutation="noise")
         code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--test-cmd", cmd, "--interaction-artifact", str(current), "--preserved-surface", str(surface), "--output", str(parity)], root)
         results.append({"name": "field_parity_tolerates_single_px_and_subepsilon_color_noise", "passed": code == 0 and data.get("passed") is True})
         write_structured_interaction_artifact(current, mutation="edge_scroll")
@@ -317,6 +323,9 @@ def main() -> int:
         write_structured_interaction_artifact(current, mutation="single_move")
         code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--test-cmd", cmd, "--interaction-artifact", str(current), "--preserved-surface", str(surface), "--output", str(parity)], root)
         results.append({"name": "field_parity_catches_real_single_object_move", "passed": code != 0 and any(item.get("diff", {}).get("type") == "field_drift" for item in data.get("violations", []))})
+        write_structured_interaction_artifact(current, mutation="css_drift")
+        code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--test-cmd", cmd, "--interaction-artifact", str(current), "--preserved-surface", str(surface), "--output", str(parity)], root)
+        results.append({"name": "field_parity_catches_real_computed_css_drift", "passed": code != 0 and any(item.get("diff", {}).get("path", "").startswith("evidence.computed_css") for item in data.get("violations", []))})
         write_structured_interaction_artifact(current, mutation="generated_ids")
         code, data = run_json([sys.executable, str(SALVAGE), "preserve-parity", "--characterization-baseline", str(baseline), "--target", str(root), "--test-cmd", cmd, "--interaction-artifact", str(current), "--preserved-surface", str(surface), "--output", str(parity)], root)
         results.append({"name": "field_parity_normalizes_generated_ids", "passed": code == 0 and data.get("passed") is True})

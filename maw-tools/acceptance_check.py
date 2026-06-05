@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -15,6 +16,7 @@ import run_report
 import verdict_check
 import anti_gaming_check
 import salvage_check
+import archive_run
 
 
 ACCEPTANCE_RESULT = "acceptance-result.json"
@@ -391,7 +393,7 @@ def salvage_resistance_reports_pass(data: Any) -> tuple[bool, str]:
         "surface_shrink_gaming",
     }
     names = {item.get("name") for item in mutations if isinstance(item, dict)}
-    if names != expected:
+    if not expected <= names:
         return False, "mutations must cover hidden dependency, dead reference, duplicate, server/client behavior break, cross-language coupling, and surface-shrink planted failures"
     for item in mutations:
         if not isinstance(item, dict):
@@ -755,7 +757,23 @@ def main(argv: list[str] | None = None) -> int:
     summary_path = run_report.write_run_summary(run_dir)
     report_result = {"check": "run_report", "run": str(run_dir), "summary": str(summary_path), "passed": summary_path.is_file()}
     write_json_artifact(artifacts / "run-report-result.json", report_result)
+    try:
+        archive_result = archive_run.archive_run(
+            run_dir,
+            archive_root=Path(os.environ["MAW_RESEARCH_ARCHIVE_DIR"]) if os.environ.get("MAW_RESEARCH_ARCHIVE_DIR") else None,
+            target_repo=Path(os.environ["MAW_TARGET_REPO"]) if os.environ.get("MAW_TARGET_REPO") else None,
+            maw_commit=os.environ.get("MAW_EXECUTOR_COMMIT"),
+        )
+    except Exception as exc:
+        archive_result = {
+            "check": "research_archive_export",
+            "schema_version": 1,
+            "passed": False,
+            "error": str(exc),
+        }
+    write_json_artifact(artifacts / "research-archive-result.json", archive_result)
     result["run_summary"] = str(summary_path)
+    result["research_archive"] = archive_result
     write_acceptance_artifact(run_dir, result)
     run_report.write_run_summary(run_dir)
     print(json.dumps(result, indent=2))

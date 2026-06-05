@@ -15,6 +15,7 @@ if str(TOOLS) not in sys.path:
     sys.path.insert(0, str(TOOLS))
 
 import acceptance_check  # noqa: E402
+import archive_run  # noqa: E402
 import code_graph_html  # noqa: E402
 import code_graph_py  # noqa: E402
 import dependency_risk_audit  # noqa: E402
@@ -100,6 +101,19 @@ def cmd_acceptance(args: argparse.Namespace) -> int:
         argv.extend(["--test-cwd", args.test_cwd])
     argv.extend(["--timeout", str(args.timeout)])
     return acceptance_check.main(argv)
+
+
+def cmd_archive_run(args: argparse.Namespace) -> int:
+    argv = [args.run_folder]
+    if args.archive_root:
+        argv.extend(["--archive-root", args.archive_root])
+    if args.target_repo:
+        argv.extend(["--target-repo", args.target_repo])
+    if args.maw_commit:
+        argv.extend(["--maw-commit", args.maw_commit])
+    if args.output:
+        argv.extend(["--output", args.output])
+    return archive_run.main(argv)
 
 
 def cmd_verdict_check(args: argparse.Namespace) -> int:
@@ -271,6 +285,14 @@ def build_parser() -> argparse.ArgumentParser:
     acceptance.add_argument("--test-cwd")
     acceptance.add_argument("--timeout", type=float, default=600)
     acceptance.set_defaults(func=cmd_acceptance)
+
+    archive_cmd = sub.add_parser("archive-run", help="export a curated tamper-evident run archive")
+    archive_cmd.add_argument("run_folder")
+    archive_cmd.add_argument("--archive-root")
+    archive_cmd.add_argument("--target-repo")
+    archive_cmd.add_argument("--maw-commit")
+    archive_cmd.add_argument("--output")
+    archive_cmd.set_defaults(func=cmd_archive_run)
 
     verdict = sub.add_parser("verdict-check", help="verify run.md final verdict matches acceptance artifact")
     verdict.add_argument("run_folder")
