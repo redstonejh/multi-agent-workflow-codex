@@ -4,6 +4,21 @@ This repository defines a Codex-native Multi-Agent Workflow (MAW). The workflow 
 
 The main Codex entry point is `.codex/skills/maw/SKILL.md`. Role definitions live in `.codex/agents/`. Deterministic tools live in `maw-tools/` and must use only the Python standard library.
 
+## Delegation Invariant
+
+MAW requires real role delegation. The conductor must detect an available
+sub-agent/delegation primitive at run start and must delegate every selected
+role in `roles` and `parallel_roles` to an independent sub-agent loaded with
+that role's `.codex/agents/<role>.md` prompt. If no real delegation primitive is
+available, MAW must halt with verdict `NEEDS-HUMAN` and reason
+`real delegation unavailable`; single-context role-playing is not allowed.
+
+Every run must write `artifacts/delegation-proof.json` before acceptance. The
+proof must include the detected capability and, for each selected role, a
+distinct sub-agent/session identifier plus the role prompt path. Acceptance must
+run `maw-tools/delegation_check.py`; a run cannot `SHIP` if the proof is
+missing, incomplete, or shows shared context ids across roles.
+
 ## Roles
 
 - `conductor`: selects the smallest useful team, records the run plan, and enforces caps.
@@ -52,6 +67,7 @@ Use deterministic checks whenever possible before relying on model judgment:
 python maw-tools/scaffold_run.py init "<task>" --agents conductor,planner,worker,critic,acceptance_gate --json
 python maw-tools/scaffold_run.py handoff --run <run_dir> --from planner --to worker
 python maw-tools/validate_handoffs.py <run_dir>
+python maw-tools/delegation_check.py <run_dir>
 python maw-tools/checks.py test --cmd "<test command>"
 python maw-tools/acceptance_check.py --run <run_dir> --test-cmd "<test command>"
 python maw-tools/salvage_check.py verdict <run_dir>

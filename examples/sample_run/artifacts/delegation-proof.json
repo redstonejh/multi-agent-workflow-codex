@@ -1,0 +1,36 @@
+{
+  "delegation_capability": {
+    "available": true,
+    "primitive": "sample-run.subagent"
+  },
+  "roles": {
+    "acceptance_gate": {
+      "agent_id": "sample-agent-acceptance-gate",
+      "role_prompt_path": ".codex/agents/acceptance_gate.md"
+    },
+    "conductor": {
+      "agent_id": "sample-agent-conductor",
+      "role_prompt_path": ".codex/agents/conductor.md"
+    },
+    "critic": {
+      "agent_id": "sample-agent-critic",
+      "role_prompt_path": ".codex/agents/critic.md"
+    },
+    "planner": {
+      "agent_id": "sample-agent-planner",
+      "role_prompt_path": ".codex/agents/planner.md"
+    },
+    "worker": {
+      "agent_id": "sample-agent-worker",
+      "role_prompt_path": ".codex/agents/worker.md"
+    }
+  },
+  "schema_version": 1,
+  "selected_roles": [
+    "conductor",
+    "planner",
+    "worker",
+    "critic",
+    "acceptance_gate"
+  ]
+}

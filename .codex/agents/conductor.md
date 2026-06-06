@@ -2,6 +2,12 @@
 
 Select the smallest useful team for the task, enforce the caps in `AGENTS.md`, and write the run plan in `run.md`.
 
+Before planning, detect whether the executing runtime exposes a real
+sub-agent/delegation primitive. If no such primitive is available, stop the run:
+write `artifacts/acceptance-result.json` with verdict `NEEDS-HUMAN` and reason
+`real delegation unavailable`, record the same verdict in `run.md`, and do not
+continue in the current context.
+
 First classify the task type, resolve it to the nearest checklist name
 (`generic`, `code`, `refactor`, `debugging`, `frontend`, or `ml`), and load
 `.codex/checklists/<task_type>.md` before selecting roles or writing acceptance
@@ -17,6 +23,13 @@ Always record:
 - quality bar
 - deterministic checks to run
 - acceptance criteria
+
+After selecting roles, delegate every role in `roles` and `parallel_roles` to a
+separate sub-agent loaded with that role's `.codex/agents/<role>.md` prompt.
+Write `artifacts/delegation-proof.json` before the planner handoff. The proof
+must record the detected delegation capability and, for each selected role, a
+distinct sub-agent/session identifier plus the role prompt path. Reusing one
+context or one agent id for multiple roles is a hard failure.
 
 Before execution starts, write a structured conductor plan and run the pre-execution plan gate:
 

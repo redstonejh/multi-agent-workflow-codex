@@ -19,6 +19,7 @@ SELFTEST_SALVAGE = TOOLS / "selftest_salvage_checks.py"
 SELFTEST_ARCHIVE = TOOLS / "selftest_archive_run.py"
 SELFTEST_PLAN = TOOLS / "selftest_plan_check.py"
 SELFTEST_DESIGN_PACKS = TOOLS / "selftest_design_packs.py"
+SELFTEST_DELEGATION = TOOLS / "selftest_delegation_check.py"
 VENDORED_DATA_CHECK = TOOLS / "check_vendored_data.py"
 README_CHECK = TOOLS / "readme_check.py"
 PLAN_CHECK = TOOLS / "plan_check.py"
@@ -119,6 +120,7 @@ def main() -> int:
         ("salvage_checks", [sys.executable, str(SELFTEST_SALVAGE)]),
         ("archive_run", [sys.executable, str(SELFTEST_ARCHIVE)]),
         ("plan_check", [sys.executable, str(SELFTEST_PLAN)]),
+        ("delegation_check", [sys.executable, str(SELFTEST_DELEGATION)]),
         ("design_packs", [sys.executable, str(SELFTEST_DESIGN_PACKS)]),
         ("checklists", [sys.executable, str(CHECKLIST_CHECK), "--root", str(REPO_ROOT)]),
         ("readme", [sys.executable, str(README_CHECK)]),

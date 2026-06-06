@@ -20,6 +20,7 @@ SCAFFOLD = ROOT / "maw-tools" / "scaffold_run.py"
 CHECKS = ROOT / "maw-tools" / "checks.py"
 VALIDATE = ROOT / "maw-tools" / "validate_handoffs.py"
 ACCEPTANCE = ROOT / "maw-tools" / "acceptance_check.py"
+DELEGATION_CHECK = ROOT / "maw-tools" / "delegation_check.py"
 VERDICT_CHECK = ROOT / "maw-tools" / "verdict_check.py"
 RUN_REPORT = ROOT / "maw-tools" / "run_report.py"
 TASK_GRAPH = ROOT / "maw-tools" / "task_graph.py"
@@ -200,6 +201,61 @@ class MawToolTests(unittest.TestCase):
             text = text.replace("<What the next role should do next.>", "Continue the demo.")
             handoff.write_text(text, encoding="utf-8")
 
+    def _write_delegation_proof(self, run_dir: Path, roles: list[str] | None = None, shared: bool = False) -> None:
+        selected = roles or ["conductor", "planner", "worker", "critic", "acceptance_gate"]
+        role_entries = {}
+        for index, role in enumerate(selected):
+            role_entries[role] = {
+                "agent_id": "agent-shared" if shared else f"agent-{index}-{role}",
+                "role_prompt_path": f".codex/agents/{role}.md",
+            }
+        (run_dir / "artifacts").mkdir(parents=True, exist_ok=True)
+        (run_dir / "artifacts" / "delegation-proof.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "delegation_capability": {"available": True, "primitive": "unit-test.spawn"},
+                    "selected_roles": selected,
+                    "roles": role_entries,
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+    def test_delegation_check_requires_proof(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = Path(tmp_dir)
+            (run_dir / "artifacts").mkdir()
+            proc = run_tool(str(DELEGATION_CHECK), str(run_dir))
+            result = json.loads(proc.stdout)
+
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertFalse(result["passed"])
+        self.assertTrue(any(item["type"] == "missing_delegation_proof" for item in result["violations"]))
+
+    def test_delegation_check_rejects_shared_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = Path(tmp_dir)
+            self._write_delegation_proof(run_dir, ["conductor", "planner", "worker"], shared=True)
+            proc = run_tool(str(DELEGATION_CHECK), str(run_dir))
+            result = json.loads(proc.stdout)
+
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertFalse(result["passed"])
+        self.assertTrue(any(item["type"] == "shared_agent_context" for item in result["violations"]))
+        self.assertTrue(any(item["type"] == "duplicate_agent_context" for item in result["violations"]))
+
+    def test_delegation_check_accepts_distinct_contexts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = Path(tmp_dir)
+            self._write_delegation_proof(run_dir, ["conductor", "planner", "worker"])
+            proc = run_tool(str(DELEGATION_CHECK), str(run_dir))
+            result = json.loads(proc.stdout)
+
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertTrue(result["passed"])
+
     def test_checks_exit_code_matches_result(self) -> None:
         proc = run_tool(str(CHECKS), "gap", "--train", "0.8", "--test", "0.79", "--tol", "0.05")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
@@ -222,6 +278,20 @@ class MawToolTests(unittest.TestCase):
             self.assertEqual(result["task_type"], "standard-software-task")
             self.assertTrue(result["evidence"]["passed"])
             self.assertEqual(json.loads(artifact.read_text(encoding="utf-8"))["verdict"], "SHIP")
+
+    def test_acceptance_check_requires_delegation_proof(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            run_dir = Path(tmp_dir) / "sample_run"
+            shutil.copytree(ROOT / "examples" / "sample_run", run_dir)
+            (run_dir / "artifacts" / "delegation-proof.json").unlink()
+
+            proc = self._run_sample_acceptance(run_dir)
+            result = json.loads(proc.stdout)
+
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertEqual(result["verdict"], "NO-SHIP")
+        self.assertFalse(result["delegation"]["passed"])
+        self.assertTrue(any(item["delegation_type"] == "missing_delegation_proof" for item in result["violations"]))
 
     def _run_sample_acceptance(self, run_dir: Path) -> subprocess.CompletedProcess[str]:
         return run_tool(
@@ -259,6 +329,7 @@ class MawToolTests(unittest.TestCase):
         run_md = (run_dir / "run.md").read_text(encoding="utf-8")
         run_md = run_md.replace("- Status: in-progress", "- Status: in-progress\n- Task type: ml")
         (run_dir / "run.md").write_text(run_md, encoding="utf-8")
+        self._write_delegation_proof(run_dir)
 
         artifacts = run_dir / "artifacts"
         for name in (
@@ -599,6 +670,7 @@ class MawToolTests(unittest.TestCase):
         run_md = (run_dir / "run.md").read_text(encoding="utf-8")
         run_md = run_md.replace("- Status: in-progress", "- Status: in-progress\n- Task type: code")
         (run_dir / "run.md").write_text(run_md, encoding="utf-8")
+        self._write_delegation_proof(run_dir, ["conductor", "planner", "worker", "dependency_mapper", "critic", "acceptance_gate"])
 
         artifacts = run_dir / "artifacts"
         (artifacts / "test-result.json").write_text(json.dumps({"passed": True}) + "\n", encoding="utf-8")
@@ -729,6 +801,7 @@ class MawToolTests(unittest.TestCase):
             run_md = (run_dir / "run.md").read_text(encoding="utf-8")
             run_md = run_md.replace("- Status: in-progress", "- Status: in-progress\n- Workflow template: refactor-task")
             (run_dir / "run.md").write_text(run_md, encoding="utf-8")
+            self._write_delegation_proof(run_dir)
 
             source = Path(tmp_dir) / "legacy.py"
             source.write_text("def public():\n    return 'edited'\n", encoding="utf-8")

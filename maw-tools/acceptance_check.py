@@ -17,6 +17,7 @@ import verdict_check
 import anti_gaming_check
 import salvage_check
 import archive_run
+import delegation_check
 
 
 ACCEPTANCE_RESULT = "acceptance-result.json"
@@ -635,7 +636,14 @@ def check_required_evidence(run_dir: Path, task_type: str) -> dict[str, Any]:
     }
 
 
-def acceptance_violations(handoffs: dict, test: dict, evidence: dict, anti_gaming: dict | None = None, salvage_gates: dict | None = None) -> list[dict[str, Any]]:
+def acceptance_violations(
+    handoffs: dict,
+    test: dict,
+    evidence: dict,
+    anti_gaming: dict | None = None,
+    salvage_gates: dict | None = None,
+    delegation: dict | None = None,
+) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
     if not handoffs.get("passed"):
         result.append(violation("handoffs_invalid", "handoff validation failed"))
@@ -666,10 +674,29 @@ def acceptance_violations(handoffs: dict, test: dict, evidence: dict, anti_gamin
                         **extra,
                     )
                 )
+    if delegation is not None and not delegation.get("passed"):
+        for item in delegation.get("violations", []):
+            if isinstance(item, dict):
+                extra = {key: value for key, value in item.items() if key not in {"type", "message"}}
+                result.append(
+                    violation(
+                        "delegation_gate_failed",
+                        item.get("message", "delegation proof hard gate failed"),
+                        delegation_type=item.get("type"),
+                        **extra,
+                    )
+                )
     return result
 
 
-def verdict(handoffs: dict, test: dict, evidence: dict, anti_gaming: dict | None = None, salvage_gates: dict | None = None) -> str:
+def verdict(
+    handoffs: dict,
+    test: dict,
+    evidence: dict,
+    anti_gaming: dict | None = None,
+    salvage_gates: dict | None = None,
+    delegation: dict | None = None,
+) -> str:
     if not handoffs.get("passed"):
         return "NO-SHIP"
     if not test.get("passed"):
@@ -679,6 +706,8 @@ def verdict(handoffs: dict, test: dict, evidence: dict, anti_gaming: dict | None
     if anti_gaming is not None and not anti_gaming.get("passed"):
         return "NO-SHIP"
     if salvage_gates is not None and not salvage_gates.get("passed"):
+        return "NO-SHIP"
+    if delegation is not None and not delegation.get("passed"):
         return "NO-SHIP"
     return "SHIP"
 
@@ -733,10 +762,12 @@ def main(argv: list[str] | None = None) -> int:
     evidence = check_required_evidence(run_dir, task_type)
     anti_gaming = anti_gaming_check.check_run(run_dir)
     salvage_gates = salvage_check.check_run(run_dir)
+    delegation = delegation_check.check_run(run_dir)
     write_json_artifact(artifacts / "anti-gaming-hard-gates.json", anti_gaming)
     write_json_artifact(artifacts / "salvage-hard-gates.json", salvage_gates)
-    violations = acceptance_violations(handoffs, test, evidence, anti_gaming, salvage_gates)
-    final_verdict = verdict(handoffs, test, evidence, anti_gaming, salvage_gates)
+    write_json_artifact(artifacts / "delegation-check-result.json", delegation)
+    violations = acceptance_violations(handoffs, test, evidence, anti_gaming, salvage_gates, delegation)
+    final_verdict = verdict(handoffs, test, evidence, anti_gaming, salvage_gates, delegation)
     result = {
         "run": str(run_dir),
         "task_type": task_type,
@@ -745,6 +776,7 @@ def main(argv: list[str] | None = None) -> int:
         "evidence": evidence,
         "anti_gaming": anti_gaming,
         "salvage_gates": salvage_gates,
+        "delegation": delegation,
         "violations": violations,
         "verdict": final_verdict,
     }

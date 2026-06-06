@@ -32,6 +32,13 @@ For dependency-risk-audit workflows, verify generated bug dossiers exist for hig
 
 For every completed run, verify pre-execution plan gate evidence exists: proposed structured plan, `plan_check.py` result, `plan_reviewer` verdict, final accepted plan, and revision count. Deterministic `plan_check.py` evidence is the hard gate; `plan_reviewer` is advisory.
 
+For every completed run, verify `artifacts/delegation-proof.json` with
+`maw-tools/delegation_check.py`. Missing proof, missing role entries, missing
+prompt paths, or reused sub-agent/session ids are hard `NO-SHIP` gates. If the
+runtime had no delegation primitive and the run halted before execution, the
+only acceptable verdict is `NEEDS-HUMAN` with reason `real delegation
+unavailable`.
+
 For refactor tasks, any unverified behavior-preservation surface identified by
 `.codex/checklists/refactor.md` is `NO-SHIP`. For ML tasks, any unverified
 leakage, overlap, drift, baseline, shuffled-label, multi-seed, or reproducibility

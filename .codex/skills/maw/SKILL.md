@@ -55,6 +55,7 @@ these files rather than maintaining duplicate checklist text.
 python maw-tools/scaffold_run.py handoff --run <run_dir> --from <from_agent> --to <to_agent>
 python maw-tools/validate_handoffs.py <run_dir>
 python maw-tools/checks.py test --cmd "<test command>" --cwd <path>
+python maw-tools/delegation_check.py <run_dir>
 python maw-tools/acceptance_check.py --run <run_dir> --test-cmd "<test command>" --test-cwd <path>
 python maw-tools/archive_run.py <run_dir> --archive-root ../research-archive --target-repo <path> --maw-commit <sha>
 maw plan-check <conductor-plan.json>
@@ -77,4 +78,18 @@ Do not leave generated placeholders in completed handoffs. Keep artifacts in `ar
 
 ## Subagents
 
-If Codex subagent tools are available and delegation is authorized, use the role prompts in `.codex/agents/`. Otherwise run the roles sequentially in the current Codex session while preserving the same files and handoffs.
+Real role delegation is mandatory. At run start, the conductor MUST detect an
+available sub-agent/delegation primitive exposed by the executing runtime. The
+conductor MUST spawn every selected role in `roles` and `parallel_roles` as a
+separate sub-agent with its own context, loaded with that role's
+`.codex/agents/<role>.md` prompt.
+
+If no real delegation primitive is available, MAW MUST write an acceptance
+artifact with verdict `NEEDS-HUMAN` and stop with the reason
+`real delegation unavailable`. MAW must never continue by having one model
+role-play multiple roles in a single context.
+
+Every run MUST write `artifacts/delegation-proof.json`. The proof lists the
+delegation capability detected and, for each selected role, a distinct
+sub-agent/session identifier plus the role prompt path. Acceptance runs
+`maw-tools/delegation_check.py`; a run cannot `SHIP` without passing proof.
